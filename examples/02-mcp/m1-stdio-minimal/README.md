@@ -24,6 +24,7 @@ m1-stdio-minimal/
   raw_session.py   서버를 띄워 JSON-RPC 대화를 줄 단위로 출력하는 스크립트
   opencode.json    mcp.glossary 항목: ["python", "server.py"] 로 서버 실행
   check.py         자동 검증 (tools/run_checks.py가 실행)
+  fake_llm.py      가짜 LLM 서버. check.py 가 모델 없이 opencode 의 요청을 기록·재현하는 데 씀
 ```
 
 ## 따라 하기
@@ -178,7 +179,7 @@ opencode가 시작되면 `opencode.json`의 `mcp.glossary`를 읽고 아래 순�
 
 ### stdout은 프로토콜 전용
 
-서버의 `print()`가 stdout에 한 줄이라도 쓰면 opencode는 그 줄을 JSON-RPC로 읽으려다 실패한다. 그래서 `server.py`는 로그를 모두 `log()` 함수(stderr)로 보낸다. 디버깅하다 무심코 `print("here")`를 넣는 것이 가장 흔한 MCP 서버 오류다.
+stdout은 JSON-RPC 메시지가 흐르는 통로다. opencode 1.19.5에서 직접 시험해 보니, 줄바꿈으로 끝나는 `print("디버그")` 한 줄이 섞인 것은 **무시되고** 서버는 `✓ connected` 그대로였고 도구 호출도 됐다. 하지만 **줄바꿈 없는 출력**(예: `sys.stdout.write("디버그 ")`)이 JSON 앞에 붙으면 그 줄이 깨진 JSON이 되어 스트림이 어긋난다. 이때 서버는 약 30초 뒤 `✗ failed — Operation timed out after 30000ms`가 된다. 안 깨지는 경우가 있다고 stdout에 출력해도 되는 것은 아니다. 클라이언트마다 처리가 다를 수 있으므로 `server.py`는 로그를 모두 `log()` 함수(stderr)로 보낸다.
 
 ### Windows 인코딩
 
@@ -189,11 +190,11 @@ Windows의 파이썬은 stdin/stdout을 cp949로 열기 때문에 한글이 든 
 1. **용어 추가** — `glossary.json`에 용어를 하나 추가하고, opencode를 다시 시작해서 물어본다. (서버는 시작할 때 파일을 읽으므로 opencode를 껐다 켜야 한다.)
 2. **도구 추가** — `server.py`의 `TOOLS`에 `random_term`(무작위 용어 하나) 도구를 정의하고 `call_tool`에 처리를 추가한다. `python raw_session.py`로 `tools/list`에 나타나는지 먼저 확인한다.
 3. **description 망가뜨려 보기** — `lookup_term`의 `description`을 `"도구"` 한 단어로 바꾸고 같은 질문을 해 본다. 모델이 도구를 고르는 확률이 어떻게 달라지는지 관찰한다.
-4. **실수 체험** — `handle()` 안에 `print("디버그")`를 넣고 `opencode mcp list`를 실행해 어떤 오류가 나는지 본다. (확인 후 지우자.)
+4. **실수 체험** — `handle()` 맨 앞에 `sys.stdout.write("디버그 ")`를 넣고(줄바꿈 없는 출력) `opencode mcp list`를 실행한다. 약 30초 뒤 `✗ glossary failed — Operation timed out after 30000ms`가 나온다. 같은 자리에 `print("디버그")`를 넣으면(줄바꿈 있음) 이번 시험에서는 오류 없이 `connected`였다. 확인 후 지우자.
 
 ## 주의할 점 / 문제 해결
 
-- **opencode를 이 예제 폴더에서 실행해야 한다.** `command`의 `server.py`는 설정 파일 위치가 아니라 **opencode를 실행한 폴더** 기준이다. 하위 폴더에서 실행하면 설정은 찾아지지만 서버 파일을 못 찾아 `✗ glossary failed — Operation timed out after 30000ms`로 30초 뒤에 실패한다. (서버 프로세스가 즉시 죽어도 실패 표시는 연결 시간 제한 30초 뒤에 나온다.)
+- **opencode를 이 예제 폴더에서 실행해야 한다.** `command`의 `server.py`는 설정 파일 위치가 아니라 **opencode를 실행한 폴더** 기준이다. 하위 폴더에서 실행하면 설정은 찾아지지만 서버 파일을 못 찾아 실패한다. Linux에서 확인한 증상은 약 2초 뒤 `✗ glossary failed — MCP error -32000: Connection closed`다(`python nope.py`처럼 없는 스크립트를 가리킬 때도 같다). Windows에서는 메시지나 걸리는 시간이 다를 수 있다(미확인). 어느 쪽이든 `command`의 경로와 실행한 폴더부터 확인한다.
 - **Linux에서 `python` 명령이 없으면** `command`를 `["python3", "server.py"]`로 바꾼다.
 - **한글이 `???`나 깨진 글자로 나온다** — Windows에서 `reconfigure`를 빼먹었을 때의 증상이다.
 - **서버를 고쳤는데 반영이 안 된다** — opencode는 시작할 때 서버를 띄운다. 코드를 고쳤다면 opencode를 다시 시작한다.

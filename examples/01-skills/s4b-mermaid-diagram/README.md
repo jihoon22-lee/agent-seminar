@@ -156,4 +156,4 @@ sample-app/
 - 큰 프로젝트에서는 그래프가 복잡해진다. 하위 패키지 폴더 하나만 인자로 주면 된다.
 - **Windows 에서는 `python`, Linux 에서는 `python3`**: SKILL.md 는 `python` 으로 안내하고 "없으면 `python3`" 를 덧붙였다. Windows 에서 opencode 의 `bash` 도구는 Git Bash 가 아니라 **Windows PowerShell 5.1** 에서 명령을 실행한다. 그래서 SKILL.md 는 `&&`, `export`, `$변수`, `| head` 같은 bash 전용 문법 없이 `python <스킬 폴더>/scripts/… 인자` **한 줄**만 시킨다. 스킬 폴더 경로는 Windows 에서 `C:\...\.opencode\skills\<이름>` 처럼 역슬래시로 오지만, 파이썬에는 `/` 로 바꿔 넘겨도 동작한다(`check.py` 가 가짜 모델로 검증). 출력 Markdown 의 경로 표기는 항상 `/` 이다(Windows 에서도).
 - 트리는 `├──` 같은 유니코드 선을 쓴다. 파일은 UTF-8 로 쓰고, 터미널 글꼴이 깨지면 에디터로 연다.
-- `out/` 은 gitignore 대상이다. 첫 실행 지연(`.opencode/` 의 `@opencode-ai/plugin` 자동 설치 시도)은 S3a 와 같다.
+- `out/` 은 gitignore 대상이다. 첫 실행 지연(`.opencode/` 의 `@opencode-ai/plugin` 자동 설치 시도)은 S3a 와 같다. 이 예제에도 플러그인이 없어 레지스트리에 닿지 않아도 눈에 띄는 멈춤은 없었다. 자세한 내용은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러) 참고.

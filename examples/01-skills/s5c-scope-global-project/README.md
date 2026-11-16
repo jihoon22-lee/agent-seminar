@@ -33,7 +33,7 @@ s5c-scope-global-project/
 
 `demo.py` 의 "전역 스킬 폴더"는 임시 폴더 안에 만든 **가짜**입니다. 내 진짜 `~/.config/opencode` 는 읽지도 쓰지도 않습니다.
 
-> `.opencode/` 가 있는 폴더에서 처음 opencode 를 실행하면 `@opencode-ai/plugin` 이 npm 에서 `.opencode/` 안에 자동 설치됩니다(`package.json`, `node_modules/` 생성, git 제외). 레지스트리에 접근할 수 없으면 첫 실행이 약 70초 멈췄다가 계속됩니다. 레지스트리에 닿지 않으면 첫 실행만이 아니라 **시작할 때마다** 이렇게 멈춥니다. 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있습니다.
+> **`.opencode/` 가 있는 폴더에서는** opencode 가 시작할 때 `@opencode-ai/plugin` 을 npm 에서 설치하려 시도하고, 성공하면 `.opencode/` 안에 `package.json`, `node_modules/`, `.gitignore` 가 생깁니다(모두 git 에서 제외). 이 예제에는 플러그인(`.opencode/plugins/*.js`)이 없어서, 레지스트리에 닿지 않는 환경에서도 눈에 띄는 멈춤은 없었습니다(연결을 거부하는 레지스트리로 측정: `opencode debug skill` 약 2초, `opencode run` 약 4초. TUI 는 확인하지 못했습니다). 설치 시도 자체는 일어납니다. 같은 환경에서 `.opencode/plugins/*.js` 가 있는 폴더(P1~P8 등)는 시작할 때마다 약 70초 멈춥니다(새 환경의 맨 처음 시작은 약 130초). 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있습니다.
 
 ## 따라 하기
 

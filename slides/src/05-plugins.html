@@ -79,7 +79,7 @@
         <li><code>.env.example</code>은 허용: 변수 <strong>이름</strong>은 알아야 일을 하니까</li>
         <li>Windows 경로(<code>C:\...\.env</code>)도 처리</li>
       </ul>
-      <p class="tiny muted">차단 30가지, 허용 21가지 사례를 node 단위 테스트로 고정했습니다.</p>
+      <p class="tiny muted">차단 35가지, 허용 24가지 사례를 node 단위 테스트로 고정했습니다. 1.19.5는 기본 권한으로도 <code>.env</code> 읽기 전에 묻습니다. 플러그인은 묻지 않고 거절하고, bash 우회와 <code>--auto</code> 실행까지 막습니다.</p>
     </div>
     <script type="text/x-code" data-lang="text" class="term sm" data-title="opencode 1.19.5 실제 실행 (도구 호출은 가짜 모델이 지시)">
     > .env 를 보여줘
@@ -95,6 +95,7 @@
   <div class="ref">examples/03-plugins/p1-env-guard</div>
   <aside class="notes">
     <p>이 출력은 실제 opencode를 실행했고, 어떤 도구를 부를지만 가짜 모델 서버가 정했습니다. 그래서 차단 동작은 매번 똑같이 재현됩니다. 실제 모델이 차단 뒤에 어떻게 반응하는지는 무료 모델 한도로 확인하지 못했습니다.</p>
+    <p>질문이 나올 만한 부분: opencode 1.19.5의 기본 권한에도 read의 *.env는 ask로 들어 있습니다(opencode debug agent build로 확인). 그래도 플러그인을 쓰는 이유는 승인 창 피로 없이 처음부터 거절하고, cat .env 같은 bash 우회도 막고, 모두 승인하는 --auto 실행에서도 그대로 동작하기 때문입니다. 정규식 가드라서 완벽한 차단은 아닙니다.</p>
   </aside>
 </section>
 
@@ -137,7 +138,7 @@
         ...
       ];
       </script>
-      <p class="tiny muted">막아야 할 47가지, 허용해야 할 36가지 사례를 테스트로 고정</p>
+      <p class="tiny muted">막아야 할 55가지, 허용해야 할 44가지 사례를 테스트로 고정</p>
     </div>
     <table class="compact">
       <tr><th></th><th class="config"><code>permission.bash</code></th><th class="plugin">플러그인</th></tr>

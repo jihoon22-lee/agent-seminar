@@ -20,6 +20,7 @@
 s2b-api-design/
 ├── README.md
 ├── check.py                                    자동 검증
+├── fake_llm.py                                 가짜 LLM 서버. check.py 가 모델 없이 opencode 의 요청을 기록·재현하는 데 씀
 └── .opencode/skills/api-design/
     ├── SKILL.md                                라우터: 어떤 요청에 어떤 파일을 읽는지 표로 안내
     └── references/
@@ -125,5 +126,5 @@ Note: file list is sampled.
 ## 주의할 점 / 문제 해결
 
 - **파일 읽기가 항상 일어나지는 않는다.** 모델에 따라 라우팅 표를 건너뛰고 일반 지식으로 답할 수 있다. 이때는 답변에 `pg1_`가 없다. 표의 "읽을 파일" 열을 굵게 하거나, 본문 맨 위에 "규칙은 읽은 파일에 적힌 것만 따른다"를 두는 것(이 예제가 그렇게 한다)이 도움이 된다.
-- **`.opencode/`가 있는 폴더에서 처음 실행하면** opencode가 `.opencode/` 안에 `package.json`, `node_modules/`, `.gitignore`를 자동으로 만든다(`@opencode-ai/plugin` 설치). 인터넷이나 패키지 미러에 접근할 수 없으면 첫 시작이 약 70초 멈춘 것처럼 보일 수 있다. 레지스트리에 닿지 않으면 첫 실행만이 아니라 **시작할 때마다** 이렇게 멈춘다. 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있다.
+- **`.opencode/`가 있는 폴더에서는** opencode가 시작할 때 `@opencode-ai/plugin`을 npm에서 설치하려 시도하고, 성공하면 `.opencode/` 안에 `package.json`, `node_modules/`, `.gitignore`가 생긴다(모두 git에서 제외). 이 예제에는 플러그인(`.opencode/plugins/*.js`)이 없어서, 레지스트리에 닿지 않는 환경에서도 눈에 띄는 멈춤은 없었다(연결을 거부하는 레지스트리로 측정: `opencode debug skill` 약 2초, `opencode run` 약 4초. TUI는 확인하지 못했다). 설치 시도 자체는 일어난다. 같은 환경에서 `.opencode/plugins/*.js`가 있는 폴더(P1~P8 등)는 시작할 때마다 약 70초 멈춘다(새 환경의 맨 처음 시작은 약 130초). 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있다.
 - **이 규칙은 가상의 팀 규칙이다.** 실제 서비스의 API 설계 가이드가 아니므로 규칙 값(`pg1_` 등)을 그대로 쓰지 말고 팀의 규칙으로 바꿔 쓰자.

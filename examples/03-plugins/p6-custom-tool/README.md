@@ -104,6 +104,8 @@ curl http://127.0.0.1:4096/experimental/tool/ids
 
 PowerShell 은 `Invoke-RestMethod http://127.0.0.1:4096/experimental/tool/ids` 를 쓰면 됩니다. 도구 목록 끝에 세 도구가 보이면 등록된 것입니다.
 
+**확인이 끝나면 서버를 꺼야 합니다.** `opencode serve` 는 계속 떠 있습니다. 포그라운드(새 창)로 띄웠다면 그 창에서 `Ctrl+C` 를 누릅니다. 위처럼 `&` 로 띄웠다면 `kill %1` 입니다. 다른 창에서 포트로 찾아 끄려면 PowerShell 은 `Get-NetTCPConnection -LocalPort 4096 | ForEach-Object { Stop-Process -Id $_.OwningProcess }`, Linux 는 `kill $(lsof -ti:4096)` 입니다. 포트로 지정하는 이유는 같은 PC 에서 쓰는 다른 opencode 를 같이 끄지 않으려는 것입니다.
+
 ### 4. 자동 검증
 
 ```powershell
@@ -197,7 +199,9 @@ a3fe1ffb-b945-4148-864f-85d8108d90be
 | 상황 | 결과 |
 |---|---|
 | 레지스트리에 닿음 | 첫 시작 6~10초, 이후 1초 안팎 |
-| 레지스트리가 연결을 거부/차단(응답 없음) | **약 70초 동안 시작이 멈춘** 뒤 계속 진행. 설치가 안 됐으므로 `import ... "@opencode-ai/plugin"` 이 실패하고 **커스텀 도구가 오류 메시지 없이 사라짐** |
+| 레지스트리가 연결을 거부(연결 즉시 실패) + `.opencode/plugins/*.js` 가 있는 폴더 | **시작할 때마다 약 72초 멈춘** 뒤 계속 진행. 새 환경에서 맨 처음 시작은 약 130초. 설치가 안 됐으므로 `import ... "@opencode-ai/plugin"` 이 실패하고 **커스텀 도구가 오류 메시지 없이 사라짐** |
+| 같은 환경 + `.opencode/` 는 있지만 **플러그인이 없는 폴더**(스킬만 있는 예제) | 눈에 띄는 멈춤이 없었음(`opencode debug skill` 2초, `opencode run` 4초. TUI 는 확인하지 못함). 설치 시도 자체는 일어나므로 `.opencode/package.json` 등이 생기거나 실패 로그가 남을 수 있음 |
+| 레지스트리가 패킷을 **조용히 버림**(방화벽 DROP 등, 연결 거부가 아니라 무응답) | 연결 시간 초과를 기다리느라 **200초 넘게** 멈출 수 있음(플러그인이 있는 폴더 기준) |
 | 레지스트리는 응답하지만 패키지가 없음(404) | 지연 없이 바로 실패, 마찬가지로 도구가 조용히 사라짐 |
 
 도구가 안 보이면 `opencode --print-logs` 로 실행해서 이 줄을 찾으세요(일반 실행에는 출력되지 않습니다).

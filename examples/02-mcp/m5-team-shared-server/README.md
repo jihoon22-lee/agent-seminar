@@ -12,7 +12,7 @@ Python 파일 하나(`server.py`)이고, 팀원은 같은 `opencode.json` 을 �
 
 | 도구 | 설명 |
 |---|---|
-| `oncall_lookup(team, date?)` | `oncall.json` 에서 팀의 온콜 당번(1차/2차) 조회. 날짜를 생략하면 오늘 |
+| `oncall_lookup(team, date?)` | `oncall.json` 에서 팀의 온콜 당번(1차/2차) 조회. 날짜를 생략하면 오늘(일정표 밖이면 주간 순환 배정) |
 | `team_status()` | `status.json` 의 서비스 상태(ok / degraded / maintenance) 요약 |
 
 ## 실무에서는
@@ -198,5 +198,5 @@ $ curl -X POST localhost:3918/ -H 'Authorization: Bearer demo-token-alice-1' \
 - `Invalid MCP URL`: `TEAM_MCP_URL` 이 비어 있거나 설정되지 않았습니다. 환경 변수를 설정한 **같은 터미널**에서 `opencode` 를 실행하세요.
 - `ECONNREFUSED`: 서버가 안 떠 있거나 포트/주소가 다릅니다.
 - 기본 포트는 3918 입니다(`--port` 로 변경). 이미 사용 중이면 서버가 시작 시 오류를 냅니다.
-- 오늘 날짜로 `oncall_lookup` 을 부르면 `oncall.json` 의 일정(2026-11-02 ~ 2026-11-29) 밖에서는 "일정이 없습니다" 가 나옵니다. 날짜를 지정하거나 데이터를 갱신하세요.
+- `oncall.json` 에는 2026-11-02 ~ 2026-11-29 일정만 들어 있습니다. 이 기간 밖의 날짜(오늘 날짜 포함)로 `oncall_lookup` 을 부르면 서버가 **주간 순환 배정**으로 대신 답합니다. 그 팀의 항목들을 ISO 주 번호 % 항목 수 로 골라 쓰는 데모용 규칙이며, 답변에 "순환 배정"이라고 표시됩니다. 실제 당번표가 아니므로 날짜를 지정하거나 데이터를 갱신하세요. (팀 이름이 틀렸을 때만 오류가 납니다.)
 - Windows 에서 `logs/server.log` 는 UTF-8 로 기록됩니다. 메모장 대신 VS Code 등으로 여세요.

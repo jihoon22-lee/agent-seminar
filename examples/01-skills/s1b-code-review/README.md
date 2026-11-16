@@ -20,6 +20,7 @@
 s1b-code-review/
 ├── README.md
 ├── check.py                                  자동 검증 (결함 재현, 스킬 발견, 선택적으로 모델 실행)
+├── fake_llm.py                               가짜 LLM 서버. check.py 가 모델 없이 opencode 의 요청을 기록·재현하는 데 씀
 ├── sample/orders.py                          리뷰 대상: 결함 6개가 심어진 주문 모듈
 └── .opencode/skills/code-review/
     └── SKILL.md                              체크리스트 + 심각도 기준 + 출력 형식
@@ -124,5 +125,5 @@ I'll load the code-review skill to follow the team's checklist.
 
 - **이 폴더에서 바로 실행한다.** 이 예제는 `sandbox/`를 쓰지 않는다(git 변경이 필요 없기 때문). 폴더 이름이 길어 헷갈리면 `cd`한 뒤 `opencode debug skill`로 `location`이 이 폴더의 `.opencode/skills/code-review/SKILL.md`인지 확인하자.
 - **등급은 모델마다 다르다.** 같은 결함을 어떤 모델은 "주의", 다른 모델은 "치명"으로 쓴다. 결함 목록이 빠짐없이 나왔는지를 먼저 보고, 등급은 SKILL.md의 심각도 표를 더 구체적으로 고쳐서 맞추자.
-- **`.opencode/`가 있는 폴더에서 처음 실행하면** opencode가 `.opencode/` 안에 `package.json`, `node_modules/`, `.gitignore`를 자동으로 만든다(`@opencode-ai/plugin` 설치). 인터넷이나 패키지 미러에 접근할 수 없으면 첫 시작이 약 70초 멈춘 것처럼 보일 수 있다. 레지스트리에 닿지 않으면 첫 실행만이 아니라 **시작할 때마다** 이렇게 멈춘다. 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있다.
+- **`.opencode/`가 있는 폴더에서는** opencode가 시작할 때 `@opencode-ai/plugin`을 npm에서 설치하려 시도하고, 성공하면 `.opencode/` 안에 `package.json`, `node_modules/`, `.gitignore`가 생긴다(모두 git에서 제외). 이 예제에는 플러그인(`.opencode/plugins/*.js`)이 없어서, 레지스트리에 닿지 않는 환경에서도 눈에 띄는 멈춤은 없었다(연결을 거부하는 레지스트리로 측정: `opencode debug skill` 약 2초, `opencode run` 약 4초. TUI는 확인하지 못했다). 설치 시도 자체는 일어난다. 같은 환경에서 `.opencode/plugins/*.js`가 있는 폴더(P1~P8 등)는 시작할 때마다 약 70초 멈춘다(새 환경의 맨 처음 시작은 약 130초). 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있다.
 - **샘플 코드는 실행용이 아니다.** `python sample/orders.py`는 메모리 DB로 한 줄만 출력한다. 결함을 일부러 고치지 않고 두는 것이 이 예제의 목적이다. Linux에서 `python` 명령이 없으면 `python3`로 바꾸세요.

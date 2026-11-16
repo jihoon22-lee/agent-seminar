@@ -31,7 +31,7 @@ p4-notify-on-idle/
 
 평소 쓰는 모델로 실행하면 됩니다. (모델 설정이 없다면 무료 모델 `-m opencode/big-pickle` 을 붙이세요.)
 
-1. 이 폴더에서 opencode 를 실행합니다. 처음 실행하면 opencode 가 `.opencode/` 안에 `@opencode-ai/plugin` 을 npm 으로 설치하려고 합니다. 인터넷이 막혀 있고 패키지 미러도 없으면 첫 시작이 70초쯤 멈췄다가 계속 진행됩니다. 레지스트리에 닿지 않으면 첫 실행만이 아니라 **시작할 때마다** 이렇게 멈춥니다. 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있습니다.
+1. 이 폴더에서 opencode 를 실행합니다. 처음 실행하면 opencode 가 `.opencode/` 안에 `@opencode-ai/plugin` 을 npm 으로 설치하려고 합니다. 인터넷이 막혀 있고 패키지 미러도 없으면 첫 시작이 70초쯤 멈췄다가 계속 진행됩니다. 레지스트리에 닿지 않으면 첫 실행만이 아니라 **시작할 때마다** 이렇게 멈춥니다. 아주 처음, 새 환경에서의 첫 시작은 약 130초까지 걸렸습니다(패킷을 조용히 버리는 레지스트리면 200초를 넘을 수도 있습니다). 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있습니다.
 
    PowerShell:
    ```powershell
@@ -50,7 +50,7 @@ p4-notify-on-idle/
 
 3. 기록은 항상 남습니다.
 
-   PowerShell: `Get-Content logs\notify.log`
+   PowerShell: `Get-Content -Encoding UTF8 logs\notify.log`
    Linux bash: `cat logs/notify.log`
 
 4. **이벤트 이름을 직접 찾아보는 방법**: 아래처럼 `NOTIFY_LOG_ALL_EVENTS=1` 로 실행하면 받은 모든 이벤트의 type 이 `logs/events.log` 에 쌓입니다. 이 예제가 어떤 이름을 쓸지 정할 때 쓴 방법입니다.
@@ -59,7 +59,7 @@ p4-notify-on-idle/
    ```powershell
    $env:NOTIFY_LOG_ALL_EVENTS = 1
    opencode run --auto "bash 도구로 echo hello 를 실행해 줘"
-   Get-Content logs\events.log | ForEach-Object { ($_ -split "`t")[1] } | Sort-Object -Unique
+   Get-Content -Encoding UTF8 logs\events.log | ForEach-Object { ($_ -split "`t")[1] } | Sort-Object -Unique
    ```
    Linux bash:
    ```bash
@@ -146,5 +146,5 @@ Windows 에서 `opencode serve` 에 붙어(TUI 처럼 오래 사는 프로세스
 - 토스트는 Windows 의 방해 금지(집중 지원) 설정이 켜져 있으면 화면에 나타나지 않을 수 있습니다. 소리는 시스템 볼륨을 따릅니다.
 - WSL 에서 Linux 용 opencode 를 쓰면 `notify-send` 가 있어도 Windows 화면에는 알림이 뜨지 않습니다. 이 예제는 WSL 을 따로 처리하지 않습니다.
 - 알림에 들어가는 `patterns` 에는 실행하려는 명령이 그대로 들어 있습니다. 비밀이 들어 있는 명령이 화면과 `notify.log` 에 남을 수 있으니 길이를 80자로 자르는 부분을 유지하세요.
-- **export 는 플러그인 함수만 하세요.** 상수나 보조 함수를 export 하면 opencode 가 그것도 플러그인으로 호출하다가 오류 메시지 없이 파일 전체를 건너뜁니다.
+- **export 는 플러그인 함수만 하세요.** 숫자·문자열·객체 같은 함수가 아닌 값(`export const X = 1`)을 export 하면 opencode 가 **파일 전체를 건너뜁니다.** 평소 실행에는 아무 출력도 없고, `opencode --print-logs` 로 실행해야 `failed to load plugin ... Plugin export is not a function` 오류가 보입니다. 보조 함수를 export 하면 파일은 로드되지만 그 함수까지 플러그인으로 호출됩니다. 그러니 도우미는 export 하지 마세요. 문법 오류나 import 오류는 `--print-logs` 에도 아무것도 남기지 않으니, 플러그인이 로드됐는지는 플러그인이 직접 남기는 흔적(로드 로그 등)으로 확인하세요.
 - `node` 가 없으면 `check.py` 가 경고(WARN)를 내고 단위 테스트를 건너뜁니다. opencode 실행에는 Node 가 필요 없습니다.

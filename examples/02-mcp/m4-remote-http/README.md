@@ -24,6 +24,7 @@ m4-remote-http/
   opencode.json    mcp.glossary-remote: type "remote", url, headers({env:DEMO_TOKEN}), oauth false
   http_probe.py    urllib으로 서버에 요청을 보내고 HTTP 요청/응답을 그대로 출력
   check.py         자동 검증 (서버를 직접 띄우고 끝에 종료)
+  fake_llm.py      가짜 LLM 서버. check.py 가 모델 없이 opencode 의 요청을 기록·재현하는 데 씀
 ```
 
 ## 따라 하기
@@ -89,6 +90,16 @@ opencode mcp list
 DEMO_TOKEN=wrong-token opencode mcp list
 ```
 
+**실험이 끝나면 올바른 토큰으로 되돌린다.** PowerShell의 `$env:` 값은 그 창에 계속 남으므로, 되돌리지 않으면 이후 단계가 계속 `401`이 된다.
+
+```powershell
+$env:DEMO_TOKEN = "demo-token-123"
+```
+
+```bash
+export DEMO_TOKEN=demo-token-123   # 위에서 'DEMO_TOKEN=... opencode ...' 한 줄 형태로만 썼다면 이 창에는 남지 않아 필요 없다
+```
+
 **실험 2 — 서버를 끄면?** 터미널 1에서 `Ctrl+C`를 누른 뒤 `opencode mcp list`를 실행한다.
 
 ## 기대 결과
@@ -148,7 +159,7 @@ opencode에서 질문하면 모델이 부르는 도구가 `⚙ glossary-remote_l
 | 비밀 값이 있는 곳 | 각 사용자의 PC (`{env:}`/`{file:}`) | 서버 쪽에 두고, 사용자는 접속 토큰만 가진다 |
 | 서버 업데이트 | 사용자마다 코드를 받아야 함 | 서버 한 곳만 갱신 |
 | 동시에 여러 명이 쓰면 | 각자 자기 프로세스 | 한 프로세스를 공유 (동시 요청 처리, 로그 분리를 고려해야 함) |
-| 실패 모습 | 프로세스가 죽으면 `failed` (시작 직후 죽으면 30초 뒤 표시) | 서버가 꺼져 있으면 `ECONNREFUSED`, 토큰이 틀리면 `401` |
+| 실패 모습 | 프로세스가 죽으면 `failed` (Linux에서 없는 스크립트를 가리키면 약 2초 만에 `MCP error -32000: Connection closed`. Windows에서는 다를 수 있다, 미확인) | 서버가 꺼져 있으면 `ECONNREFUSED`, 토큰이 틀리면 `401` |
 | 네트워크 노출 | 없음 | 포트를 연다 → 바인딩 주소와 토큰이 보안의 전부 |
 
 ## 동작 원리

@@ -32,7 +32,7 @@ p3-audit-log/
 
 평소 쓰는 모델로 실행하면 됩니다. (모델 설정이 없다면 무료 모델 `-m opencode/big-pickle` 을 붙이세요.)
 
-1. 이 폴더에서 opencode 를 실행합니다. 처음 실행하면 opencode 가 `.opencode/` 안에 `@opencode-ai/plugin` 을 npm 으로 설치하려고 합니다. 인터넷이 막혀 있고 패키지 미러도 없으면 첫 시작이 70초쯤 멈췄다가 계속 진행됩니다. 레지스트리에 닿지 않으면 첫 실행만이 아니라 **시작할 때마다** 이렇게 멈춥니다. 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있습니다.
+1. 이 폴더에서 opencode 를 실행합니다. 처음 실행하면 opencode 가 `.opencode/` 안에 `@opencode-ai/plugin` 을 npm 으로 설치하려고 합니다. 인터넷이 막혀 있고 패키지 미러도 없으면 첫 시작이 70초쯤 멈췄다가 계속 진행됩니다. 레지스트리에 닿지 않으면 첫 실행만이 아니라 **시작할 때마다** 이렇게 멈춥니다. 아주 처음, 새 환경에서의 첫 시작은 약 130초까지 걸렸습니다(패킷을 조용히 버리는 레지스트리면 200초를 넘을 수도 있습니다). 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있습니다.
 
    PowerShell:
    ```powershell
@@ -54,7 +54,7 @@ p3-audit-log/
    ```
    python summarize_audit.py
    ```
-   원본 JSONL 도 직접 열어 보세요: PowerShell `Get-Content logs\audit.jsonl`, Linux bash `cat logs/audit.jsonl`
+   원본 JSONL 도 직접 열어 보세요: PowerShell `Get-Content -Encoding UTF8 logs\audit.jsonl`, Linux bash `cat logs/audit.jsonl`
 
 4. 옵션: `--tool bash`(특정 도구만 타임라인에 표시), `--session <ID>`(세션별), `--all`(로테이션된 파일까지).
 
@@ -133,7 +133,7 @@ p3-audit-log/
 
 ## 주의할 점 / 문제 해결
 
-- **export 는 플러그인 함수만 하세요.** 상수나 보조 함수를 export 하면 opencode 가 그것도 플러그인으로 호출하다가 오류 메시지 없이 파일 전체를 건너뜁니다. 그래서 요약 함수는 export 하지 않고, 테스트는 훅을 직접 호출합니다.
+- **export 는 플러그인 함수만 하세요.** 숫자·문자열·객체 같은 함수가 아닌 값(`export const X = 1`)을 export 하면 opencode 가 **파일 전체를 건너뜁니다.** 평소 실행에는 아무 출력도 없고, `opencode --print-logs` 로 실행해야 `failed to load plugin ... Plugin export is not a function` 오류가 보입니다. 보조 함수를 export 하면 파일은 로드되지만 그 함수까지 플러그인으로 호출됩니다. 그러니 도우미는 export 하지 마세요. 문법 오류나 import 오류는 `--print-logs` 에도 아무것도 남기지 않으니, 플러그인이 로드됐는지는 플러그인이 직접 남기는 흔적(로드 로그 등)으로 확인하세요. 그래서 요약 함수는 export 하지 않고, 테스트는 훅을 직접 호출합니다.
 - 기록 파일은 **opencode 를 실행한 폴더** 기준 `logs/` 입니다 (플러그인이 받는 `directory` 값). 다른 폴더에서 실행하면 그 폴더에 `logs/` 가 생깁니다.
 - 시각은 UTC(`2026-…Z`)로 저장되고, `summarize_audit.py` 가 로컬 시각으로 바꿔 보여 줍니다.
 - 하위 에이전트(`task` 도구)가 쓴 도구 호출도 같은 훅으로 들어오는지는 이번에 확인하지 않았습니다.

@@ -81,7 +81,7 @@ cd examples/04-combined/x1-three-ways
 | b-mcp | `⚙ glossary_lookup_term {"term":"카나리"}` |
 | c-plugin | `⚙ team_glossary {"term":"카나리"}` |
 
-c-plugin 은 `.opencode/` 가 있어서 첫 실행에 `@opencode-ai/plugin` 을 npm 에서 설치합니다(인터넷이 막혔다면 [P6](../../03-plugins/p6-custom-tool/) 의 "패키지 미러" 참고).
+c-plugin 은 `.opencode/plugins/` 에 플러그인이 있어서 시작할 때 `@opencode-ai/plugin` 을 npm 에서 설치하려 합니다. 레지스트리에 닿지 않으면 **시작할 때마다 약 70초** 멈추고, 완전히 새 환경의 첫 시작은 약 130초까지 걸렸습니다. a-skill 과 b-mcp 폴더에는 플러그인이 없어 이런 멈춤이 눈에 띄지 않았습니다(설치 시도는 `.opencode/` 가 있는 a-skill 에서 일어납니다). 인터넷이 막혔다면 [P6](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러) 의 "패키지 미러" 참고.
 
 자동 검증: `python check.py` (Linux: `python3 check.py`).
 

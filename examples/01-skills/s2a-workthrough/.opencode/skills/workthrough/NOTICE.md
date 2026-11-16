@@ -5,9 +5,9 @@
 
 원본에서 바꾼 부분(이 세미나 자료에 맞추기 위한 최소한의 변경):
 
-1. `SKILL.md`의 `description` 끝에 한국어 요청 문구를 덧붙였다. 원문 영어 문장은 그대로다.
+1. `SKILL.md`의 `description` 끝에 한국어 요청 문구를 덧붙였다. 영어 문장은 3번의 이유로 "자동으로" 표현만 고쳤다.
 2. `SKILL.md`에 들어 있던 "Example Workthrough Structure" 블록(약 50줄)을 지우고, `TEMPLATE.md`와 `EXAMPLES.md`를 **언제** 읽을지 적은 "Supporting Files" 절로 바꿨다. 원본 `SKILL.md`는 두 파일을 언급하지 않아서, 모델이 파일 이름은 볼 수 있어도 언제 읽어야 하는지는 알 방법이 없었다.
-3. "세션이 끝날 때 자동으로 실행된다"는 문장을 "사용자가 기록을 요청하거나 작업을 마친 직후에 불러온다"로 바꿨다. opencode에는 세션 종료 시점의 자동 실행이 없고, 스킬은 모델이 description을 보고 고른다.
+3. "자동으로 문서화한다 / 작업 뒤 자동으로 쓴다"는 취지의 문장(`description`의 "Automatically document…", 본문의 "automatically generates", "Use this skill automatically after")을 "사용자가 기록을 요청하거나 작업을 마친 직후에 불러온다"로 바꿨다. opencode에는 세션 종료 시점의 자동 실행이 없고, 스킬은 모델이 description을 보고 고른다.
 4. `TEMPLATE.md`, `EXAMPLES.md`, `LICENSE.txt`는 원본과 동일하다. 원본의 `README.md`와 `QUICKSTART.md`는 다른 도구 기준의 안내문이라 가져오지 않았다.
 
 이 파일은 모델이 읽을 필요가 없으므로 `SKILL.md`에서 언급하지 않는다.

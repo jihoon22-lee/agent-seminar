@@ -107,4 +107,4 @@ best_month: 2025-11 (8,021,000원)   biggest_mom_increase: 2025-11 +23.2%   bigg
 - **한글 글꼴**: HTML 은 `Malgun Gothic`(Windows), `Apple SD Gothic Neo`(macOS), `Noto Sans CJK KR`(Linux) 순으로 쓴다. 한글 글꼴이 없는 서버 화면에서는 글자가 깨져 보일 수 있다.
 - **원격 서버에서 만든 경우** 브라우저가 서버에 없으므로 `out/report.html` 을 내려받아 연다. 파일 하나로 완결되므로 메일 첨부나 메신저 전송도 된다.
 - **Windows 에서는 `python`, Linux 에서는 `python3`**: SKILL.md 는 `python` 으로 안내하고 "없으면 `python3`" 를 덧붙였다. Windows 에서 opencode 의 `bash` 도구는 Git Bash 가 아니라 **Windows PowerShell 5.1** 에서 명령을 실행한다. 그래서 SKILL.md 는 `&&`, `export`, `$변수`, `| head` 같은 bash 전용 문법 없이 `python <스킬 폴더>/scripts/… 인자` **한 줄**만 시킨다. 스킬 폴더 경로는 Windows 에서 `C:\...\.opencode\skills\<이름>` 처럼 역슬래시로 오지만, 파이썬에는 `/` 로 바꿔 넘겨도 동작한다(`check.py` 가 가짜 모델로 검증). 경로 구분자는 어느 쪽이든 스크립트가 `pathlib` 로 처리한다.
-- `out/` 은 gitignore 대상이다. 첫 실행 지연(`.opencode/` 의 `@opencode-ai/plugin` 자동 설치 시도)은 S3a 와 같다.
+- `out/` 은 gitignore 대상이다. 첫 실행 지연(`.opencode/` 의 `@opencode-ai/plugin` 자동 설치 시도)은 S3a 와 같다. 이 예제에도 플러그인이 없어 레지스트리에 닿지 않아도 눈에 띄는 멈춤은 없었다. 자세한 내용은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러) 참고.

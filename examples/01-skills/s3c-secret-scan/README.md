@@ -123,4 +123,4 @@ exit=1
 - **오탐/미탐은 있다.** 엔트로피 규칙은 해시·빌드 ID 를 잡고, 짧거나 평문인 비밀번호는 `password = "…"` 형태가 아니면 놓친다. 이 스캐너는 안전망 하나일 뿐 전문 도구(gitleaks 등)를 대체하지 않는다.
 - **Windows 에서는 `python`, Linux 에서는 `python3`**: SKILL.md 는 `python` 으로 안내하고 "없으면 `python3`" 를 덧붙였다. Windows 에서 opencode 의 `bash` 도구는 Git Bash 가 아니라 **Windows PowerShell 5.1** 에서 명령을 실행한다. 그래서 SKILL.md 는 `&&`, `export`, `$변수`, `| head` 같은 bash 전용 문법 없이 `python <스킬 폴더>/scripts/… 인자` **한 줄**만 시킨다. 스킬 폴더 경로는 Windows 에서 `C:\...\.opencode\skills\<이름>` 처럼 역슬래시로 오지만, 파이썬에는 `/` 로 바꿔 넘겨도 동작한다(`check.py` 가 가짜 모델로 검증). 종료 코드 확인은 PowerShell 은 `$LASTEXITCODE`, bash 는 `$?`.
 - `prepare.py` 는 `sandbox/` 를 지우고 다시 만든다. Windows 에서 `.git` 안의 읽기 전용 파일도 지우도록 처리돼 있다.
-- 첫 실행 지연(`.opencode/` 의 `@opencode-ai/plugin` 자동 설치 시도)은 S3a 와 같다.
+- 첫 실행 지연(`.opencode/` 의 `@opencode-ai/plugin` 자동 설치 시도)은 S3a 와 같다. 이 예제에도 플러그인이 없어 레지스트리에 닿지 않아도 눈에 띄는 멈춤은 없었다. 자세한 내용은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러) 참고.

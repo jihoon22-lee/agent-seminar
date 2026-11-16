@@ -7,8 +7,10 @@
 //   AUDIT_MAX_BYTES  파일이 이 크기를 넘으면 새 파일로 교체(로테이션). 기본 1048576 (1 MiB)
 //   AUDIT_KEEP       보관할 이전 파일 개수. 기본 5
 //
-// 주의: 이 파일은 "플러그인 함수"만 export 합니다. 상수나 보조 함수를 export 하면
-//       opencode 가 그것도 플러그인으로 호출하다가 모듈 전체를 조용히 건너뜁니다.
+// 주의: 이 파일은 "플러그인 함수"만 export 합니다. 숫자·문자열·객체 같은 함수가 아닌 값을 export 하면
+//       opencode 가 이 파일 전체를 건너뜁니다(평소엔 아무 출력이 없고 `--print-logs` 에만
+//       "Plugin export is not a function" 오류가 보입니다). 보조 함수를 export 해도 그것까지 플러그인으로
+//       호출되므로 export 하지 않습니다.
 import { appendFileSync, mkdirSync, readdirSync, renameSync, rmSync, statSync } from "node:fs";
 import { join } from "node:path";
 

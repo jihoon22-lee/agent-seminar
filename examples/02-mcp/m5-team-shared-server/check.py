@@ -155,6 +155,9 @@ try:
     _, res = call(url, "demo-token-alice-1", "oncall_lookup", {"team": "platform", "date": "2026-11-18"})
     text = res["result"]["content"][0]["text"]
     check("oncall_lookup(platform, 2026-11-18) -> 1차 carol", "1차 carol" in text and not res["result"]["isError"], text)
+    _, res = call(url, "demo-token-alice-1", "oncall_lookup", {"team": "platform", "date": "2027-03-10"})
+    text_out = res["result"]["content"][0]["text"]
+    check("일정표 밖의 날짜는 오류 없이 주간 순환 배정으로 답한다", not res["result"]["isError"] and "순환" in text_out and "1차" in text_out, text_out)
     _, res = call(url, "demo-token-bob-1", "oncall_lookup", {"team": "payment", "date": "2026-11-05"})
     check("oncall_lookup(payment, 2026-11-05) -> 1차 dana", "1차 dana" in res["result"]["content"][0]["text"])
     _, res = call(url, "demo-token-bob-1", "oncall_lookup", {"team": "nothing"})

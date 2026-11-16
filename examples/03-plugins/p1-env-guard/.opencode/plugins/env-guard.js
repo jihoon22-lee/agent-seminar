@@ -1,7 +1,9 @@
 // p1-env-guard: 에이전트가 .env 파일을 읽거나 고치지 못하게 막는 플러그인.
 //
-// 규칙: 이 파일은 "플러그인 함수"만 export 합니다. 상수나 보조 함수를 export 하면
-//       opencode 가 그것도 플러그인으로 호출하다가 모듈 전체를 조용히 건너뜁니다.
+// 규칙: 이 파일은 "플러그인 함수"만 export 합니다. 숫자·문자열·객체 같은 함수가 아닌 값을 export 하면
+//       opencode 가 이 파일 전체를 건너뜁니다(평소엔 아무 출력이 없고 `--print-logs` 에만
+//       "Plugin export is not a function" 오류가 보입니다). 보조 함수를 export 해도 그것까지 플러그인으로
+//       호출되므로 export 하지 않습니다.
 import { appendFileSync, mkdirSync } from "node:fs";
 import { join, win32 } from "node:path";
 
@@ -19,7 +21,7 @@ const READER_RE = new RegExp(
       "cat", "bat", "tac", "nl", "more", "less", "head", "tail", "type", "xxd", "od", "strings",
       "sed", "awk", "grep", "egrep", "rg", "cut", "sort", "uniq", "diff", "cp", "copy", "mv", "move",
       "source", "base64", "get-content", "gc", "select-string", "sls", "copy-item", "import-csv",
-      "readalltext", "readalllines", "readallbytes",
+      "findstr", "readalltext", "readalllines", "readallbytes",
     ].join("|") +
     ")(?=[\\s(\\[:]|$)|(?:^|[\\s;&|(`])\\.(?=\\s)|\\b(?:python3?|py|node)\\s+-[ce]\\b",
   "i",
@@ -27,7 +29,8 @@ const READER_RE = new RegExp(
 
 // ".env", ".env.local", ".env.production", ".env*" 처럼 "경로의 마지막 조각"이 .env 로 시작하는 토큰.
 // os.environ, process.env.X, $env:NAME, .envrc 는 걸리지 않도록 앞뒤 경계를 요구합니다.
-const ENV_TOKEN_RE = /(?:^|[\s"'`=<>(\/\\])(\.env(?:\.[\w.*?-]+)?[*?]?)(?=$|[\s"'`;&|<>)])/gi;
+// 앞 경계의 ':' 는 PowerShell 의 `-Path:.env`, `-LiteralPath:.env` 형태를 잡기 위한 것입니다.
+const ENV_TOKEN_RE = /(?:^|[\s"'`=<>(:\/\\])(\.env(?:\.[\w.*?-]+)?[*?]?)(?=$|[\s"'`;&|<>)])/gi;
 
 // ---- 판정 함수 (export 하지 않음) ---------------------------------------------
 function isProtectedName(name) {

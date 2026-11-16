@@ -24,6 +24,7 @@ m6-sqlite-tickets/
   opencode.json    mcp.tickets: ["python", "server.py"]
   tickets.db       (prepare.py가 생성, .gitignore 대상)
   check.py         자동 검증 (읽기 전용, 결과 제한, 결정적 생성 등)
+  fake_llm.py      가짜 LLM 서버. check.py 가 모델 없이 opencode 의 요청을 기록·재현하는 데 씀
 ```
 
 ## 따라 하기

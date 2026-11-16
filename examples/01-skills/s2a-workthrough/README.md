@@ -34,6 +34,7 @@
 s2a-workthrough/
 ├── README.md
 ├── check.py                               자동 검증
+├── fake_llm.py                            가짜 LLM 서버. check.py 가 모델 없이 opencode 의 요청을 기록·재현하는 데 씀
 ├── prepare.py                             샘플 프로젝트 sandbox/ 생성 (커밋 1개 + 아직 커밋하지 않은 버그 수정)
 └── .opencode/skills/workthrough/
     ├── SKILL.md                           본문: 언제 쓰나, 문서 구조, 저장 위치, 보조 파일을 읽을 조건
@@ -57,9 +58,9 @@ sandbox/
 
 원본 스킬은 MIT 라이선스이며 저작권 고지가 `LICENSE.txt`에 그대로 들어 있다. opencode용으로 옮기면서 바꾼 것은 다음뿐이다(`NOTICE.md`에도 같은 내용이 있다).
 
-1. `description`의 영어 문장은 그대로 두고 끝에 한국어 요청 문구("workthrough로 기록해줘" 등)를 덧붙였다.
+1. `description` 끝에 한국어 요청 문구("workthrough로 기록해줘" 등)를 덧붙였다. (영어 문장은 3번 때문에 "자동으로" 표현만 고쳤다.)
 2. 원본 `SKILL.md`는 문서 양식을 약 50줄 안에 직접 적고 있었고 `TEMPLATE.md`/`EXAMPLES.md`를 언급하지 않았다. 이 블록을 지우고 "두 파일을 **언제** 읽는가"를 적은 `Supporting Files` 절로 바꿨다. **이 변경이 이 예제의 핵심이다.** 스킬을 불러오면 모델은 폴더의 파일 목록을 받지만, 그 파일을 *언제* 읽어야 하는지는 `SKILL.md`가 말해 주지 않으면 알 수 없다.
-3. "세션 끝에 자동으로 실행된다"는 문장을 "사용자가 요청하거나 작업을 마친 직후에 불러온다"로 바꿨다. opencode에는 세션 종료 시점의 자동 실행이 없고, 모델이 `description`을 보고 고른다.
+3. "자동으로 문서화한다 / 작업 뒤 자동으로 쓴다"는 문장(`description`과 본문)을 "사용자가 요청하거나 작업을 마친 직후에 불러온다"로 바꿨다. opencode에는 세션 종료 시점의 자동 실행이 없고, 모델이 `description`을 보고 고른다.
 4. 원본의 `README.md`, `QUICKSTART.md`는 다른 도구 기준의 안내라 가져오지 않았다. `TEMPLATE.md`, `EXAMPLES.md`, `LICENSE.txt`는 원본과 동일하다.
 
 ## 따라 하기
@@ -158,5 +159,5 @@ sandbox/
 - **`sandbox/`에서 실행해야 한다.** 그래야 `git diff`에 샘플 변경이 보인다. 이 폴더(`s2a-workthrough/`)에서 바로 실행하면 상위 세미나 저장소의 변경을 기록하려 한다.
 - **모델이 보조 파일을 읽지 않을 수도 있다.** 모델 출력은 확률적이다. TEMPLATE.md를 읽지 않고 쓰는 일도 있다. 그럴 때는 "TEMPLATE.md를 읽고 그 양식으로 써줘"라고 하면 된다. 스킬 본문이 파일 이름과 읽을 조건을 분명히 적을수록 읽는 빈도가 올라간다.
 - **같은 이름의 스킬이 이미 있다면**: 다른 곳(전역 폴더 등)에 `workthrough` 스킬이 있으면 이름이 겹친다. `opencode debug skill`의 `location`으로 어느 쪽이 쓰였는지 확인하자.
-- **`.opencode/`가 있는 폴더에서 처음 실행하면** opencode가 `.opencode/` 안에 `package.json`, `node_modules/`, `.gitignore`를 자동으로 만든다(`@opencode-ai/plugin` 설치). 인터넷이나 패키지 미러에 접근할 수 없으면 첫 시작이 약 70초 멈춘 것처럼 보일 수 있다. 레지스트리에 닿지 않으면 첫 실행만이 아니라 **시작할 때마다** 이렇게 멈춘다. 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있다.
+- **`.opencode/`가 있는 폴더에서는** opencode가 시작할 때 `@opencode-ai/plugin`을 npm에서 설치하려 시도하고, 성공하면 `.opencode/` 안에 `package.json`, `node_modules/`, `.gitignore`가 생긴다(모두 git에서 제외). 이 예제에는 플러그인(`.opencode/plugins/*.js`)이 없어서, 레지스트리에 닿지 않는 환경에서도 눈에 띄는 멈춤은 없었다(연결을 거부하는 레지스트리로 측정: `opencode debug skill` 약 2초, `opencode run` 약 4초. TUI는 확인하지 못했다). 설치 시도 자체는 일어난다. 같은 환경에서 `.opencode/plugins/*.js`가 있는 폴더(P1~P8 등)는 시작할 때마다 약 70초 멈춘다(새 환경의 맨 처음 시작은 약 130초). 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있다.
 - **Linux에서 `python` 명령이 없으면 `python3`로 바꾸세요.** 모델이 테스트를 돌릴 때 `python`이 없으면 스스로 `python3`로 바꿔 실행하는 경우가 많다.

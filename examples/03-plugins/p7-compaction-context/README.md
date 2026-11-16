@@ -30,7 +30,7 @@ p7-compaction-context/
 
 opencode 는 `.opencode/plugins/` 아래 `.js`/`.ts` 파일을 자동으로 불러오므로 `opencode.json` 이 필요 없습니다.
 이 폴더에 처음 `.opencode/` 가 생기면 opencode 가 `@opencode-ai/plugin` 을 npm 에서 `.opencode/` 에 자동 설치합니다(`package.json`, `node_modules/` 가 생기며 git 에는 올라가지 않음).
-패키지 미러가 없는 환경에서는 첫 시작이 약 70초 멈췄다가 계속됩니다. 이 플러그인은 `node:` 내장 모듈만 쓰므로 `@opencode-ai/plugin` 에 의존하지 않습니다(설치가 실패한 환경에서의 동작은 확인하지 못했습니다). 레지스트리에 닿지 않으면 첫 실행만이 아니라 **시작할 때마다** 이렇게 멈춥니다. 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있습니다.
+패키지 미러가 없는 환경에서는 첫 시작이 약 70초 멈췄다가 계속됩니다. 이 플러그인은 `node:` 내장 모듈만 쓰므로 `@opencode-ai/plugin` 에 의존하지 않습니다(설치가 실패한 환경에서의 동작은 확인하지 못했습니다). 레지스트리에 닿지 않으면 첫 실행만이 아니라 **시작할 때마다** 이렇게 멈춥니다. 아주 처음, 새 환경에서의 첫 시작은 약 130초까지 걸렸습니다(패킷을 조용히 버리는 레지스트리면 200초를 넘을 수도 있습니다). 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있습니다.
 
 ## 따라 하기
 
@@ -59,7 +59,7 @@ opencode
 3. 다른 터미널에서 로그를 봅니다.
 
 ```powershell
-Get-Content logs\compaction.log
+Get-Content -Encoding UTF8 logs\compaction.log
 ```
 
 ```bash

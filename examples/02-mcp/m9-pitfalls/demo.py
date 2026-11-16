@@ -36,9 +36,11 @@ EXPECTED = f"안녕하세요, {KOREAN_NAME}님!"
 
 
 # --- 1. opencode mcp list ------------------------------------------------------------------
-def mcp_list(opencode, env=None, cwd=HERE, timeout=240):
-    """{서버: {"status": "connected"|"failed"|..., "reason": str, "seconds": float}} — 전체 목록을 한 번에 읽는다."""
-    run_env = dict(env or os.environ, PWD=str(cwd))
+def mcp_list(opencode, env, cwd=HERE, timeout=240):
+    """{서버: {"status": "connected"|"failed"|..., "reason": str, "seconds": float}} — 전체 목록을 한 번에 읽는다.
+
+    env 는 반드시 isolated_env() 가 만든 격리 환경이어야 한다. (내 실제 설정·세션을 건드리지 않으려고 기본값을 두지 않았다)"""
+    run_env = dict(env, PWD=str(cwd))
     started = time.time()
     proc = subprocess.run([opencode, "mcp", "list"], cwd=str(cwd), env=run_env, stdin=subprocess.DEVNULL,
                           capture_output=True, timeout=timeout)
@@ -164,10 +166,10 @@ def _finish(proc, stderr_chunks):
 
 
 # --- 3. 도구 호출 때 모델에게 보이는 것 (가짜 LLM) -------------------------------------------------
-def call_experiment(opencode, server, tool, args, times=2, env=None, cwd=HERE):
+def call_experiment(opencode, server, tool, args, env, times=2, cwd=HERE):
     """가짜 모델이 `server_tool` 을 times 번 호출한다. (사용자 화면 출력, 모델이 돌려받은 tool 결과 목록)을 돌려준다."""
     with FakeLLM(script=[("tool", f"{server}_{tool}", args)] * times + ["DONE"]) as llm:
-        run_env = dict(env or os.environ)
+        run_env = dict(env)
         run_env.update({"OPENCODE_CONFIG_CONTENT": json.dumps(llm.provider_config()), "PWD": str(cwd)})
         proc = subprocess.run([opencode, "run", "-m", "fake/echo", "--auto", "go"], cwd=str(cwd), env=run_env,
                               stdin=subprocess.DEVNULL, capture_output=True, timeout=240)
@@ -224,13 +226,14 @@ def main():
     if not opencode:
         raise SystemExit("opencode 를 PATH 에서 찾을 수 없습니다.")
     config = json.loads((HERE / "opencode.json").read_text(encoding="utf-8"))["mcp"]
-    version = subprocess.run([opencode, "--version"], capture_output=True, text=True).stdout.strip()
-    print(f"플랫폼 {platform.system()} / Python {platform.python_version()} / opencode {version}")
-    print(f"stdout 인코딩 기본값(이 Python): {sys.stdout.encoding}  PYTHONUTF8={os.environ.get('PYTHONUTF8')}\n")
-
     sandbox = tempfile.mkdtemp(prefix="m9-demo-")
     try:
-        run(opencode, config, args, isolated_env(sandbox))
+        env = isolated_env(sandbox)
+        # opencode 는 전부 격리 환경으로 실행한다. (예외: 5번의 `debug paths` 는 "평소 로그 폴더"를 보여 주려고 일부러 진짜 환경을 읽기만 한다)
+        version = subprocess.run([opencode, "--version"], capture_output=True, text=True, env=env).stdout.strip()
+        print(f"플랫폼 {platform.system()} / Python {platform.python_version()} / opencode {version}")
+        print(f"stdout 인코딩 기본값(이 Python): {sys.stdout.encoding}  PYTHONUTF8={os.environ.get('PYTHONUTF8')}\n")
+        run(opencode, config, args, env)
     finally:
         shutil.rmtree(sandbox, ignore_errors=True)
 
@@ -242,7 +245,12 @@ def run(opencode, config, args, env):
     for name in config:
         info = listed.get(name, {"status": "?", "reason": ""})
         print(f"  {name:<16} {info['status']:<10} {info['reason']}")
-    print(f"  (걸린 시간 {next(iter(listed.values()))['seconds']:.1f}초)\n")
+    print(f"  (걸린 시간 {next(iter(listed.values()))['seconds']:.1f}초)")
+    if listed and all(i["status"] == "failed" and "Executable not found" in i["reason"] for i in listed.values()):
+        print("  !! 서버가 전부 'Executable not found' 로 실패했습니다. 서버 코드 문제가 아니라 python 명령 자체가 없는 환경입니다.")
+        print("     Linux 에서 python 명령이 없으면 opencode.json 의 \"python\" 을 \"python3\" 로 바꾸고 다시 실행하세요.")
+        print("     (아래 2번 probe 는 이 파이썬으로 직접 띄우므로 성공할 수 있습니다. mcp list 결과와 어긋나 보이는 이유입니다.)")
+    print()
 
     print("== 2. probe: 서버를 직접 띄워 한글 인사를 요청해 본다")
     probes = {}

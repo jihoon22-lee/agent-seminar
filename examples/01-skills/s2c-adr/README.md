@@ -21,6 +21,7 @@
 s2c-adr/
 ├── README.md
 ├── check.py                                           자동 검증
+├── fake_llm.py                                        가짜 LLM 서버. check.py 가 모델 없이 opencode 의 요청을 기록·재현하는 데 씀
 ├── prepare.py                                         ADR 하나가 이미 있는 프로젝트 sandbox/ 생성
 ├── .gitignore                                         docs/adr/ 제외 (이 폴더에서 바로 실행했을 때 생기는 생성물)
 └── .opencode/skills/adr/
@@ -72,7 +73,7 @@ sandbox/
 
 3. 결과를 확인한다.
 
-   PowerShell: `Get-ChildItem docs\adr` 후 `Get-Content docs\adr\0002-*.md`
+   PowerShell: `Get-ChildItem docs\adr` 후 `Get-Content -Encoding UTF8 docs\adr\0002-*.md`
    Linux bash: `ls docs/adr` 후 `cat docs/adr/0002-*.md`
 
 ## 기대 결과
@@ -110,5 +111,5 @@ sandbox/
 - **생성된 ADR은 git에 올라가지 않는다.** 샘플은 `sandbox/`에서만 만들고, 이 폴더에서 바로 실행했을 때를 대비해 `.gitignore`가 `docs/adr/`를 제외한다. 실제 프로젝트에서는 ADR을 커밋해야 하므로 이 줄은 넣지 않는다.
 - **번호가 겹칠 수 있다.** 두 사람이 같은 번호로 ADR을 만들었다면 병합 때 이름이 충돌한다. 한 명이 번호를 올려 파일 이름과 제목 줄(`# 0003. ...`)을 같이 바꾼다.
 - **`sandbox/` 밖에서 실행하면** `docs/adr/`가 비어 있으므로 `0001`로 만든다(이 경우 `git status`에는 `.gitignore` 덕분에 보이지 않는다).
-- **`.opencode/`가 있는 폴더에서 처음 실행하면** opencode가 `.opencode/` 안에 `package.json`, `node_modules/`, `.gitignore`를 자동으로 만든다(`@opencode-ai/plugin` 설치). 인터넷이나 패키지 미러에 접근할 수 없으면 첫 시작이 약 70초 멈춘 것처럼 보일 수 있다. 레지스트리에 닿지 않으면 첫 실행만이 아니라 **시작할 때마다** 이렇게 멈춘다. 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있다.
+- **`.opencode/`가 있는 폴더에서는** opencode가 시작할 때 `@opencode-ai/plugin`을 npm에서 설치하려 시도하고, 성공하면 `.opencode/` 안에 `package.json`, `node_modules/`, `.gitignore`가 생긴다(모두 git에서 제외). 이 예제에는 플러그인(`.opencode/plugins/*.js`)이 없어서, 레지스트리에 닿지 않는 환경에서도 눈에 띄는 멈춤은 없었다(연결을 거부하는 레지스트리로 측정: `opencode debug skill` 약 2초, `opencode run` 약 4초. TUI는 확인하지 못했다). 설치 시도 자체는 일어난다. 같은 환경에서 `.opencode/plugins/*.js`가 있는 폴더(P1~P8 등)는 시작할 때마다 약 70초 멈춘다(새 환경의 맨 처음 시작은 약 130초). 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있다.
 - **모델이 내용을 채우는 방식**: 사용자가 말한 이유가 적을수록 모델은 일반적인 장단점으로 채운다. 실제 팀의 사정(트래픽, 인력, 운영 경험)을 프롬프트에 한두 문장 더 주면 훨씬 쓸모 있는 ADR이 된다.

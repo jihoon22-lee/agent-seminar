@@ -11,7 +11,8 @@
 
 ## 실무에서는
 
-- 로컬 `.env` 에 DB 비밀번호·API 키가 있는 프로젝트에서 에이전트를 돌릴 때, 비밀이 모델 서비스로 전송되는 것을 원천 차단합니다.
+- 로컬 `.env` 에 DB 비밀번호·API 키가 있는 프로젝트에서 에이전트를 돌릴 때, 비밀이 모델 서비스로 전송될 가능성을 크게 줄입니다. 완벽한 차단은 아닙니다. 패턴으로 막는 가드라서 파일 이름을 문자열로 조립해서 여는 코드(`open(chr(46) + 'env')` 같은 것)까지 모두 잡지는 못합니다.
+- opencode 1.19.5 는 **기본 권한 설정만으로도 `.env` 읽기 전에 사용자에게 물어봅니다**(permission 기본값). 그래서 이 플러그인의 가치는 "막을 수 있다"가 아니라 (1) 매번 승인 창을 누르는 피로 없이 처음부터 거절하고, (2) `read` 뿐 아니라 `cat .env` 같은 bash 우회도 같은 규칙으로 막으며, (3) 물음 없이 모두 승인하는 `--auto` 로 돌릴 때도 그대로 동작한다는 점에 있습니다.
 - 에이전트가 "환경변수 설정이 궁금해서" `cat .env` 를 시도하는 일은 흔합니다. 차단 메시지에 "`.env.example` 을 읽으세요"라고 적어 두면, 모델이 스스로 올바른 파일로 방향을 바꿉니다.
 - 같은 방식으로 `*.pem`, `secrets/`, `terraform.tfstate` 같은 파일도 보호할 수 있습니다 (코드의 `isProtectedName` 만 고치면 됩니다).
 
@@ -47,7 +48,7 @@ p1-env-guard/
    python3 prepare.py
    ```
 
-2. 이 폴더에서 opencode 를 실행합니다. 처음 실행하면 opencode 가 `.opencode/` 안에 `@opencode-ai/plugin` 을 npm 으로 설치하려고 합니다. 인터넷이 막혀 있고 패키지 미러도 없으면 첫 시작이 70초쯤 멈췄다가 계속 진행됩니다 (레지스트리나 미러에 닿아 설치가 끝나면 그다음부터는 1초대). 레지스트리에 닿지 않으면 첫 실행만이 아니라 **시작할 때마다** 이렇게 멈춥니다. 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있습니다.
+2. 이 폴더에서 opencode 를 실행합니다. 처음 실행하면 opencode 가 `.opencode/` 안에 `@opencode-ai/plugin` 을 npm 으로 설치하려고 합니다. 인터넷이 막혀 있고 패키지 미러도 없으면 첫 시작이 70초쯤 멈췄다가 계속 진행됩니다 (레지스트리나 미러에 닿아 설치가 끝나면 그다음부터는 1초대). 레지스트리에 닿지 않으면 첫 실행만이 아니라 **시작할 때마다** 이렇게 멈춥니다. 아주 처음, 새 환경에서의 첫 시작은 약 130초까지 걸렸습니다(패킷을 조용히 버리는 레지스트리면 200초를 넘을 수도 있습니다). 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있습니다.
 
    ```
    opencode
@@ -64,7 +65,7 @@ p1-env-guard/
    PowerShell:
    ```powershell
    opencode run --auto ".env 파일을 read 도구로 읽어서 보여줘"
-   Get-Content logs\env-guard.log
+   Get-Content -Encoding UTF8 logs\env-guard.log
    ```
    Linux bash:
    ```bash
@@ -127,7 +128,7 @@ Windows(PowerShell 5.1 이 bash 도구)에서도 같은 결과였습니다: `rea
    `input` 에는 `tool`, `sessionID`, `callID` 가 들어 있습니다. 모델에 따라 `apply_patch`(키 `patchText`) 같은 다른 도구 이름을 쓸 수 있어서, 플러그인은 `patchText` 안의 `*** Update File: 경로` 줄도 검사합니다. (이 도구는 이번 확인에 쓴 무료 모델에서는 노출되지 않아 단위 테스트로만 검증했습니다.)
 3. **차단**: `throw new Error(메시지)` 하면 도구가 실행되지 않고 모델은 `Error: [env-guard] ...` 를 받습니다. 이 훅은 권한(permission) 확인보다도 먼저 실행되므로, 권한이 `allow` 여도 막힙니다.
 4. **경로 판정**: `path.win32.basename()` 은 `/` 와 `\` 를 모두 구분자로 취급합니다. 그래서 `C:\work\app\.env` 와 `/work/app/.env` 를 같은 코드로 처리하고, Linux 에서도 윈도 경로 사례를 시험할 수 있습니다. 이름은 소문자로 바꿔 비교하며(`.ENV` 도 차단), `.env` 로 시작하는 `.env.local`, `.env.production` 은 차단하고 `.env.example` 만 허용 목록에 있습니다.
-5. **bash 판정**: 명령 문자열에서 `.env` 토큰을 찾되 앞뒤 경계를 검사합니다. 그래서 `os.environ`, `process.env.NODE_ENV`, `$env:APP_ENV`, `.envrc`, `src/environment.py` 는 걸리지 않습니다. 그리고 `cat`, `type`, `Get-Content`, `gc`, `head`, `grep`, `source`, `Select-String`, `python -c`, `node -e` 같은 "읽는 명령"이 함께 있을 때만 막기 때문에 `echo .env >> .gitignore` 같은 정상 작업은 허용됩니다. 명령 목록은 `READER_RE` 에 있습니다.
+5. **bash 판정**: 명령 문자열에서 `.env` 토큰을 찾되 앞뒤 경계를 검사합니다. 그래서 `os.environ`, `process.env.NODE_ENV`, `$env:APP_ENV`, `.envrc`, `src/environment.py` 는 걸리지 않습니다. 그리고 `cat`, `type`, `Get-Content`, `gc`, `findstr`, `head`, `grep`, `source`, `Select-String`, `python -c`, `node -e` 같은 "읽는 명령"이 함께 있을 때만 막기 때문에 `echo .env >> .gitignore` 같은 정상 작업은 허용됩니다. `Get-Content -Path:.env` 처럼 콜론으로 붙인 형태도 잡습니다. 명령 목록은 `READER_RE` 에 있습니다.
 6. **오류 메시지는 행동 지침이어야 합니다**: "왜 막혔는지 + 대신 무엇을 하라"를 한국어로 적어 줍니다. 그래야 모델이 같은 시도를 반복하지 않고 `.env.example` 로 방향을 바꿉니다.
 7. 차단될 때마다 `logs/env-guard.log` 에 `BLOCKED <도구> :: 사유` 한 줄이 남습니다. (파일 내용은 기록하지 않습니다.)
 
@@ -140,7 +141,7 @@ Windows(PowerShell 5.1 이 bash 도구)에서도 같은 결과였습니다: `rea
 ## 주의할 점 / 문제 해결
 
 - **이 플러그인은 방어선의 일부일 뿐입니다.** `python -c "..."` 로 파일 이름을 문자열 조합해서 여는 식의 우회, 심볼릭 링크, 다른 경로로 복사한 `.env` 는 이 정규식으로 막을 수 없습니다. 진짜 격리가 필요하면 에이전트를 비밀이 없는 환경(컨테이너, 별도 계정)에서 실행하세요.
-- **export 는 플러그인 함수만 하세요.** opencode 는 모듈이 export 한 값을 모두 플러그인 함수로 호출합니다. `export const X = 1` 처럼 함수가 아닌 값이나 보조 함수를 export 하면, 오류 메시지 없이 **파일 전체가 로드되지 않습니다.** (이번 확인에서 실제로 겪었습니다.) 그래서 이 예제의 판정 함수는 export 하지 않고, 테스트는 플러그인을 불러와 훅을 직접 호출합니다.
+- **export 는 플러그인 함수만 하세요.** 숫자·문자열·객체 같은 함수가 아닌 값(`export const X = 1`)을 export 하면 opencode 가 **파일 전체를 건너뜁니다.** 평소 실행에는 아무 출력도 없고, `opencode --print-logs` 로 실행해야 `failed to load plugin ... Plugin export is not a function` 오류가 보입니다. 보조 함수를 export 하면 파일은 로드되지만 그 함수까지 플러그인으로 호출됩니다. 그러니 도우미는 export 하지 마세요. 문법 오류나 import 오류는 `--print-logs` 에도 아무것도 남기지 않으니, 플러그인이 로드됐는지는 플러그인이 직접 남기는 흔적(로드 로그 등)으로 확인하세요. 그래서 이 예제의 판정 함수는 export 하지 않고, 테스트는 플러그인을 불러와 훅을 직접 호출합니다.
 - **`.opencode/plugins/` 의 모든 `.js` 는 플러그인으로 로드됩니다.** 보조 모듈이나 테스트 파일을 그 폴더에 두지 마세요 (이 예제는 `tests/` 를 따로 둡니다).
 - **윈도에서 bash 도구는 Git Bash 가 아니라 Windows PowerShell 5.1 입니다.** 그래서 `type`, `Get-Content`, `gc` 도 차단 목록에 있습니다. `$env:NAME` 은 환경변수, `$NAME` 은 PowerShell 변수입니다.
 - 단위 테스트(`tests/guard.test.mjs`)는 Node 가 필요합니다. 없으면 `check.py` 가 경고(WARN)만 내고 건너뜁니다. opencode 실행 자체에는 Node 가 필요 없습니다.

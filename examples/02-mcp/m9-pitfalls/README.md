@@ -208,7 +208,7 @@ MCP 는 UTF-8 JSON 을 주고받지만 Python 의 stdout/stdin 은 기본적으�
 
 ## 주의할 점 / 문제 해결
 
-- `opencode.json` 에 `python` 이 적혀 있습니다. Linux 에 `python` 이 없으면 `Executable not found in $PATH: "python"` 으로 6개 모두 실패합니다.
+- `opencode.json` 에 `python` 이 적혀 있습니다. Linux 에 `python` 이 없으면 `Executable not found in $PATH: "python"` 으로 6개 모두 실패합니다. `demo.py` 는 6개가 모두 이 오류로 실패하면 "python 을 python3 로 바꾸라"는 안내를 출력합니다.
 - `demo.py` 가 서버를 직접 띄울 때는 현재 Python(`sys.executable`)을 씁니다. `opencode.json` 의 `python` 과 다른 Python 일 수 있습니다.
 - Windows 의 `opencode mcp list` 는 세로선을 `│` 대신 `|` 로 그립니다. `demo.py` 는 둘 다 처리합니다.
 - 자동화에서 `opencode run` 을 띄울 때는 `PWD` 환경변수를 작업 폴더에 맞추세요(`opencode run` 은 cwd 가 아니라 `PWD` 를 보는 것으로 관찰됨. m7 참고).

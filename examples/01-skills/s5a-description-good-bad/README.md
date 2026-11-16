@@ -31,11 +31,11 @@ s5a-description-good-bad/
 
 **git 저장소를 따로 만들지 않습니다.** opencode 는 프로젝트 스킬을 "실행한 폴더에서 git 루트까지 **위로** 올라가며" 찾습니다. 옆 폴더는 보지 않으므로 형제 폴더끼리는 저절로 분리되고, 변형 폴더마다 `git init` 할 필요가 없습니다(저장소 안에 중첩 저장소를 만들면 오히려 서브모듈처럼 취급되어 곤란합니다). 대신 **상위 폴더에 `.opencode/skills/` 를 두면 두 변형이 모두 그 스킬을 물려받아** 비교가 오염됩니다. 그래서 `examples/` 아래 상위 폴더는 비워 둡니다. check.py 가 이 분리를 검사합니다.
 
-> `.opencode/` 가 있는 폴더에서 처음 opencode 를 실행하면 `@opencode-ai/plugin` 이 npm 에서 `.opencode/` 안에 자동 설치됩니다(`package.json`, `node_modules/` 생성, git 제외). 레지스트리에 접근할 수 없으면 첫 실행이 약 70초 멈췄다가 계속됩니다. 레지스트리에 닿지 않으면 첫 실행만이 아니라 **시작할 때마다** 이렇게 멈춥니다. 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있습니다.
+> **`.opencode/` 가 있는 폴더에서는** opencode 가 시작할 때 `@opencode-ai/plugin` 을 npm 에서 설치하려 시도하고, 성공하면 `.opencode/` 안에 `package.json`, `node_modules/`, `.gitignore` 가 생깁니다(모두 git 에서 제외). 이 예제의 두 변형 폴더에는 플러그인(`.opencode/plugins/*.js`)이 없어서, 레지스트리에 닿지 않는 환경에서도 눈에 띄는 멈춤은 없었습니다(연결을 거부하는 레지스트리로 측정: `opencode debug skill` 약 2초, `opencode run` 약 4초. TUI 는 확인하지 못했습니다). 설치 시도 자체는 일어납니다. 같은 환경에서 `.opencode/plugins/*.js` 가 있는 폴더(P1~P8 등)는 시작할 때마다 약 70초 멈춥니다(새 환경의 맨 처음 시작은 약 130초). 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있습니다.
 
 ## 따라 하기
 
-Linux에서 `python` 명령이 없으면 `python3`로 바꾸세요. 평소 쓰는 모델로 실행하면 됩니다. 모델 설정이 없다면 무료 모델 `-m opencode/big-pickle` 을 붙이세요.
+Linux에서 `python` 명령이 없으면 `python3`로 바꾸세요. 모델은 `-m provider/model` 로 지정합니다(기본값은 무료 모델 `opencode/big-pickle`). 단, `compare.py` 는 내 실제 opencode 설정과 분리된 임시 샌드박스에서 돌기 때문에 **`opencode auth` 로 로그인해 둔 모델은 보이지 않습니다.** "평소 쓰는 모델"을 쓰려면 그 제공자가 **환경 변수로 키를 받는 방식**이어야 합니다(예: `ANTHROPIC_API_KEY` 를 설정하고 `-m anthropic/<모델>`). 그렇지 않으면 무료 모델을 쓰세요.
 
 ### 1. 모델이 처음부터 받는 것 보기 (모델 불필요)
 
@@ -73,6 +73,7 @@ PowerShell:
 python compare.py                                  # 프롬프트 4개 x 변형 2개 x 3회
 python compare.py --runs 5 --prompts 1,2           # 일부만, 더 많이
 python compare.py -m opencode/big-pickle           # 모델 지정 (기본값이 이 무료 모델)
+python compare.py -m anthropic/<모델> --runs 2     # 환경 변수(ANTHROPIC_API_KEY 등)로 키를 주는 제공자
 ```
 
 Linux bash:
@@ -169,7 +170,7 @@ python3 ../../../tools/run_checks.py s5a --model    # 실제 모델 2회 추가
 ## 주의할 점 / 문제 해결
 
 - **결과는 모델과 시점에 따라 다릅니다.** 같은 모델도 날마다 다르게 나올 수 있으므로, 숫자 하나보다 여러 번 돌린 비율을 보세요. 이 문서는 "good 이 bad 보다 더 자주 열린다"는 결과를 보장하지 않습니다. 직접 재 보고 판단하세요.
-- **무료 모델은 속도·쿼터 제한이 있습니다.** 쿼터가 바닥나면 `opencode run` 이 끝나지 않고 재시도만 합니다. `compare.py` 는 시간 초과나 쿼터 오류를 `n/a` 로 세고 비율 계산에서 뺍니다. 24번 호출이라 오래 걸리므로 먼저 `--runs 1 --prompts 1` 로 동작을 확인하세요.
+- **무료 모델은 속도·쿼터 제한이 있습니다.** 쿼터가 바닥나면 `opencode run` 이 끝나지 않고 재시도만 합니다. `compare.py` 는 모델이 실제로 답했는지(대화 기록의 `> build ·` 머리말)를 확인하고, 답이 없으면(쿼터·인증 오류, 시간 초과 등) 그 실행을 "스킬 안 열림"으로 세지 않고 **첫 실패에서 비교 전체를 중단**합니다(24번 × 최대 420초를 헛돌지 않도록). 쿼터 오류가 화면에 보이도록 `opencode run --print-logs --log-level ERROR` 로 실행합니다. 24번 호출이라 오래 걸리므로 먼저 `--runs 1 --prompts 1` 로 동작을 확인하세요.
 - **스크립트에서 `opencode run` 을 띄울 때 `PWD`.** `opencode run` 은 프로세스의 현재 폴더가 아니라 환경변수 `PWD` 를 작업 폴더로 삼는 것으로 관찰됩니다(Linux). Python 의 `subprocess.run(cwd=...)` 만 쓰면 부모 폴더의 스킬이 보입니다. `lab.py` 가 `PWD` 도 함께 맞춥니다.
 - **description 을 고친 뒤에는 opencode 를 다시 시작하세요.** 스킬은 시작할 때 한 번 읽습니다.
 - **YAML 함정.** description 에 `: `(콜론+공백)이나 ` #` 이 들어가면 YAML 로 잘못 해석될 수 있습니다. 필요하면 큰따옴표로 감싸세요. 이 예제의 good description 은 `"팀 용어"` 처럼 큰따옴표가 중간에 있지만 일반 문자열로 잘 읽힙니다 (`debug skill` 로 확인).

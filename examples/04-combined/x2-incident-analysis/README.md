@@ -146,10 +146,10 @@ Wrote file successfully.
 
 - **가드의 한계**: 이 가드는 `write`/`edit`/`apply_patch` 만 검사합니다. 모델이 `bash` 로 `echo x > notes.txt` 처럼 쓰는 것은 **막지 못하고 기록만** 합니다.
   실제로 쓰기를 막아야 한다면 `permission` 설정(위 3번)을 함께 쓰세요. `apply_patch` 는 일부 모델에서만 제공되어 이 환경에서는 가드 로직을 단위 검사로만 확인했습니다.
-- 플러그인 파일에서는 **플러그인 함수만 `export`** 하세요. 도우미 함수/상수를 내보내면 파일 전체가 조용히 로드되지 않습니다.
+- **export 는 플러그인 함수만 하세요.** 숫자·문자열·객체 같은 함수가 아닌 값(`export const X = 1`)을 export 하면 opencode 가 **파일 전체를 건너뜁니다.** 평소 실행에는 아무 출력도 없고, `opencode --print-logs` 로 실행해야 `failed to load plugin ... Plugin export is not a function` 오류가 보입니다. 보조 함수를 export 하면 파일은 로드되지만 그 함수까지 플러그인으로 호출됩니다. 그러니 도우미는 export 하지 마세요. 문법 오류나 import 오류는 `--print-logs` 에도 아무것도 남기지 않으니, 플러그인이 로드됐는지는 플러그인이 직접 남기는 흔적(로드 로그 등)으로 확인하세요.
 - `tickets.db` 가 없으면 MCP 서버가 `prepare.py` 를 먼저 실행하라는 오류를 냅니다.
 - 인자가 없는 도구 호출은 transcript 에 `Unknown` 으로 찍힙니다(`⚙ tickets_week_range Unknown`). 오류가 아닙니다.
 - `opencode run` 으로 실행할 때는 프로젝트 폴더에서 실행하세요. (Linux 에서는 `$PWD` 가 프로젝트 폴더를 정합니다.)
 - `.opencode/` 가 있어 첫 실행에 `@opencode-ai/plugin` 자동 설치가 일어납니다. 필요 없는 의존성이지만(이 플러그인은 import 하지 않음) 설치 시도는 합니다.
-  레지스트리에 닿지 않으면 약 70초 지연됩니다([P6](../../03-plugins/p6-custom-tool/) 참고). 이 플러그인은 설치와 무관하게 로드됩니다.
+  레지스트리에 닿지 않으면 플러그인이 있는 이 폴더는 **시작할 때마다 약 70초** 멈춥니다. 완전히 새 환경에서의 첫 시작은 약 130초까지 걸렸습니다([P6](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러) 참고). 이 플러그인은 설치와 무관하게 로드됩니다.
 - 로그에 인자 일부(300자)가 그대로 남습니다. 비밀 값을 인자로 받는 도구가 있다면 기록 전에 가려야 합니다.

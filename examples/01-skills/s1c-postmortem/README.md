@@ -21,6 +21,7 @@
 s1c-postmortem/
 ├── README.md
 ├── check.py                                  자동 검증
+├── fake_llm.py                               가짜 LLM 서버. check.py 가 모델 없이 opencode 의 요청을 기록·재현하는 데 씀
 ├── .gitignore                                postmortems/ 제외 (생성물)
 ├── notes/incident-notes.md                   가상 장애의 날것 메모 (이름 없음, 역할 A~F)
 └── .opencode/skills/postmortem/
@@ -39,7 +40,7 @@ PowerShell:
 ```powershell
 cd examples\01-skills\s1c-postmortem
 opencode run "notes/incident-notes.md 로 포스트모템 작성해줘"
-Get-Content postmortems\*.md
+Get-Content -Encoding UTF8 postmortems\*.md
 ```
 
 Linux bash:
@@ -147,5 +148,5 @@ Wrote file successfully.
 
 - **`postmortems/`는 git에 올라가지 않는다.** 이 예제의 `.gitignore`가 제외한다. 결과 파일이 `git status`에 보이지 않는 것은 정상이다.
 - **같은 날짜·같은 slug를 다시 만들면** 스킬 규칙에 따라 덮어쓰지 않고 `-2`를 붙인 파일이 생긴다. 다시 실행해 결과를 비교하려면 `postmortems/`를 지우고 실행하자.
-- **`.opencode/`가 있는 폴더에서 처음 실행하면** opencode가 `.opencode/` 안에 `package.json`, `node_modules/`, `.gitignore`를 자동으로 만든다(`@opencode-ai/plugin` 설치). 인터넷이나 패키지 미러에 접근할 수 없으면 첫 시작이 약 70초 멈춘 것처럼 보일 수 있다. 레지스트리에 닿지 않으면 첫 실행만이 아니라 **시작할 때마다** 이렇게 멈춘다. 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있다.
+- **`.opencode/`가 있는 폴더에서는** opencode가 시작할 때 `@opencode-ai/plugin`을 npm에서 설치하려 시도하고, 성공하면 `.opencode/` 안에 `package.json`, `node_modules/`, `.gitignore`가 생긴다(모두 git에서 제외). 이 예제에는 플러그인(`.opencode/plugins/*.js`)이 없어서, 레지스트리에 닿지 않는 환경에서도 눈에 띄는 멈춤은 없었다(연결을 거부하는 레지스트리로 측정: `opencode debug skill` 약 2초, `opencode run` 약 4초. TUI는 확인하지 못했다). 설치 시도 자체는 일어난다. 같은 환경에서 `.opencode/plugins/*.js`가 있는 폴더(P1~P8 등)는 시작할 때마다 약 70초 멈춘다(새 환경의 맨 처음 시작은 약 130초). 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있다.
 - **메모는 가상이다.** 사건, 수치, 역할 모두 연습용으로 만든 것이며 실제 장애와 무관하다.

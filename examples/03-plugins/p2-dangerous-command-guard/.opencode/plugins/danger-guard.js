@@ -5,18 +5,20 @@
 //   - unless  : (선택) 이 정규식에도 걸리면 허용 — 예: git clean 의 --dry-run
 //   - message : 모델에게 보여 줄 한국어 안내. "무엇이 위험한지 + 대신 무엇을 하라"를 적습니다.
 //
-// 주의: 이 파일은 "플러그인 함수"만 export 합니다. 상수나 보조 함수를 export 하면
-//       opencode 가 그것도 플러그인으로 호출하다가 모듈 전체를 조용히 건너뜁니다.
+// 주의: 이 파일은 "플러그인 함수"만 export 합니다. 숫자·문자열·객체 같은 함수가 아닌 값을 export 하면
+//       opencode 가 이 파일 전체를 건너뜁니다(평소엔 아무 출력이 없고 `--print-logs` 에만
+//       "Plugin export is not a function" 오류가 보입니다). 보조 함수를 export 해도 그것까지 플러그인으로
+//       호출되므로 export 하지 않습니다.
 import { appendFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 
 // 한 명령 안의 "다음 명령" 경계(; && || | 줄바꿈)를 넘지 않도록 [^;&|\n]* 를 씁니다.
 const SEG = "[^;&|\\n]*";
-// rm 류가 지우려는 "너무 큰" 대상: / /* ~ ~/ ~/* $HOME * ./* . (따옴표 허용)
-const BIG_POSIX = "[\"']?(?:\\/\\*?|~\\/?\\*?|\\$HOME\\/?\\*?|\\$\\{HOME\\}\\/?\\*?|\\*|\\.\\/\\*|\\.)[\"']?";
-// 윈도 쪽 대상: C:\ C:/ C:\* \ / ~ $HOME $env:USERPROFILE %USERPROFILE% * .\*
+// rm 류가 지우려는 "너무 큰" 대상: / /* ~ ~/ ~/* $HOME * ./* . ./ (따옴표 허용)
+const BIG_POSIX = "[\"']?(?:\\/\\*?|~\\/?\\*?|\\$HOME\\/?\\*?|\\$\\{HOME\\}\\/?\\*?|\\*|\\.(?:\\/\\*?)?)[\"']?";
+// 윈도 쪽 대상: C:\ C:/ C:\* \ / ~ $HOME $env:USERPROFILE %USERPROFILE% * . .\ .\*
 const BIG_WIN =
-  "[\"']?(?:[A-Za-z]:[\\\\/]?\\*?|\\\\\\*?|\\/\\*?|~[\\\\/]?\\*?|\\$HOME[\\\\/]?\\*?|\\$env:USERPROFILE[\\\\/]?\\*?|%USERPROFILE%[\\\\/]?\\*?|\\*|\\.[\\\\/]\\*)[\"']?";
+  "[\"']?(?:[A-Za-z]:[\\\\/]?\\*?|\\\\\\*?|\\/\\*?|~[\\\\/]?\\*?|\\$HOME[\\\\/]?\\*?|\\$env:USERPROFILE[\\\\/]?\\*?|%USERPROFILE%[\\\\/]?\\*?|\\*|\\.(?:[\\\\/]\\*?)?)[\"']?";
 const END = "(?=\\s|$|[;&|)])";
 
 const RULES = [
@@ -31,7 +33,8 @@ const RULES = [
   },
   {
     id: "powershell-remove-item-root",
-    pattern: new RegExp(`\\b(?:Remove-Item|ri)\\b(?=${SEG}\\s-r(?:ecurse)?\\b)${SEG}\\s${BIG_WIN}${END}`, "i"),
+    // PowerShell 에서는 rm/rmdir/rd/del/erase 도 Remove-Item 의 별칭이라 -Recurse 를 받습니다.
+    pattern: new RegExp(`\\b(?:Remove-Item|ri|rm|rmdir|rd|del|erase)\\b(?=${SEG}\\s-r(?:ecurse)?\\b)${SEG}\\s${BIG_WIN}${END}`, "i"),
     message: "드라이브 루트·홈 폴더·* 를 대상으로 하는 Remove-Item -Recurse 는 막혀 있습니다. 지울 대상을 구체적인 하위 경로로 지정하세요.",
   },
   {
@@ -42,7 +45,7 @@ const RULES = [
   {
     id: "git-push-force",
     // --force, -f, -fu 같은 묶음 옵션, +브랜치 refspec. --force-with-lease 는 허용.
-    pattern: new RegExp(`\\bgit\\s+push\\b${SEG}\\s(?:--force(?![-\\w])|-(?!-)[A-Za-z]*f[A-Za-z]*(?=\\s|$)|\\+\\S)`, "i"),
+    pattern: new RegExp(`\\bgit\\s+push\\b${SEG}\\s(?:--force(?![-\\w])|-(?!-)[A-Za-z]*f[A-Za-z]*(?=\\s|$|[;&|)])|\\+[^\\s;&|)]+)`, "i"),
     message: "git push --force / -f 는 원격 이력을 덮어쓸 수 있어 막혀 있습니다. 꼭 필요하면 --force-with-lease 를 쓰거나, 사용자에게 직접 실행해 달라고 요청하세요.",
   },
   {
@@ -53,8 +56,8 @@ const RULES = [
   {
     id: "git-clean-force",
     // git clean -f / -fd / -fdx / -xdf / --force. -n, --dry-run 이 함께 있으면 미리보기라서 허용.
-    pattern: new RegExp(`\\bgit\\s+clean\\b${SEG}\\s(?:--force\\b|-(?!-)[A-Za-z]*f[A-Za-z]*(?=\\s|$))`, "i"),
-    unless: /\s(?:--dry-run\b|-(?!-)[A-Za-z]*n[A-Za-z]*(?=\s|$))/i,
+    pattern: new RegExp(`\\bgit\\s+clean\\b${SEG}\\s(?:--force\\b|-(?!-)[A-Za-z]*f[A-Za-z]*(?=\\s|$|[;&|)]))`, "i"),
+    unless: /\s(?:--dry-run\b|-(?!-)[A-Za-z]*n[A-Za-z]*(?=\s|$|[;&|)]))/i,
     message: "git clean -f 는 추적되지 않은 파일을 영구 삭제합니다. git clean -n 으로 지워질 목록을 먼저 확인하고, 사용자 동의를 받은 뒤 실행하세요.",
   },
   {
@@ -85,10 +88,23 @@ const RULES = [
   },
 ];
 
+function segmentAt(command, index) {
+  let start = index;
+  while (start > 0 && !/[;&|\n]/.test(command[start - 1])) start--;
+  let end = index;
+  while (end < command.length && !/[;&|\n]/.test(command[end])) end++;
+  return command.slice(start, end);
+}
+
 function findRule(command) {
   if (typeof command !== "string") return null;
   for (const rule of RULES) {
-    if (rule.pattern.test(command) && !(rule.unless && rule.unless.test(command))) return rule;
+    const m = rule.pattern.exec(command);
+    if (!m) continue;
+    // unless 는 걸린 명령이 들어 있는 구간(; && || | 줄바꿈 사이)에서만 봅니다.
+    // `git clean -fd; head -n 5 x` 의 -n 때문에 git clean 이 풀려나지 않게 하려는 것입니다.
+    if (rule.unless && rule.unless.test(segmentAt(command, m.index))) continue;
+    return rule;
   }
   return null;
 }

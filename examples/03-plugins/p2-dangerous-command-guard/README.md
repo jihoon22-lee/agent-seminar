@@ -22,7 +22,7 @@ p2-dangerous-command-guard/
 ├── fake_llm.py                       # 검증용 가짜 LLM (표준 라이브러리만, 복사본)
 ├── check.py                              # 자동 검증 (단위 테스트 + 플러그인 로드 + --model 모델 검사)
 ├── .opencode/plugins/danger-guard.js     # 플러그인 본체 (RULES 표가 이 안에 있음)
-├── tests/matcher.test.mjs                # 규칙 표를 실제 훅으로 시험 (차단 47건 + 허용 36건, node)
+├── tests/matcher.test.mjs                # 규칙 표를 실제 훅으로 시험 (차단 55건 + 허용 44건, node)
 └── logs/                                 # 실행하면 생김: plugin-load.log, danger-guard.log
 ```
 
@@ -42,9 +42,9 @@ p2-dangerous-command-guard/
    cd examples/03-plugins/p2-dangerous-command-guard
    node tests/matcher.test.mjs
    ```
-   `danger-guard: 47 deny cases, 36 allow cases, 0 failed` 가 나오면 정상입니다.
+   `danger-guard: 55 deny cases, 44 allow cases, 0 failed` 가 나오면 정상입니다.
 
-2. opencode 를 실행합니다. 처음 실행하면 opencode 가 `.opencode/` 안에 `@opencode-ai/plugin` 을 npm 으로 설치하려고 합니다. 인터넷이 막혀 있고 패키지 미러도 없으면 첫 시작이 70초쯤 멈췄다가 계속 진행됩니다. 레지스트리에 닿지 않으면 첫 실행만이 아니라 **시작할 때마다** 이렇게 멈춥니다. 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있습니다.
+2. opencode 를 실행합니다. 처음 실행하면 opencode 가 `.opencode/` 안에 `@opencode-ai/plugin` 을 npm 으로 설치하려고 합니다. 인터넷이 막혀 있고 패키지 미러도 없으면 첫 시작이 70초쯤 멈췄다가 계속 진행됩니다. 레지스트리에 닿지 않으면 첫 실행만이 아니라 **시작할 때마다** 이렇게 멈춥니다. 아주 처음, 새 환경에서의 첫 시작은 약 130초까지 걸렸습니다(패킷을 조용히 버리는 레지스트리면 200초를 넘을 수도 있습니다). 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있습니다.
 
    ```
    opencode
@@ -59,7 +59,7 @@ p2-dangerous-command-guard/
 
 4. 차단 기록 확인:
 
-   PowerShell: `Get-Content logs\danger-guard.log`
+   PowerShell: `Get-Content -Encoding UTF8 logs\danger-guard.log`
    Linux bash: `cat logs/danger-guard.log`
 
 5. 자동 검증: `python check.py` / `python check.py --model` (Linux에서 `python` 명령이 없으면 `python3`로 바꾸세요).
@@ -90,7 +90,7 @@ guard-ok-123
 
 ```
 $ node tests/matcher.test.mjs
-danger-guard: 47 deny cases, 36 allow cases, 0 failed
+danger-guard: 55 deny cases, 44 allow cases, 0 failed
 ```
 
 ## 동작 원리
@@ -98,9 +98,10 @@ danger-guard: 47 deny cases, 36 allow cases, 0 failed
 1. 플러그인은 `async ({ directory }) => 훅 객체` 를 export 하고, `tool.execute.before(input, output)` 에서 `input.tool === "bash"` 일 때 `output.args.command` 를 검사합니다. (`bash` 도구의 인자 키는 `command`, `description` 입니다.)
 2. `RULES` 를 순서대로 훑어 `pattern` 에 걸리고 `unless` 에는 걸리지 않는 첫 규칙을 찾습니다. 찾으면 `logs/danger-guard.log` 에 기록한 뒤 `throw new Error("[danger-guard:<id>] <메시지>")` 합니다. 도구는 실행되지 않고 모델은 그 메시지를 오류로 받습니다.
 3. 정규식에는 몇 가지 약속이 있습니다.
-   - `[^;&|\n]*` 로 한 명령 안에서만 옵션을 찾습니다. `echo hi; rm -rf /` 처럼 `;`·`&&`·`|` 뒤에 붙은 명령도 잡지만, 앞 명령의 옵션이 뒤 명령으로 넘어가지는 않습니다.
+   - `[^;&|\n]*` 로 한 명령 안에서만 옵션을 찾습니다. `echo hi; rm -rf /` 처럼 `;`·`&&`·`|` 뒤에 붙은 명령도 잡지만, 앞 명령의 옵션이 뒤 명령으로 넘어가지는 않습니다. 옵션 바로 뒤에 `;`·`)` 가 붙은 `git push -f; echo done`, `(git push -f)` 도 잡습니다. `unless`(예: `git clean -n`) 도 같은 구간 안에서만 봅니다.
    - 옵션 순서와 묶음에 상관없이 잡습니다: `rm -rf`, `rm -fr`, `rm -r -f`, `rm --recursive`, `git push -fu`, `git clean -xdf`.
-   - 지울 대상은 `/`, `/*`, `~`, `~/*`, `$HOME`, `*`, `./*`, `.` 같은 "너무 큰 경로"만 봅니다. 그래서 `rm -rf build`, `rm -rf *.pyc`, `rm -rf /tmp/demo-build` 는 통과합니다.
+   - PowerShell 에서는 `rm`·`rd`·`del` 도 `Remove-Item` 의 별칭이라 `rm -Recurse -Force C:\`, `Remove-Item -Recurse -Force .` 도 막습니다.
+   - 지울 대상은 `/`, `/*`, `~`, `~/*`, `$HOME`, `*`, `./*`, `.`, `./` 같은 "너무 큰 경로"만 봅니다. 그래서 `rm -rf build`, `rm -rf *.pyc`, `rm -rf /tmp/demo-build` 는 통과합니다.
    - `git push --force-with-lease` 와 `git clean -n`(미리보기)처럼 안전한 변형은 허용합니다.
    - PowerShell: `Remove-Item -Recurse -Force C:\`, `ri`, `$env:USERPROFILE`, `rd /s /q C:\` 도 봅니다. 윈도에서 bash 도구는 Windows PowerShell 5.1 이기 때문입니다.
 4. **규칙 추가하는 법**: `RULES` 배열에 한 항목을 넣으면 됩니다.
@@ -147,7 +148,7 @@ danger-guard: 47 deny cases, 36 allow cases, 0 failed
 ## 주의할 점 / 문제 해결
 
 - **명령 문자열만 봅니다.** `psql -f cleanup.sql` 처럼 파일 안에 있는 `DROP TABLE` 이나, `python -c "shutil.rmtree('/')"` 같은 우회는 막지 못합니다. 따옴표 안의 글자도 구분하지 않아서 `git commit -m "rm -rf / 금지"` 같은 명령도 막힐 수 있습니다. 정규식 필터는 실수 방지용이지 보안 경계가 아닙니다.
-- **export 는 플러그인 함수만 하세요.** 상수나 보조 함수를 export 하면 opencode 가 그것도 플러그인으로 호출하다가 오류 메시지 없이 파일 전체를 건너뜁니다. 그래서 `RULES` 는 export 하지 않고, 테스트는 플러그인을 불러와 훅을 호출합니다. `.opencode/plugins/` 안의 모든 `.js` 가 플러그인으로 로드되므로 테스트 파일도 그 폴더 밖(`tests/`)에 둡니다.
+- **export 는 플러그인 함수만 하세요.** 숫자·문자열·객체 같은 함수가 아닌 값(`export const X = 1`)을 export 하면 opencode 가 **파일 전체를 건너뜁니다.** 평소 실행에는 아무 출력도 없고, `opencode --print-logs` 로 실행해야 `failed to load plugin ... Plugin export is not a function` 오류가 보입니다. 보조 함수를 export 하면 파일은 로드되지만 그 함수까지 플러그인으로 호출됩니다. 그러니 도우미는 export 하지 마세요. 문법 오류나 import 오류는 `--print-logs` 에도 아무것도 남기지 않으니, 플러그인이 로드됐는지는 플러그인이 직접 남기는 흔적(로드 로그 등)으로 확인하세요. 그래서 `RULES` 는 export 하지 않고, 테스트는 플러그인을 불러와 훅을 호출합니다. `.opencode/plugins/` 안의 모든 `.js` 가 플러그인으로 로드되므로 테스트 파일도 그 폴더 밖(`tests/`)에 둡니다.
 - 윈도의 bash 도구는 Git Bash 가 아니라 **Windows PowerShell 5.1** 입니다. 모델이 쓰는 명령도 `Remove-Item`, `Get-Content` 같은 PowerShell 문법이 됩니다.
 - `node` 가 없으면 `check.py` 가 경고(WARN)를 내고 단위 테스트를 건너뜁니다. opencode 실행에는 Node 가 필요 없습니다.
 - 차단 시험을 `rm -rf /` 같은 진짜 명령으로 하지 마세요. 플러그인이 로드되지 않았다면 실제로 실행됩니다. `echo` 로 문장만 출력하는 방식이 안전합니다.

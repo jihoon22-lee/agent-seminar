@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import gzip
 import hashlib
 import io
 import json
@@ -24,10 +25,24 @@ HERE = Path(__file__).resolve().parent
 PACKAGES = HERE / "packages"
 
 
+_tarballs: dict[Path, bytes] = {}
+
+
 def build_tarball(pkg_dir: Path) -> bytes:
-    """npm tarball 규칙: 모든 파일이 'package/' 아래에 있어야 한다."""
+    """npm tarball 규칙: 모든 파일이 'package/' 아래에 있어야 한다.
+
+    packument 의 shasum/integrity 와 실제로 내려 주는 tarball 의 바이트가 같아야 npm 이 받아 준다.
+    "w:gz" 는 gzip 헤더에 현재 시각을 넣어서 초가 바뀌면 바이트가 달라지므로, 헤더 시각을 0 으로 고정하고
+    패키지마다 한 번만 만들어 재사용한다.
+    """
+    if pkg_dir not in _tarballs:
+        _tarballs[pkg_dir] = _make_tarball(pkg_dir)
+    return _tarballs[pkg_dir]
+
+
+def _make_tarball(pkg_dir: Path) -> bytes:
     buf = io.BytesIO()
-    with tarfile.open(fileobj=buf, mode="w:gz") as tar:
+    with gzip.GzipFile(fileobj=buf, mode="wb", mtime=0) as gz, tarfile.open(fileobj=gz, mode="w") as tar:
         for path in sorted(pkg_dir.rglob("*")):
             if path.is_file() and "node_modules" not in path.parts:
                 info = tarfile.TarInfo("package/" + path.relative_to(pkg_dir).as_posix())

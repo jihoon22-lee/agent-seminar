@@ -102,7 +102,15 @@ def tool_oncall_lookup(cfg: Config, args: dict) -> tuple[str, bool]:
         if dt.date.fromisoformat(row["from"]) <= day <= dt.date.fromisoformat(row["to"]):
             return (f"{team} 팀 온콜 ({day}): 1차 {row['primary']}, 2차 {row['secondary']} "
                     f"(근무 기간 {row['from']} ~ {row['to']})"), False
-    return f"{team} 팀은 {day} 에 등록된 온콜 일정이 없습니다.", True
+    # 표에 없는 날짜: 등록된 항목을 ISO 주 번호 순서대로 돌려 가며 쓰는 "주간 순환"으로 대신 답한다.
+    # (자습하는 사람이 일정표가 끝난 뒤에 실행해도 빈 답이 나오지 않게 하려는 데모용 규칙이다.)
+    rows = table[team]
+    if not rows:
+        return f"{team} 팀은 {day} 에 등록된 온콜 일정이 없습니다.", True
+    week = day.isocalendar()[1]
+    row = rows[week % len(rows)]
+    return (f"{team} 팀 온콜 ({day}): 1차 {row['primary']}, 2차 {row['secondary']} "
+            f"(등록된 일정표 밖의 날짜라서 ISO {week}주 번호를 항목 {len(rows)}개로 나눈 나머지로 고른 순환 배정입니다)"), False
 
 
 def tool_team_status(cfg: Config, _args: dict) -> tuple[str, bool]:

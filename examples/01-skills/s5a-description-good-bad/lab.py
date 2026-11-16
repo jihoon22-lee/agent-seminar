@@ -161,7 +161,8 @@ class model_lock:
 def run_model(sb: Sandbox, prompt: str, cwd: Path | str, model: str, timeout: int = 420, auto: bool = True,
               extra_args: list[str] | None = None) -> str:
     """진짜 모델로 `opencode run` 한 번. 대화 기록(stdout+stderr)을 돌려줍니다."""
-    args = ["run", "-m", model] + (["--auto"] if auto else []) + (extra_args or []) + [prompt]
+    # --print-logs --log-level ERROR: 쿼터/인증 오류가 화면에 보이게 합니다. 없으면 opencode run 이 조용히 재시도만 합니다.
+    args = ["run", "--print-logs", "--log-level", "ERROR", "-m", model] + (["--auto"] if auto else []) + (extra_args or []) + [prompt]
     with model_lock():
         try:
             proc = sb.opencode(args, cwd, timeout=timeout)

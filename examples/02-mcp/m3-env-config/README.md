@@ -25,6 +25,7 @@ m3-env-config/
   opencode.json    mcp.glossary-env({env:} 사용) / mcp.glossary-file({file:} 사용, 기본 꺼짐)
   secrets/         (prepare.py가 생성, .gitignore 대상)
   check.py         자동 검증
+  fake_llm.py      가짜 LLM 서버. check.py 가 모델 없이 opencode 의 요청을 기록·재현하는 데 씀
 ```
 
 `server.py`는 도구 3개를 제공한다: `lookup_term`, `list_terms`(둘 다 `API_TOKEN` 필요), `server_info`(토큰 없이도 동작, 토큰 값은 절대 출력하지 않고 설정됨/없음만 보여 줌).

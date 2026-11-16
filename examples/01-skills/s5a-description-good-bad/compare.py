@@ -7,6 +7,13 @@
 
 모델 출력은 매번 달라지므로 "3번 중 몇 번"으로 정직하게 셉니다. 스킬이 열렸는지는 모델의 말이 아니라
 opencode 가 찍는 `→ Skill "team-glossary"` 표식으로 판단합니다. 인터넷이 필요한 건 모델 호출뿐입니다.
+
+주의: 이 스크립트는 내 실제 opencode 설정과 분리된 임시 샌드박스에서 실행합니다. 그래서 내가 평소 `opencode auth`
+(로그인)로 등록해 둔 모델은 여기서 보이지 않습니다. 환경 변수로 키를 주는 제공자(예: ANTHROPIC_API_KEY,
+OPENAI_API_KEY 를 설정한 뒤 `-m anthropic/<모델>`)와 무료 모델 `opencode/big-pickle` 은 그대로 동작합니다.
+
+모델이 실제로 답했는지는 대화 기록의 `> build ·` 머리말로 판단합니다. 그것이 없으면(쿼터·인증·네트워크 오류, 시간 초과 등)
+그 실행은 "스킬 안 열림"이 아니라 측정 불가(n/a)이므로 첫 n/a 에서 비교 전체를 중단합니다.
 Linux에서 `python` 명령이 없으면 `python3` 로 바꿔 실행하세요.
 """
 from __future__ import annotations
@@ -23,7 +30,8 @@ import lab
 HERE = Path(__file__).resolve().parent
 VARIANTS = ["variant-bad", "variant-good"]
 SKILL_MARK = '→ Skill "team-glossary"'
-LIMIT_RE = re.compile(r"FreeTierError|rate.?limit|\b429\b|quota exceeded", re.I)
+LIMIT_RE = re.compile(r"FreeTierError|usage limit|rate.?limit|\b429\b|quota exceeded", re.I)
+ANSWERED_MARK = "> build ·"   # 모델이 실제로 답을 시작했을 때 opencode run 이 찍는 머리말
 
 # (표시 이름, 프롬프트, 정답에 들어 있어야 하는 말 - 스킬 본문을 읽었다는 증거)
 PROMPTS = [
@@ -58,13 +66,18 @@ def main() -> int:
                 cells = []
                 for i in range(args.runs):
                     out = lab.run_model(sb, prompt, Path(tmp) / neutral[variant], args.model)
-                    if LIMIT_RE.search(out) or out.startswith("<<timeout>>"):
-                        cells.append("n/a")
-                        print("     (모델 호출 실패 - 쿼터/속도 제한이거나 시간 초과: " + out.strip().replace("\n", " ")[-160:] + ")")
-                    else:
-                        loaded = SKILL_MARK in out
-                        used = loaded and evidence is not None and evidence in out
-                        cells.append("열림+정답" if used else ("열림" if loaded else "안 열림"))
+                    if ANSWERED_MARK not in out:
+                        reason = "쿼터/속도 제한" if LIMIT_RE.search(out) or out.startswith("<<timeout>>") else "원인 불명"
+                        print(f"  [{label}] {variant} #{i + 1}: n/a")
+                        print("\n!! 모델이 답하지 않았습니다 (" + reason + "): " + out.strip().replace("\n", " ")[-300:])
+                        print("   이 실행을 '스킬 안 열림'으로 세면 결과가 거짓이 되므로 비교를 중단합니다.")
+                        print("   - 이 스크립트는 내 실제 opencode 설정과 분리된 샌드박스에서 돕니다. `opencode auth` 로 로그인한 모델은 보이지 않습니다.")
+                        print("   - 환경 변수로 키를 주는 제공자(예: ANTHROPIC_API_KEY)를 설정하고 `-m anthropic/<모델>` 로 지정하거나,")
+                        print("     무료 모델 `-m opencode/big-pickle` 의 한도가 풀린 뒤 다시 실행하세요.")
+                        return 1
+                    loaded = SKILL_MARK in out
+                    used = loaded and evidence is not None and evidence in out
+                    cells.append("열림+정답" if used else ("열림" if loaded else "안 열림"))
                     print(f"  [{label}] {variant} #{i + 1}: {cells[-1]}", flush=True)
                 table[(label, variant)] = cells
 

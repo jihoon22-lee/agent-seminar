@@ -83,7 +83,7 @@ mkdir sandbox\.opencode\plugins
 copy plugins\hello.js sandbox\.opencode\plugins\
 cd sandbox
 opencode debug config          # plugin 항목에 file:///.../sandbox/.opencode/plugins/hello.js 가 보인다
-type logs\hello-loaded.log     # 마커가 한 줄 생겼다
+Get-Content -Encoding UTF8 logs\hello-loaded.log     # 마커가 한 줄 생겼다
 ```
 ```bash
 mkdir -p sandbox/.opencode/plugins
@@ -123,6 +123,10 @@ cat logs/hello-loaded.log      # 마커가 한 줄 생겼다
 [OK] e3    중복: 자동 탐색 + 설정에서 같은 파일    로드 횟수: 1
 [OK] e4    중복: 같은 내용, 다른 위치의 파일 2개   로드 횟수: 2
 [OK] f1    자동 + 전역 + 설정 모두 켜기           로드 횟수: 3
+[OK] x1    export 함정: 함수가 아닌 값           로드 횟수: 0
+       - (hello.js 에 `export const X = 42` 를 덧붙이면 파일 전체가 건너뛰어짐)
+[OK] x2    export 함정: 도우미 함수              로드 횟수: 1
+       - (`export function helper()` 를 덧붙여도 hello 는 로드됨. helper 도 플러그인으로 호출될 뿐)
 [OK] pure  --pure  설정에는 플러그인 3개가 적혀 있지만 실행되지 않음   로드 횟수: 0
 ```
 
@@ -164,7 +168,8 @@ Linux `~/.config/opencode`, Windows `%USERPROFILE%\.config\opencode`. `XDG_CONFI
 - 내용이 같아도 **파일 위치가 다르면 별개 플러그인**이라 각각 로드됩니다(`e4`: 2회). 전역 폴더와 프로젝트 폴더에 같은 플러그인을 두면 2회 로드됩니다(`f1`: 3회).
   → 같은 훅이 두 번 실행됩니다. 로그가 두 번 찍히거나, 가드가 두 번 돌 수 있으니 한 곳에만 두세요.
 - 한 파일에서 여러 함수를 `export` 하면 **전부 플러그인으로 호출**됩니다. 도우미 함수는 내보내지 마세요.
-  함수가 아닌 값(`export const NAME = "x"`)을 하나라도 내보내면 **그 파일의 플러그인이 모두 조용히 로드되지 않습니다**(확인).
+  함수가 아닌 값(숫자·문자열·객체·배열, 예: `export const NAME = "x"`)을 하나라도 내보내면 **그 파일의 플러그인이 모두 로드되지 않습니다**(확인: `x1` 은 0회, 도우미 함수를 덧붙인 `x2` 는 1회).
+  평소 실행에는 아무 출력도 없고, `opencode --print-logs` 로 실행하면 `level=ERROR message="failed to load plugin" ... error="Plugin export is not a function"` 이 보입니다.
 
 ### `--pure` (`OPENCODE_PURE=1` 도 동일)
 외부 플러그인(자동 탐색·전역 폴더·`plugin` 설정·npm)을 **하나도 로드하지 않습니다.** `opencode debug config` 의 `plugin` 배열에는 여전히 적혀 있지만 실행되지 않습니다(`pure`: 0회).
@@ -186,9 +191,8 @@ git 저장소가 아닌 곳에서는 `project.id` 가 `"global"`, `worktree` 가
 - **로드 실패는 대부분 조용합니다.** `import` 오류, 문법 오류, 잘못된 진입점은 로그에도 안 남습니다. 플러그인 첫 줄에서 마커 파일에 쓰는 코드를 넣어 두면 "로드 자체가 안 된 건지, 훅이 안 불린 건지" 를 가를 수 있습니다.
   플러그인 함수가 **초기화 중 예외**를 던지면 `opencode --print-logs` 에서 `level=ERROR message="failed to load plugin"` 이 보입니다.
 - 플러그인을 고친 뒤에는 **opencode 를 다시 시작**해야 합니다(실행 중에는 다시 읽지 않습니다).
-- `.opencode/` 가 있는 폴더에서는 처음 시작할 때 `@opencode-ai/plugin` 을 npm 으로 설치합니다. 레지스트리에 닿지 않으면 약 70초 멈췄다가 계속됩니다. 레지스트리에 닿지 않으면 첫 실행만이 아니라 **시작할 때마다** 이렇게 멈춥니다. 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있습니다.
+- `.opencode/` 가 있는 폴더에서는 처음 시작할 때 `@opencode-ai/plugin` 을 npm 으로 설치합니다. 레지스트리에 닿지 않으면 약 70초 멈췄다가 계속됩니다. 레지스트리에 닿지 않으면 첫 실행만이 아니라 **시작할 때마다** 이렇게 멈춥니다. 아주 처음, 새 환경에서의 첫 시작은 약 130초까지 걸렸습니다(패킷을 조용히 버리는 레지스트리면 200초를 넘을 수도 있습니다). 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있습니다.
   (이 예제의 `hello.js` 는 그 패키지를 import 하지 않아서 멈춘 뒤에도 정상 로드됩니다). 미러 지정은 [P6](../p6-custom-tool/) 참고.
 - **Windows 에서 `shell.env` 확인**: Windows 의 bash 도구가 쓰는 셸이 PowerShell 일 수 있어(`$HELLO_LOADED` 가 안 풀림) `demo.py` 는 Windows 에서
   `python -c "import os; ..."` 로 환경 변수를 읽습니다. 실제 모델 세션에서 확인할 때도 셸 문법 차이를 기억하세요(PowerShell: `$env:HELLO_LOADED`).
-- (d)의 npm 이름 시나리오(`d3`)는 Windows 에서 드물게 첫 시도에 0회로 끝난 적이 있어(원인 미확인, 이후 5/5 정상) `demo.py` 가 한 번 재시도합니다.
 - `sandbox/`, `logs/` 는 `.gitignore` 대상입니다.

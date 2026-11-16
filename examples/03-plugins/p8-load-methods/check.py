@@ -30,6 +30,10 @@ for sc in demo.SCENARIOS:
               res.get("shell_env") is not None and "HELLO_LOADED=yes" in res["shell_env"], str(res.get("shell_env")))
     if sc.id == "c3":
         check("[c3] [경로, 옵션] 형태에서 플러그인이 옵션을 받았다", {"greeting": "안녕"} in res["options"], str(res["options"]))
+    if sc.id == "x1":
+        check("[x1] 함수가 아닌 값(export const X = 42)을 export 하면 파일 전체가 로드되지 않는다", len(res["loaded"]) == 0)
+    if sc.id == "x2":
+        check("[x2] 도우미 함수를 export 해도 진짜 플러그인은 여전히 로드된다", len(res["loaded"]) >= 1)
     if sc.id == "d3":
         check("[d3] npm 이름 형태는 캐시 폴더의 node_modules 에서 로드됐다",
               any("node_modules/opencode-hello" in src for src in res["loaded"]), str(res["loaded"]))

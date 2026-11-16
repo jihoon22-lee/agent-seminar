@@ -28,6 +28,7 @@ m2-python-sdk/
   opencode.json              (prepare.py가 생성, .gitignore 대상)
   .venv/                     (prepare.py가 생성, .gitignore 대상)
   check.py                   자동 검증 (임시 폴더에 별도 venv를 만들어 검사)
+  fake_llm.py                가짜 LLM 서버. check.py 가 모델 없이 opencode 의 요청을 기록·재현하는 데 씀
 ```
 
 ## 따라 하기

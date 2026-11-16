@@ -5,8 +5,10 @@
 //   output = { env: {} }                  처음에는 비어 있는 객체. 여기에 넣은 키만 기존 환경 위에 덮어씁니다.
 // 에이전트가 쓰는 환경만 바뀌고, 사용자의 터미널·시스템 환경변수는 그대로입니다.
 //
-// 주의: 이 파일은 "플러그인 함수"만 export 합니다. 상수나 보조 함수를 export 하면
-//       opencode 가 그것도 플러그인으로 호출하다가 모듈 전체를 조용히 건너뜁니다.
+// 주의: 이 파일은 "플러그인 함수"만 export 합니다. 숫자·문자열·객체 같은 함수가 아닌 값을 export 하면
+//       opencode 가 이 파일 전체를 건너뜁니다(평소엔 아무 출력이 없고 `--print-logs` 에만
+//       "Plugin export is not a function" 오류가 보입니다). 보조 함수를 export 해도 그것까지 플러그인으로
+//       호출되므로 export 하지 않습니다.
 import { appendFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 

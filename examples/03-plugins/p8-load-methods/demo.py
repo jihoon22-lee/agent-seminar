@@ -255,6 +255,21 @@ def setup_e4(env: Env) -> None:
     env.write_config({"plugin": ["./plugins/hello.js"]})
 
 
+def _hello_with_extra(env: Env, extra: str) -> None:
+    """hello.js 뒤에 한 줄을 덧붙인 사본을 .opencode/plugins/ 에 둔다. (원본은 건드리지 않는다)"""
+    dst = env.project / ".opencode" / "plugins" / "hello.js"
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    dst.write_text(HELLO.read_text(encoding="utf-8") + "\n" + extra + "\n", encoding="utf-8")
+
+
+def setup_x1(env: Env) -> None:
+    _hello_with_extra(env, "export const X = 42")                      # 함수가 아닌 값을 export
+
+
+def setup_x2(env: Env) -> None:
+    _hello_with_extra(env, "export function helper() { return 1 }")    # 도우미 함수를 export
+
+
 def setup_f1(env: Env) -> None:
     setup_a(env)
     setup_b(env)
@@ -277,6 +292,8 @@ SCENARIOS: list[Scenario] = [
     Scenario("e3", "중복: 자동 탐색 + 설정에서 같은 파일", '.opencode/plugins/hello.js + "plugin": ["./.opencode/plugins/hello.js"]', setup_e3, 1),
     Scenario("e4", "중복: 같은 내용, 다른 위치의 파일 2개", ".opencode/plugins/hello.js + plugins/hello.js(설정에서 지정)", setup_e4, 2),
     Scenario("f1", "자동 + 전역 + 설정 모두 켜기", "세 위치에 모두 두기", setup_f1, 3),
+    Scenario("x1", "export 함정: 함수가 아닌 값", "hello.js 에 `export const X = 42` 를 덧붙임 -> 파일 전체가 건너뛰어짐", setup_x1, 0),
+    Scenario("x2", "export 함정: 도우미 함수", "hello.js 에 `export function helper()` 를 덧붙임 -> 로드는 되고 helper 도 플러그인으로 호출됨", setup_x2, 1),
     Scenario("pure", "--pure", "f1 과 같은 구성으로 opencode --pure 실행", setup_f1, 0, extra_args=["--pure"]),
 ]
 
@@ -291,13 +308,7 @@ def short(url: str) -> str:
 
 
 def run_scenario(sc: Scenario, opencode: str, keep: bool = False) -> dict:
-    res = _run_once(sc, opencode, keep)
-    if sc.id == "d3" and not res["loaded"]:
-        # npm 이름 형태는 첫 실행에서 패키지를 내려받는다. Windows 에서 아주 가끔 첫 시도에 0회로 끝나서 한 번 더 시도한다.
-        print("  (npm 설치가 늦어 0회 — 한 번 더 시도합니다)")
-        res = _run_once(sc, opencode, keep)
-        res["retried"] = True
-    return res
+    return _run_once(sc, opencode, keep)
 
 
 def _run_once(sc: Scenario, opencode: str, keep: bool = False) -> dict:

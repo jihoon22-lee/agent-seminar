@@ -9,7 +9,7 @@
 
 ## 실무에서는
 
-- **신규 입사자·신규 팀원 온보딩**: "커밋 규칙 문서를 읽어 오세요" 대신 저장소에 스킬을 넣어 두면, 문서를 읽지 않은 사람도 에이전트에게 메시지를 맡기는 것만으로 규칙을 지킨다.
+- **새로 합류한 팀원 온보딩**: "커밋 규칙 문서를 읽어 오세요" 대신 저장소에 스킬을 넣어 두면, 문서를 읽지 않은 사람도 에이전트에게 메시지를 맡기는 것만으로 규칙을 지킨다.
 - **리뷰어 부담 줄이기**: `fix: 수정`, `update`, `asdf` 같은 메시지를 리뷰 코멘트로 고쳐 달라고 요청하는 일이 줄어든다.
 - **자동화와 연결**: 1행이 `type(scope): 요약` 형식이면 changelog·릴리스 노트 도구, `commitlint` 같은 훅이 그대로 동작한다. 스킬이 만든 메시지를 훅이 한 번 더 검사하는 구성이 흔하다.
 - **이슈 추적**: 브랜치 이름(`fix/42-...`)에서 이슈 번호를 꺼내 `Refs: #42`를 붙이게 하면, 이슈와 커밋의 연결이 사람 손을 거치지 않는다.
@@ -20,6 +20,7 @@
 s1a-commit-message/
 ├── README.md
 ├── check.py                                 자동 검증 (스킬 발견, 형식, 선택적으로 모델 실행)
+├── fake_llm.py                              가짜 LLM 서버. check.py 가 모델 없이 opencode 의 요청을 기록·재현하는 데 씀
 ├── prepare.py                               실습용 git 저장소 sandbox/ 생성
 └── .opencode/skills/commit-message/
     └── SKILL.md                             커밋 규칙 (frontmatter name/description + 본문)
@@ -129,14 +130,14 @@ bce49a9 initial pricing module
 
 ## 직접 바꿔 보기
 
-- `SKILL.md`의 type 표에 `deps`(의존성 갱신)를 추가하고, 정규식에도 같은 값을 넣은 다음 `requirements.txt`를 수정해 스테이징하고 다시 요청해 보자.
+- `sandbox/.opencode/skills/commit-message/SKILL.md`(PowerShell 경로 `sandbox\.opencode\skills\commit-message\SKILL.md`)의 type 표에 `deps`(의존성 갱신)를 추가하고, 정규식에도 같은 값을 넣은 다음 `requirements.txt`를 수정해 스테이징하고 다시 요청해 보자. **예제 폴더의 원본 `.opencode/skills/...`를 고치면 아무것도 바뀌지 않는다.** 데모는 `sandbox/` 안의 사본으로 실행되기 때문이다. 원본을 고쳤다면 `prepare.py`를 다시 실행해 사본을 갱신한다(이때 sandbox/가 새로 만들어지므로 스테이징도 다시 한다).
 - 꼬리말 규칙을 `Refs: #42` 대신 `Closes #42`로 바꾸고, 브랜치 이름을 `git branch -m feature/7-login`으로 바꿔 번호가 따라 바뀌는지 확인해 보자.
-- `description`에서 "커밋 메시지 작성해줘" 같은 문구를 전부 지우고(`팀 규칙` 같은 모호한 말만 남기고) 같은 프롬프트를 던져 보자. 스킬이 로드되는지 실행 기록의 `→ Skill` 줄로 확인하자. description이 왜 중요한지 확인하는 가장 빠른 방법이다.
+- (역시 sandbox 안의 사본에서) `description`에서 "커밋 메시지 작성해줘" 같은 문구를 전부 지우고(`팀 규칙` 같은 모호한 말만 남기고) 같은 프롬프트를 던져 보자. 스킬이 로드되는지 실행 기록의 `→ Skill` 줄로 확인하자. description이 왜 중요한지 확인하는 가장 빠른 방법이다.
 
 ## 주의할 점 / 문제 해결
 
 - **`sandbox/`에서 실행해야 한다.** 이 저장소의 폴더에서 바로 `opencode`를 실행하면 상위의 세미나 저장소(git 루트)가 프로젝트로 잡히고, 스테이징된 변경도 없다. 모델이 "스테이징된 변경이 없습니다"라고 답한다면 위치를 의심하자.
-- **`.opencode/`가 있는 폴더에서 처음 실행하면** opencode가 `.opencode/` 안에 `package.json`, `node_modules/`, `.gitignore`를 자동으로 만든다(`@opencode-ai/plugin` 설치). 패키지 미러나 인터넷에 접근할 수 없으면 첫 시작이 약 70초 멈춘 것처럼 보일 수 있고, 설치에 성공하면 그다음부터는 빠르다. 레지스트리에 닿지 않으면 첫 실행만이 아니라 **시작할 때마다** 이렇게 멈춘다. 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있다.
+- **`.opencode/`가 있는 폴더에서는** opencode가 시작할 때 `@opencode-ai/plugin`을 npm에서 설치하려 시도하고, 성공하면 `.opencode/` 안에 `package.json`, `node_modules/`, `.gitignore`가 생긴다(모두 git에서 제외). 이 예제에는 플러그인(`.opencode/plugins/*.js`)이 없어서, 레지스트리에 닿지 않는 환경에서도 눈에 띄는 멈춤은 없었다(연결을 거부하는 레지스트리로 측정: `opencode debug skill` 약 2초, `opencode run` 약 4초. TUI는 확인하지 못했다). 설치 시도 자체는 일어난다. 같은 환경에서 `.opencode/plugins/*.js`가 있는 폴더(P1~P8 등)는 시작할 때마다 약 70초 멈춘다(새 환경의 맨 처음 시작은 약 130초). 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있다.
 - **`prepare.py`는 몇 번이든 다시 실행해도 된다.** `sandbox/`를 지우고 처음부터 만든다. Windows에서 `sandbox/`를 손으로 지울 때 `.git` 안의 파일이 읽기 전용이라 거부되면 `Remove-Item -Recurse -Force sandbox`를 쓴다.
 - **Linux에서 `python` 명령이 없으면 `python3`로 바꾸세요.** (`check.py`는 어느 쪽이든 동작한다.)
 - **모델이 형식을 어길 때**: 요약이 50자를 넘거나 본문이 빠졌다면, 어긴 출력을 보여 주며 "SKILL.md의 규칙을 다시 읽고 고쳐줘"라고 하면 대개 고친다. 근본적인 해결은 규칙 문장을 더 구체적으로(예시와 함께) 쓰는 것이다.

@@ -148,13 +148,13 @@ tool.execute.after     결과 기록, 후처리
 
 ### P1. 비밀 파일을 읽지 못하게: `tool.execute.before`
 
-`read`, `write`, `edit`의 경로가 `.env`, `.env.*`이면 차단하고, `bash`의 `cat .env`, `Get-Content .env` 같은 우회도 막습니다. 변수 이름은 알아야 일을 하므로 `.env.example`은 허용합니다. Windows 경로(`C:\...\.env`)도 같은 코드로 처리합니다(`path.win32.basename`은 `/`와 `\`를 모두 구분자로 취급). 차단 30가지, 허용 21가지 사례를 `node` 단위 테스트로 고정했습니다.
+`read`, `write`, `edit`의 경로가 `.env`, `.env.*`이면 차단하고, `bash`의 `cat .env`, `Get-Content .env` 같은 우회도 막습니다. 변수 이름은 알아야 일을 하므로 `.env.example`은 허용합니다. Windows 경로(`C:\...\.env`)도 같은 코드로 처리합니다(`path.win32.basename`은 `/`와 `\`를 모두 구분자로 취급). 차단 35가지, 허용 24가지 사례를 `node` 단위 테스트로 고정했습니다. opencode 1.19.5는 기본 권한으로도 `read`의 `*.env`, `*.env.*`를 `ask`로 두므로(`opencode debug agent build`로 확인), 이 플러그인의 몫은 승인 창 없이 처음부터 거절하기, bash 우회 막기, `--auto` 실행에서도 막기입니다.
 
 bash 판정은 `.env` 토큰에 경계를 두고, `cat`, `type`, `Get-Content`, `grep`, `python -c` 같은 "읽는 명령"이 함께 있을 때만 막습니다. 그래서 `os.environ`, `$env:APP_ENV`, `echo .env >> .gitignore`는 통과합니다. `python -c`로 파일 이름을 문자열 조합해서 여는 식의 우회, 심볼릭 링크는 정규식으로 막을 수 없으므로 **방어선의 일부**일 뿐입니다. 진짜 격리가 필요하면 비밀이 없는 환경(컨테이너, 별도 계정)에서 실행하세요.
 
 ### P2. 위험한 명령 차단: 규칙 표를 코드로
 
-`rm -rf /`, `git push --force`, `git reset --hard`, `DROP TABLE` 같은 되돌릴 수 없는 명령을 `bash` 실행 직전에 막습니다. 핵심은 `{ id, pattern, message }`로 이루어진 **규칙 표**입니다. 한 줄을 추가하면 새 위험 명령을 막고, `tests/matcher.test.mjs`에 막아야 하는 것과 막으면 안 되는 것을 함께 적습니다(47가지 차단, 36가지 허용). 옵션 순서(`rm -rf`, `rm -fr`, `rm -r -f`), `;` 뒤의 명령, PowerShell 문법(`Remove-Item -Recurse -Force C:\`)까지 봅니다. `git push --force-with-lease`와 `git clean -n` 같은 안전한 변형은 허용합니다.
+`rm -rf /`, `git push --force`, `git reset --hard`, `DROP TABLE` 같은 되돌릴 수 없는 명령을 `bash` 실행 직전에 막습니다. 핵심은 `{ id, pattern, message }`로 이루어진 **규칙 표**입니다. 한 줄을 추가하면 새 위험 명령을 막고, `tests/matcher.test.mjs`에 막아야 하는 것과 막으면 안 되는 것을 함께 적습니다(55가지 차단, 44가지 허용). 옵션 순서(`rm -rf`, `rm -fr`, `rm -r -f`), `;` 뒤의 명령, PowerShell 문법(`Remove-Item -Recurse -Force C:\`)까지 봅니다. `git push --force-with-lease`와 `git clean -n` 같은 안전한 변형은 허용합니다.
 
 한계도 있습니다. 명령 문자열만 보므로 `psql -f cleanup.sql` 속의 `DROP TABLE`이나 `python -c "shutil.rmtree('/')"`는 못 막고, `git commit -m "rm -rf / 금지"`처럼 따옴표 안의 글자도 막힐 수 있습니다. 정규식 필터는 실수 방지용이지 보안 경계가 아닙니다. 차단 시험을 진짜 `rm -rf /`로 하지 마세요. 플러그인이 로드되지 않았다면 실제로 실행됩니다. `echo`로 문장만 출력하는 방식이 안전합니다.
 

@@ -1,14 +1,14 @@
 ---
 name: workthrough
-description: Automatically document all development work and code modifications in a structured workthrough format. Use this skill after completing any development task, bug fix, feature implementation, or code refactoring to create comprehensive documentation. 작업 기록 문서를 남길 때 사용한다: 사용자가 "workthrough로 기록해줘", "작업 내용 문서화해줘", "변경 작업 정리해줘", "작업 기록 남겨줘", "이 변경 기록해줘" 처럼 요청하거나, 기능 구현·버그 수정·리팩터링을 끝낸 직후.
+description: Document development work and code modifications in a structured workthrough format. Use this skill when the user asks for a work record, or right after completing a development task, bug fix, feature implementation, or code refactoring, to create comprehensive documentation. 작업 기록 문서를 남길 때 사용한다: 사용자가 "workthrough로 기록해줘", "작업 내용 문서화해줘", "변경 작업 정리해줘", "작업 기록 남겨줘", "이 변경 기록해줘" 처럼 요청하거나, 기능 구현·버그 수정·리팩터링을 끝낸 직후.
 license: MIT
 ---
 
-This skill automatically generates detailed workthrough documentation for all development work, capturing the context, changes made, and verification results in a clear, structured format.
+This skill generates detailed workthrough documentation for development work, capturing the context, changes made, and verification results in a clear, structured format.
 
 ## When to Use This Skill
 
-Use this skill automatically after:
+Use this skill when the user asks for a work record, or right after:
 - Implementing new features or functionality
 - Fixing bugs or errors
 - Refactoring code

@@ -92,7 +92,7 @@ def main() -> None:
     log_dir.mkdir(exist_ok=True)
     (log_dir / "app.log").write_text("\n".join(out) + "\n", encoding="utf-8", newline="\n")
     print(f"wrote {log_dir / 'app.log'} ({len(out)} lines)")
-    print("다음: opencode 를 이 폴더에서 실행하고 '[logs/app.log](logs/app.log) 에서 장애 원인을 찾아줘' 라고 요청하세요.")
+    print("다음: opencode 를 이 폴더에서 실행하고 'logs/app.log 에서 장애 원인을 찾아줘' 라고 요청하세요.")
 
 
 if __name__ == "__main__":
