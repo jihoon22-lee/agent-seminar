@@ -1,0 +1,6 @@
+{
+  "api-gateway": {"state": "ok", "note": ""},
+  "payment-api": {"state": "degraded", "note": "결제 승인 지연 조사 중"},
+  "batch-worker": {"state": "ok", "note": ""},
+  "search": {"state": "maintenance", "note": "매주 목요일 02:00 색인 재구성"}
+}

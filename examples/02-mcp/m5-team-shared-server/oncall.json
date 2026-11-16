@@ -1,0 +1,15 @@
+{
+  "platform": [
+    {"from": "2026-11-02", "to": "2026-11-08", "primary": "alice", "secondary": "bob"},
+    {"from": "2026-11-09", "to": "2026-11-15", "primary": "bob", "secondary": "carol"},
+    {"from": "2026-11-16", "to": "2026-11-22", "primary": "carol", "secondary": "alice"},
+    {"from": "2026-11-23", "to": "2026-11-29", "primary": "alice", "secondary": "carol"}
+  ],
+  "payment": [
+    {"from": "2026-11-02", "to": "2026-11-15", "primary": "dana", "secondary": "erin"},
+    {"from": "2026-11-16", "to": "2026-11-29", "primary": "erin", "secondary": "dana"}
+  ],
+  "data": [
+    {"from": "2026-11-02", "to": "2026-11-29", "primary": "frank", "secondary": "bob"}
+  ]
+}
