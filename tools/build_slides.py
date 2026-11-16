@@ -175,7 +175,10 @@ def subset_fonts(page: str, src_dir: Path) -> None:
     chars = set(text) | set(chr(c) for c in range(0x20, 0x7F)) | set("·…“”‘’→←↑↓✓✗⚙•—–")
     FONT_DIR.mkdir(parents=True, exist_ok=True)
     for src, stem, family, weight in FONTS:
-        font = TTFont(src_dir / src)
+        path = src_dir / src
+        if not path.exists():  # plain upstream name, e.g. IBMPlexSansKR-Regular.ttf
+            path = src_dir / src.split("-", 1)[1]
+        font = TTFont(path)
         opts = subset.Options()
         opts.flavor = "woff2"
         opts.layout_features = ["*"]
