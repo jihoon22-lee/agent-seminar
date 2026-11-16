@@ -47,15 +47,15 @@
         <li><strong>git</strong></li>
         <li class="small">모델: 평소 쓰는 모델 그대로. 설정된 모델이 없으면 무료 모델 <code>opencode/big-pickle</code></li>
       </ul>
-      <p class="small muted">인터넷 없이 돌아가도록 만들었습니다. 다만 플러그인 예제는 opencode가 npm 패키지 하나를 자동 설치하므로 npm 레지스트리나 미러가 필요합니다.</p>
+      <p class="small muted">인터넷 없이 돌아가도록 만들었습니다. 다만 <code>.opencode/</code> 폴더가 있는 예제는 처음 실행할 때 opencode가 npm 패키지 하나(<code>@opencode-ai/plugin</code>)를 설치하려 합니다. 레지스트리나 미러가 없으면 첫 시작이 1분쯤 멈췄다가 그대로 진행됩니다. 플러그인 단위 테스트에는 Node가 있으면 좋습니다.</p>
     </div>
     <div>
       <script type="text/x-code" data-lang="powershell" class="term" data-title="PowerShell">
-      PS C:\work> git clone https://github.com/jihoon22-lee/agent-seminar
-      PS C:\work> cd agent-seminar\examples\01-skills\s1a-commit-message
-      PS C:\work> opencode --version
+      PS> git clone https://github.com/jihoon22-lee/agent-seminar
+      PS> cd agent-seminar\examples\01-skills\s1a-commit-message
+      PS> opencode --version
       1.19.5
-      PS C:\work> opencode
+      PS> opencode
       </script>
       <script type="text/x-code" data-lang="bash" class="term" data-title="Linux">
       $ git clone https://github.com/jihoon22-lee/agent-seminar
