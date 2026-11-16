@@ -1,0 +1,11 @@
+{
+  "name": "opencode-hello",
+  "version": "1.0.0",
+  "description": "P8 예제: 로드 방법 비교용 아주 작은 opencode 플러그인",
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js"
+  },
+  "license": "MIT"
+}
