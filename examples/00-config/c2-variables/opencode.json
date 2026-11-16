@@ -1,0 +1,28 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "username": "{env:DEMO_USER}",
+  "mcp": {
+    "env-probe": {
+      "type": "local",
+      "command": ["python", "env_probe_server.py"],
+      "environment": {
+        "DEMO_API_TOKEN": "{env:DEMO_API_TOKEN}",
+        "FILE_TOKEN": "{file:secrets/token.txt}",
+        "GREETING": "{env:DEMO_GREETING}, {env:DEMO_NAME}",
+        "SHELL_STYLE": "${DEMO_API_TOKEN}",
+        "UNSET_VALUE": "{env:DEMO_NOT_SET}",
+        "PLAIN_NOTE": "just-a-literal"
+      },
+      "enabled": true
+    },
+    "remote-demo": {
+      "type": "remote",
+      "url": "http://127.0.0.1:9/mcp",
+      "headers": {
+        "Authorization": "Bearer {env:DEMO_API_TOKEN}",
+        "X-Demo-Label": "plain-header"
+      },
+      "enabled": false
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "username": "team-user",
+  "share": "manual",
+  "instructions": ["team-rules.md"],
+  "mcp": {
+    "layer-team": { "type": "local", "command": ["python", "team.py"], "enabled": false }
+  },
+  "permission": { "bash": { "git status*": "allow" } }
+}

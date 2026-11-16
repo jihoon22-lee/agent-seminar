@@ -1,0 +1,23 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "username": "project-user",
+  "instructions": [
+    "shared-rules.md",
+    "project-rules.md"
+  ],
+  "mcp": {
+    "layer-project": {
+      "type": "local",
+      "command": [
+        "python",
+        "project.py"
+      ],
+      "enabled": false
+    }
+  },
+  "permission": {
+    "bash": {
+      "rm *": "deny"
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "autoupdate": false,
+  "username": "global-user",
+  "share": "disabled",
+  "instructions": [
+    "global-rules.md",
+    "shared-rules.md"
+  ],
+  "mcp": {
+    "layer-global": {
+      "type": "local",
+      "command": [
+        "python",
+        "global.py"
+      ],
+      "enabled": false
+    }
+  },
+  "permission": {
+    "bash": {
+      "*": "ask"
+    },
+    "edit": "ask"
+  }
+}

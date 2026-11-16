@@ -1,0 +1,5 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "username": "c4-test-user",
+  "instructions": ["test-only-rules.md"]
+}
