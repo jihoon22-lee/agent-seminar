@@ -106,6 +106,7 @@ python3 tools/run_checks.py examples --model
 | `N` | 발표자 메모 |
 | `P` | 발표자 창 (메모, 다음 슬라이드, 타이머) |
 | `F` | 전체 화면 |
+| `S` | 짧은 버전: 오른쪽 위에 "심화"라고 표시된 슬라이드를 건너뛰며 넘김 (60분 발표용) |
 
 브라우저의 인쇄(PDF로 저장)를 쓰면 한 장에 슬라이드 하나씩 출력됩니다.
 슬라이드 원본은 `slides/src/`에 있고, `python tools/build_slides.py`가 `slides/index.html`을 만듭니다.

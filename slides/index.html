@@ -645,7 +645,7 @@ PS&gt; opencode</code></pre></figure>
   </aside>
 </section>
 
-<section class="slide" data-chapter="config" data-title="합쳐지는 방식">
+<section class="slide" data-optional data-chapter="config" data-title="합쳐지는 방식">
   <h2>키 종류마다 합쳐지는 방식이 다릅니다</h2>
   <div class="cols c46">
     <div>
@@ -777,7 +777,7 @@ subprocess.run([<span class="t-str">"opencode"</span>, *args], env=env, cwd=proj
   </aside>
 </section>
 
-<section class="slide" data-chapter="config" data-title="안전하게 실험하기">
+<section class="slide" data-optional data-chapter="config" data-title="안전하게 실험하기">
   <h2>내 설정을 망치지 않고 실험하는 법</h2>
   <div class="cols c46">
     <div>
@@ -1003,7 +1003,7 @@ Refs: #42</code></pre></figure>
   </aside>
 </section>
 
-<section class="slide" data-chapter="skill" data-title="S1b 코드 리뷰">
+<section class="slide" data-optional data-chapter="skill" data-title="S1b 코드 리뷰">
   <h2><span class="tag skill">S1b</span>리뷰 기준을 팀 전체가 같이 쓰기</h2>
   <div class="cols c37">
     <div>
@@ -1026,7 +1026,7 @@ Refs: #42</code></pre></figure>
   <aside class="notes"><p>"결제 전에 커밋" 결함은 일부러 심지 않았는데 모델이 찾았습니다. 체크리스트가 시야를 넓혀 준 예입니다.</p></aside>
 </section>
 
-<section class="slide" data-chapter="skill" data-title="S1c 장애 회고">
+<section class="slide" data-optional data-chapter="skill" data-title="S1c 장애 회고">
   <h2><span class="tag skill">S1c</span>장애 회고: 물어보며 쓰거나, 메모로 쓰거나</h2>
   <div class="cols">
     <div>
@@ -1090,7 +1090,7 @@ PS&gt; opencode run <span class="t-str">"스테이징된 변경으로 커밋 메
   <aside class="notes"><p>이 예제의 실제 모델 확인은 무료 모델 한도 때문에 마치지 못했습니다. 가짜 모델로 opencode가 스킬 본문과 파일 목록을 전달하는 것까지는 확인했습니다.</p></aside>
 </section>
 
-<section class="slide" data-chapter="skill" data-title="S2a 실사용 스킬 옮기기">
+<section class="slide" data-optional data-chapter="skill" data-title="S2a 실사용 스킬 옮기기">
   <h2><span class="tag skill">S2a</span>실제로 쓰던 스킬을 opencode로 옮기며 바꾼 것</h2>
   <div class="cols c46">
     <div>
@@ -1116,7 +1116,7 @@ PS&gt; opencode run <span class="t-str">"스테이징된 변경으로 커밋 메
   <aside class="notes"><p>"자동으로 실행된다"는 착각이 흔합니다. 매번 꼭 일어나야 한다면 그건 스킬이 아니라 플러그인의 일입니다.</p></aside>
 </section>
 
-<section class="slide" data-chapter="skill" data-title="S2c ADR">
+<section class="slide" data-optional data-chapter="skill" data-title="S2c ADR">
   <h2><span class="tag skill">S2c</span>템플릿과 예시로 결과물 모양 고정하기</h2>
   <div class="cols">
     <div>
@@ -1205,7 +1205,7 @@ $ python3 /…/summarize_log.py logs/app.log
   </aside>
 </section>
 
-<section class="slide" data-chapter="skill" data-title="S3b 릴리스 노트">
+<section class="slide" data-optional data-chapter="skill" data-title="S3b 릴리스 노트">
   <h2><span class="tag skill">S3b</span>분류는 스크립트가, 문장은 모델이</h2>
   <div class="cols c46">
     <div>
@@ -1234,7 +1234,7 @@ $ python3 /…/summarize_log.py logs/app.log
   <aside class="notes"><p>"규칙대로 분류하기"는 코드가 훨씬 잘합니다. 모델에게 git log 원문 수백 줄을 주고 분류까지 시키면 빠뜨리거나 섞습니다. 모델이 잘하는 부분, 즉 사용자 관점의 문장으로 바꾸는 일만 남기는 것이 요령입니다.</p></aside>
 </section>
 
-<section class="slide" data-chapter="skill" data-title="S3c 비밀값 검사">
+<section class="slide" data-optional data-chapter="skill" data-title="S3c 비밀값 검사">
   <h2><span class="tag skill">S3c</span>커밋 전에 비밀값이 섞였는지 검사</h2>
   <div class="cols c64">
     <figure class="code term sm" data-lang="text"><figcaption>scan_secrets.py --changed (실제, 일부)</figcaption><pre><code>.env:1:known-token-prefix: API_KEY=sk-***(43 chars)
@@ -1257,7 +1257,7 @@ exit=1</code></pre></figure>
   <aside class="notes"><p>패턴 검사를 모델에게 맡기면 매번 결과가 달라집니다. 검사는 스크립트가 결정적으로 하고, 모델은 결과를 읽고 "이건 진짜 키, 이건 오탐 같다, 이렇게 고치자"를 설명합니다.</p></aside>
 </section>
 
-<section class="slide" data-chapter="skill" data-title="S4a HTML 리포트">
+<section class="slide" data-optional data-chapter="skill" data-title="S4a HTML 리포트">
   <h2><span class="tag skill">S4a</span>CSV를 브라우저로 여는 리포트로</h2>
   <div class="cols c46">
     <div>
@@ -1282,7 +1282,7 @@ biggest_mom_decrease: 2025-12 -8.7%
   <aside class="notes"><p>모델에게 HTML과 차트를 매번 새로 짜게 하면 모양이 매번 다르고 숫자도 틀릴 수 있습니다. 양식과 계산은 스크립트에 고정하고, 모델은 "부산은 7~9월에 빠졌다가 회복했다" 같은 해석만 씁니다.</p></aside>
 </section>
 
-<section class="slide" data-chapter="skill" data-title="S4b 구조 다이어그램">
+<section class="slide" data-optional data-chapter="skill" data-title="S4b 구조 다이어그램">
   <h2><span class="tag skill">S4b</span>코드 구조를 Mermaid 다이어그램으로</h2>
   <div class="cols c46">
     <div>
@@ -1423,7 +1423,7 @@ PS&gt; opencode
   </aside>
 </section>
 
-<section class="slide" data-chapter="skill" data-title="S5c 범위와 공유">
+<section class="slide" data-optional data-chapter="skill" data-title="S5c 범위와 공유">
   <h2><span class="tag skill">S5c</span>팀에 스킬을 나눠 주는 방법과 함정</h2>
   <div class="cols">
     <div>
@@ -1803,7 +1803,7 @@ severity별 건수 (합계 12건)
   </aside>
 </section>
 
-<section class="slide demo" data-chapter="mcp" data-title="데모: M6">
+<section class="slide demo" data-optional data-chapter="mcp" data-title="데모: M6">
   <div class="demo-mark">데모</div>
   <h2>가상 티켓 DB에 질문하기</h2>
   <div class="cols c64">
@@ -1823,7 +1823,7 @@ PS&gt; opencode run <span class="t-str">"지난주 payment 서비스 장애 티�
   <aside class="notes"><p>무료 모델 한도 때문에 이 질문을 실제 모델로 끝까지 확인하지는 못했습니다. 도구 결과는 README에 실제 출력으로 있습니다. 발표 전에 발표용 PC에서 한 번 돌려 보세요.</p></aside>
 </section>
 
-<section class="slide" data-chapter="mcp" data-title="M7 resources와 prompts">
+<section class="slide" data-optional data-chapter="mcp" data-title="M7 resources와 prompts">
   <h2><span class="tag mcp">M7</span>도구 말고도: resources와 prompts</h2>
   <div class="cols">
     <div>
@@ -1894,7 +1894,7 @@ PS&gt; opencode run <span class="t-str">"지난주 payment 서비스 장애 티�
   </aside>
 </section>
 
-<section class="slide" data-chapter="mcp" data-title="M9 고장 갤러리">
+<section class="slide" data-optional data-chapter="mcp" data-title="M9 고장 갤러리">
   <h2><span class="tag mcp">M9</span>MCP 서버가 안 붙을 때: 흔한 고장 네 가지</h2>
   <table class="compact">
     <tr><th class="mcp">고장</th><th class="mcp">보이는 증상</th><th class="mcp">원인과 처방</th></tr>
@@ -2134,7 +2134,7 @@ PS&gt; opencode                    # TUI에서 <span class="t-str">"cat .env 로
   <aside class="notes"><p>"에이전트가 어젯밤에 뭘 했지?"에 답할 수 있어야 팀에서 안심하고 맡깁니다. 감사 로그는 모델과 상관없이 항상 남아야 하므로 플러그인의 일입니다.</p></aside>
 </section>
 
-<section class="slide" data-chapter="plugin" data-title="P4 알림">
+<section class="slide" data-optional data-chapter="plugin" data-title="P4 알림">
   <h2><span class="tag plugin">P4</span>작업이 끝나거나 승인이 필요할 때 알림</h2>
   <div class="cols">
     <div>
@@ -2159,7 +2159,7 @@ PS&gt; opencode                    # TUI에서 <span class="t-str">"cat .env 로
   <aside class="notes"><p>모든 이벤트 이름을 파일로 남기는 진단 모드가 예제에 있습니다. 새 버전에서 이벤트 이름이 바뀌면 그걸로 확인하세요.</p></aside>
 </section>
 
-<section class="slide" data-chapter="plugin" data-title="P5 셸 환경 주입">
+<section class="slide" data-optional data-chapter="plugin" data-title="P5 셸 환경 주입">
   <h2><span class="tag plugin">P5</span>에이전트의 셸에만 환경 변수 넣기</h2>
   <div class="cols c64">
     <figure class="code sm" data-lang="js"><figcaption>.opencode/plugins/shell-env.js (일부)</figcaption><pre><code><span class="t-kw">export</span> <span class="t-kw">const</span> ShellEnv = <span class="t-kw">async</span> ({ directory }) =&gt; {
@@ -2189,7 +2189,7 @@ PS&gt; opencode                    # TUI에서 <span class="t-str">"cat .env 로
   <aside class="notes"><p>"내 PC에서는 되는데 에이전트가 돌리면 프록시 때문에 안 된다" 같은 문제를 팀 단위로 없애는 용도입니다.</p></aside>
 </section>
 
-<section class="slide" data-chapter="plugin" data-title="P7 압축 훅">
+<section class="slide" data-optional data-chapter="plugin" data-title="P7 압축 훅">
   <h2><span class="tag plugin">P7</span>대화가 압축돼도 잊으면 안 되는 것</h2>
   <div class="cols c46">
     <div>
@@ -2512,7 +2512,7 @@ PS&gt; python tools\run_checks.py examples <span class="t-flag">--model</span>  
   <aside class="notes"><p>예상 질문: 다른 에이전트에서도 되나요? 스킬(SKILL.md)과 MCP는 여러 에이전트가 같은 형식을 읽습니다. 플러그인과 opencode.json은 opencode 전용입니다. 오늘 예제는 모두 opencode 1.19.5에서 확인했습니다.</p></aside>
 </section>
 
-<section class="slide divider" data-chapter="appendix" data-title="부록">
+<section class="slide divider" data-optional data-chapter="appendix" data-title="부록">
   <div class="cols c46 center">
     <div>
       <div class="num">+</div>
@@ -2575,7 +2575,7 @@ PS&gt; python tools\run_checks.py examples <span class="t-flag">--model</span>  
   <aside class="notes"><p>발표에서는 넘어가고, 질문이 나오면 이 장을 엽니다.</p></aside>
 </section>
 
-<section class="slide" data-chapter="appendix" data-title="문제 해결 표">
+<section class="slide" data-optional data-chapter="appendix" data-title="문제 해결 표">
   <h2>이럴 때는 이것부터</h2>
   <table class="compact">
     <tr><th>증상</th><th>원인</th><th>확인과 해결</th></tr>
@@ -2593,7 +2593,7 @@ PS&gt; python tools\run_checks.py examples <span class="t-flag">--model</span>  
   <aside class="notes"><p>표의 모든 줄은 예제를 만들면서 실제로 겪은 것입니다. 자세한 설명은 가이드 문서와 각 예제 README의 "주의할 점"에 있습니다.</p></aside>
 </section>
 
-<section class="slide" data-chapter="appendix" data-title="확인 명령 모음">
+<section class="slide" data-optional data-chapter="appendix" data-title="확인 명령 모음">
   <h2>모델 없이 확인하는 명령</h2>
   <table class="compact">
     <tr><th class="config">명령</th><th class="config">보여 주는 것</th></tr>
@@ -2608,7 +2608,7 @@ PS&gt; python tools\run_checks.py examples <span class="t-flag">--model</span>  
   <aside class="notes"><p>문제가 생기면 모델을 의심하기 전에 이 명령들로 설정이 의도대로 합쳐졌는지부터 봅니다. 대부분 여기서 원인이 보입니다.</p></aside>
 </section>
 
-<section class="slide" data-chapter="appendix" data-title="버전 차이 주의">
+<section class="slide" data-optional data-chapter="appendix" data-title="버전 차이 주의">
   <h2>문서를 볼 때: 버전을 먼저 확인하세요</h2>
   <div class="cols">
     <div>
@@ -2628,7 +2628,7 @@ PS&gt; python tools\run_checks.py examples <span class="t-flag">--model</span>  
   <aside class="notes"><p>자동 업데이트가 켜져 있으면 어느 날 갑자기 형식이 바뀝니다. 팀에서 쓸 때는 버전을 맞춰 두는 것을 권합니다.</p></aside>
 </section>
 
-<section class="slide" data-chapter="appendix" data-title="참고 자료">
+<section class="slide" data-optional data-chapter="appendix" data-title="참고 자료">
   <h2>참고 자료</h2>
   <div class="cols">
     <ul class="small">

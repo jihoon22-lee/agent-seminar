@@ -1,6 +1,7 @@
 /* agent-seminar deck engine — no dependencies.
  * Keys: → ↓ Space PgDn next · ← ↑ PgUp previous · Home/End · number+Enter jump
- *       O overview · N notes · P presenter window · F fullscreen · ? help · Esc close
+ *       O overview · N notes · P presenter window · F fullscreen · S short version · ? help · Esc close
+ * Slides marked data-optional ("심화") are skipped by next/prev while the short version is on.
  */
 (function () {
   "use strict";
@@ -25,6 +26,12 @@
     no.className = "pageno";
     no.textContent = `${i + 1} / ${total}`;
     s.appendChild(no);
+    if (s.dataset.optional !== undefined) {
+      const deep = document.createElement("div");
+      deep.className = "depth-tag";
+      deep.textContent = "심화";
+      s.appendChild(deep);
+    }
     const ch = s.dataset.chapter;
     if (ch && !s.classList.contains("title") && !s.classList.contains("divider") && !s.querySelector(".chapter-tag")) {
       const tag = document.createElement("div");
@@ -42,6 +49,7 @@
     <div><kbd>→</kbd><kbd>Space</kbd>다음 &nbsp; <kbd>←</kbd>이전 &nbsp; <kbd>Home</kbd><kbd>End</kbd>처음 / 끝</div>
     <div><kbd>숫자</kbd><kbd>Enter</kbd>해당 쪽으로 이동</div>
     <div><kbd>O</kbd>전체 보기 &nbsp; <kbd>N</kbd>발표자 메모 &nbsp; <kbd>P</kbd>발표자 창 &nbsp; <kbd>F</kbd>전체 화면</div>
+    <div><kbd>S</kbd>짧은 버전(60분 발표용): "심화" 표시 슬라이드를 건너뛰며 넘기기</div>
     <div><kbd>Ctrl</kbd><kbd>P</kbd>인쇄(PDF 저장: 배경 그래픽 켜기)</div>
     <div><kbd>Esc</kbd>닫기 &nbsp; <kbd>?</kbd>이 도움말</div></div>`;
   document.body.append(progress, notesPanel, jumpBox, help);
@@ -93,15 +101,38 @@
     if (isPresenter) renderPresenter();
   }
 
+  // Short version: shared through localStorage so the presenter window follows the same path.
+  const SHORT_KEY = "agent-seminar-short";
+  if (params.has("short")) try { localStorage.setItem(SHORT_KEY, "1"); } catch (e) { /* storage blocked */ }
+  function shortMode() {
+    try { return localStorage.getItem(SHORT_KEY) === "1"; } catch (e) { return params.has("short"); }
+  }
+  function neighbour(from, dir) {
+    let j = from + dir;
+    if (shortMode()) while (j >= 0 && j < total && slides[j].dataset.optional !== undefined) j += dir;
+    return j < 0 || j >= total ? from : j;
+  }
+  function toggleShort() {
+    const on = !shortMode();
+    try { localStorage.setItem(SHORT_KEY, on ? "1" : "0"); } catch (e) { /* storage blocked */ }
+    document.body.classList.toggle("short-mode", on);
+    const skipped = slides.filter((s) => s.dataset.optional !== undefined).length;
+    jumpBox.textContent = on ? `짧은 버전: 심화 ${skipped}장 건너뜀` : "전체 버전";
+    jumpBox.style.display = "block";
+    clearTimeout(jumpTimer); jumpTimer = setTimeout(() => { jumpBox.style.display = "none"; }, 2500);
+    if (isPresenter) renderPresenter();
+  }
+  document.body.classList.toggle("short-mode", shortMode());
+
   function next() {
     const hidden = stepsOf(slides[index]).filter((s) => !s.classList.contains("shown"));
     if (hidden.length) { hidden[0].classList.add("shown"); syncSteps(); return; }
-    if (index < total - 1) show(index + 1);
+    if (index < total - 1) show(neighbour(index, 1));
   }
   function prev() {
     const shown = stepsOf(slides[index]).filter((s) => s.classList.contains("shown"));
     if (shown.length) { shown[shown.length - 1].classList.remove("shown"); syncSteps(); return; }
-    if (index > 0) show(index - 1, { allSteps: true });
+    if (index > 0) show(neighbour(index, -1), { allSteps: true });
   }
   function syncSteps() {
     if (!channel) return;
@@ -176,8 +207,9 @@
   function renderPresenter() {
     if (!pv) return;
     frameInto(pv.querySelector(".pv-current"), slides[index]);
-    frameInto(pv.querySelector(".pv-next"), slides[index + 1]);
-    pv.querySelector(".pv-count").textContent = `${index + 1} / ${total}`;
+    frameInto(pv.querySelector(".pv-next"), index < total - 1 ? slides[neighbour(index, 1)] : undefined);
+    const deep = slides[index].dataset.optional !== undefined ? " · 심화" : "";
+    pv.querySelector(".pv-count").textContent = `${index + 1} / ${total}${deep}${shortMode() ? " · 짧은 버전" : ""}`;
     const notes = slides[index].querySelector("aside.notes");
     pv.querySelector(".pv-notes").innerHTML = notes ? notes.innerHTML : "<p>(메모 없음)</p>";
     if (!startedAt) startedAt = Date.now();
@@ -206,6 +238,7 @@
       case "f": case "F":
         if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen?.();
         break;
+      case "s": case "S": toggleShort(); break;
       case "?": document.body.classList.toggle("show-help"); break;
       case "Escape": toggleOverview(false); document.body.classList.remove("show-help"); break;
       default: return;
