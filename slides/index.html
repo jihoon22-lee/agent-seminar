@@ -627,7 +627,7 @@ PS&gt; opencode</code></pre></figure>
     <div class="arrow">›</div>
     <div class="node config"><b>④ 프로젝트</b><code>.opencode/</code><br><code>opencode.json</code></div>
     <div class="arrow">›</div>
-    <div class="node config fill"><b>⑤ OPENCODE_CONFIG_CONTENT</b>환경 변수 속 JSON</div>
+    <div class="node config fill"><b>⑤ OPENCODE_CONFIG_<wbr>CONTENT</b>환경 변수 속 JSON</div>
   </div>
   <div class="cols">
     <ul>
@@ -2009,7 +2009,7 @@ PS&gt; opencode run <span class="t-str">"지난주 payment 서비스 장애 티�
 <section class="slide" data-chapter="plugin" data-title="훅이 불리는 순서">
   <h2>bash 명령 하나가 실행될 때 훅이 불리는 순서</h2>
   <div class="flow" style="margin:10px 0 34px">
-    <div class="node plugin fill"><b>tool.execute.before</b>검사, 인자 수정, 차단</div>
+    <div class="node plugin fill"><b>tool.execute.<wbr>before</b>검사, 인자 수정, 차단</div>
     <div class="arrow">›</div>
     <div class="node config"><b>permission</b><code>ask</code>면 사용자에게 묻는다<br><span class="tiny muted">이벤트 <code>permission.asked</code></span></div>
     <div class="arrow">›</div>
@@ -2017,7 +2017,7 @@ PS&gt; opencode run <span class="t-str">"지난주 payment 서비스 장애 티�
     <div class="arrow">›</div>
     <div class="node"><b>명령 실행</b></div>
     <div class="arrow">›</div>
-    <div class="node plugin fill"><b>tool.execute.after</b>결과 기록, 후처리</div>
+    <div class="node plugin fill"><b>tool.execute.<wbr>after</b>결과 기록, 후처리</div>
   </div>
   <table class="compact">
     <tr><th class="plugin">도구</th><th class="plugin"><code>output.args</code>의 키 (1.19.5 관찰)</th></tr>
@@ -2025,6 +2025,7 @@ PS&gt; opencode run <span class="t-str">"지난주 payment 서비스 장애 티�
     <tr><td><code>read</code></td><td><code>filePath</code></td></tr>
     <tr><td><code>write</code> / <code>edit</code></td><td><code>filePath</code>, <code>content</code> / <code>filePath</code>, <code>oldString</code>, <code>newString</code></td></tr>
   </table>
+  <div class="callout small" style="margin-top:26px"><p><code>before</code>에서 예외를 던지면 권한 확인까지 가지 않고 끝납니다. 사용자에게 묻지도 않고, <code>--auto</code>로 실행해도 막힙니다. 반대로 <code>after</code>는 이미 실행된 뒤라 막을 수 없습니다. 기록과 후처리만 합니다.</p></div>
   <aside class="notes">
     <p>before가 권한 확인보다 먼저입니다. 그래서 플러그인이 막으면 사용자에게 묻지도 않고 끝납니다. --auto로 실행해도 플러그인의 차단은 그대로입니다.</p>
   </aside>
