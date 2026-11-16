@@ -20,6 +20,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 
@@ -175,6 +176,20 @@ def call_experiment(opencode, server, tool, args, times=2, env=None, cwd=HERE):
     return screen, results
 
 
+# --- 격리: 내 opencode 설정·세션 기록과 섞이지 않게 -------------------------------------------------
+def isolated_env(root):
+    """opencode 가 쓰는 설정·데이터·캐시 폴더를 임시 폴더로 돌린 환경 변수를 만든다.
+    내 전역 MCP 서버가 함께 뜨거나, 가짜 모델 실행 기록이 내 세션 목록에 남지 않는다."""
+    env = {k: v for k, v in os.environ.items() if not k.startswith("OPENCODE_CONFIG")}
+    for name in ("CONFIG", "DATA", "CACHE", "STATE"):
+        path = pathlib.Path(root) / name.lower()
+        path.mkdir(parents=True, exist_ok=True)
+        env[f"XDG_{name}_HOME"] = str(path)
+    env["OPENCODE_DISABLE_AUTOUPDATE"] = "1"
+    env["OPENCODE_DISABLE_EXTERNAL_SKILLS"] = "1"
+    return env
+
+
 # --- 4. 로그 위치 ---------------------------------------------------------------------------------
 def log_dir(opencode, env=None):
     proc = subprocess.run([opencode, "debug", "paths"], capture_output=True, env=env or os.environ, stdin=subprocess.DEVNULL)
@@ -213,8 +228,17 @@ def main():
     print(f"플랫폼 {platform.system()} / Python {platform.python_version()} / opencode {version}")
     print(f"stdout 인코딩 기본값(이 Python): {sys.stdout.encoding}  PYTHONUTF8={os.environ.get('PYTHONUTF8')}\n")
 
+    sandbox = tempfile.mkdtemp(prefix="m9-demo-")
+    try:
+        run(opencode, config, args, isolated_env(sandbox))
+    finally:
+        shutil.rmtree(sandbox, ignore_errors=True)
+
+
+def run(opencode, config, args, env):
+    print("(opencode 는 임시 폴더로 격리해서 실행합니다. 내 설정과 세션 기록은 그대로입니다.)\n")
     print("== 1. opencode mcp list (서버 6개를 한 번에 연결해 본다)")
-    listed = mcp_list(opencode)
+    listed = mcp_list(opencode, env=env)
     for name in config:
         info = listed.get(name, {"status": "?", "reason": ""})
         print(f"  {name:<16} {info['status']:<10} {info['reason']}")
@@ -233,7 +257,7 @@ def main():
     for server, tool, arg, times in (("broken_encoding", "greet", {"name": KOREAN_NAME}, 1),
                                      ("crash_on_call", "greet", {"name": KOREAN_NAME}, 2),
                                      ("fixed_server", "greet", {"name": "boom"}, 2)):
-        screen, results = call_experiment(opencode, server, tool, arg, times=times)
+        screen, results = call_experiment(opencode, server, tool, arg, times=times, env=env)
         print(f"  [{server}] 사용자 화면:")
         for line in screen.splitlines():
             if line.startswith(("✗", "⚙", "Error")):
@@ -251,7 +275,7 @@ def main():
 
     print("== 5. 로그는 어디에?")
     d = log_dir(opencode)
-    print(f"  opencode 로그 폴더: {d}")
+    print(f"  opencode 로그 폴더(평소 실행할 때): {d}")
     print("  이번 실행의 로그를 화면으로: opencode run --print-logs --log-level DEBUG \"...\"")
     print("  MCP 서버 자신의 stderr(트레이스백)는 opencode 로그에 남지 않는다 → 서버를 직접 실행해서 보라 (위 probe 가 하는 일)")
 

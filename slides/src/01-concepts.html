@@ -117,23 +117,27 @@
       <li>모델이 대화 중에 도구를 고른다</li>
       <li>opencode가 <code>tools/call</code>로 호출하고 결과를 모델에게 준다</li>
     </ol>
-    <script type="text/x-code" data-lang="json" class="term sm" data-title="실제 주고받은 메시지 (m1-stdio-minimal)">
-    → {"jsonrpc":"2.0","id":1,"method":"initialize","params":{...}}
-    ← {"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"…",
-        "capabilities":{"tools":{}},"serverInfo":{"name":"glossary"}}}
-    → {"jsonrpc":"2.0","method":"notifications/initialized"}
-    → {"jsonrpc":"2.0","id":2,"method":"tools/list"}
-    ← {"jsonrpc":"2.0","id":2,"result":{"tools":[{"name":"lookup_term",
-        "description":"팀 용어 사전에서 용어의 뜻을 찾는다", ...}]}}
-    → {"jsonrpc":"2.0","id":3,"method":"tools/call",
-       "params":{"name":"lookup_term","arguments":{"term":"MCP"}}}
-    ← {"jsonrpc":"2.0","id":3,"result":{"content":[{"type":"text",
-        "text":"Model Context Protocol ..."}]}}
+    <script type="text/x-code" data-lang="json" class="term sm" data-title="python raw_session.py 의 실제 출력 (줄임)">
+    >> {"id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18",…}}
+    << {"id":1,"result":{"protocolVersion":"2025-06-18",
+          "capabilities":{"tools":{}},"serverInfo":{"name":"glossary-m1",…}}}
+    >> {"method":"notifications/initialized"}          (답장 없음)
+    >> {"id":2,"method":"tools/list"}
+    << {"id":2,"result":{"tools":[{"name":"lookup_term",
+          "description":"팀 용어집에서 용어 하나의 뜻을 찾는다. ADR, SLO,
+            롤백, 카나리 배포 같은 팀 내부 용어의 정의가 필요할 때 사용한다.…",
+          "inputSchema":{…"required":["term"]}}, {"name":"list_terms",…}]}}
+    >> {"id":3,"method":"tools/call",
+        "params":{"name":"lookup_term","arguments":{"term":"ADR"}}}
+    << {"id":3,"result":{"content":[{"type":"text","text":"ADR: 중요한 설계
+          결정을 배경, 선택지, 결과와 함께 짧은 문서 한 장으로 남기는 방식.…"}],
+          "isError":false}}
     </script>
   </div>
   <div class="ref">examples/02-mcp/m1-stdio-minimal</div>
   <aside class="notes">
     <p>SDK 없이 표준 라이브러리만으로 서버를 만들 수 있다는 것을 MCP 장에서 직접 보여 드립니다. 마법이 아니라 메시지 형식에 대한 약속이라는 점을 기억해 주세요.</p>
+    <p>모든 메시지에 "jsonrpc":"2.0"이 붙는데 화면에서는 줄였습니다. raw_session.py는 opencode 없이 서버를 직접 띄워 이 대화를 재현합니다. opencode 1.19.5는 initialize에서 2025-11-25 버전을 보냅니다.</p>
   </aside>
 </section>
 

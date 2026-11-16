@@ -385,21 +385,25 @@ PS&gt; opencode</code></pre></figure>
       <li>모델이 대화 중에 도구를 고른다</li>
       <li>opencode가 <code>tools/call</code>로 호출하고 결과를 모델에게 준다</li>
     </ol>
-    <figure class="code term sm" data-lang="json"><figcaption>실제 주고받은 메시지 (m1-stdio-minimal)</figcaption><pre><code>→ {<span class="t-key">"jsonrpc"</span>:<span class="t-str">"2.0"</span>,<span class="t-key">"id"</span>:<span class="t-num">1</span>,<span class="t-key">"method"</span>:<span class="t-str">"initialize"</span>,<span class="t-key">"params"</span>:{...}}
-← {<span class="t-key">"jsonrpc"</span>:<span class="t-str">"2.0"</span>,<span class="t-key">"id"</span>:<span class="t-num">1</span>,<span class="t-key">"result"</span>:{<span class="t-key">"protocolVersion"</span>:<span class="t-str">"…"</span>,
-    <span class="t-key">"capabilities"</span>:{<span class="t-key">"tools"</span>:{}},<span class="t-key">"serverInfo"</span>:{<span class="t-key">"name"</span>:<span class="t-str">"glossary"</span>}}}
-→ {<span class="t-key">"jsonrpc"</span>:<span class="t-str">"2.0"</span>,<span class="t-key">"method"</span>:<span class="t-str">"notifications/initialized"</span>}
-→ {<span class="t-key">"jsonrpc"</span>:<span class="t-str">"2.0"</span>,<span class="t-key">"id"</span>:<span class="t-num">2</span>,<span class="t-key">"method"</span>:<span class="t-str">"tools/list"</span>}
-← {<span class="t-key">"jsonrpc"</span>:<span class="t-str">"2.0"</span>,<span class="t-key">"id"</span>:<span class="t-num">2</span>,<span class="t-key">"result"</span>:{<span class="t-key">"tools"</span>:[{<span class="t-key">"name"</span>:<span class="t-str">"lookup_term"</span>,
-    <span class="t-key">"description"</span>:<span class="t-str">"팀 용어 사전에서 용어의 뜻을 찾는다"</span>, ...}]}}
-→ {<span class="t-key">"jsonrpc"</span>:<span class="t-str">"2.0"</span>,<span class="t-key">"id"</span>:<span class="t-num">3</span>,<span class="t-key">"method"</span>:<span class="t-str">"tools/call"</span>,
-   <span class="t-key">"params"</span>:{<span class="t-key">"name"</span>:<span class="t-str">"lookup_term"</span>,<span class="t-key">"arguments"</span>:{<span class="t-key">"term"</span>:<span class="t-str">"MCP"</span>}}}
-← {<span class="t-key">"jsonrpc"</span>:<span class="t-str">"2.0"</span>,<span class="t-key">"id"</span>:<span class="t-num">3</span>,<span class="t-key">"result"</span>:{<span class="t-key">"content"</span>:[{<span class="t-key">"type"</span>:<span class="t-str">"text"</span>,
-    <span class="t-key">"text"</span>:<span class="t-str">"Model Context Protocol ..."</span>}]}}</code></pre></figure>
+    <figure class="code term sm" data-lang="json"><figcaption>python raw_session.py 의 실제 출력 (줄임)</figcaption><pre><code>&gt;&gt; {<span class="t-key">"id"</span>:<span class="t-num">1</span>,<span class="t-key">"method"</span>:<span class="t-str">"initialize"</span>,<span class="t-key">"params"</span>:{<span class="t-key">"protocolVersion"</span>:<span class="t-str">"2025-06-18"</span>,…}}
+&lt;&lt; {<span class="t-key">"id"</span>:<span class="t-num">1</span>,<span class="t-key">"result"</span>:{<span class="t-key">"protocolVersion"</span>:<span class="t-str">"2025-06-18"</span>,
+      <span class="t-key">"capabilities"</span>:{<span class="t-key">"tools"</span>:{}},<span class="t-key">"serverInfo"</span>:{<span class="t-key">"name"</span>:<span class="t-str">"glossary-m1"</span>,…}}}
+&gt;&gt; {<span class="t-key">"method"</span>:<span class="t-str">"notifications/initialized"</span>}          (답장 없음)
+&gt;&gt; {<span class="t-key">"id"</span>:<span class="t-num">2</span>,<span class="t-key">"method"</span>:<span class="t-str">"tools/list"</span>}
+&lt;&lt; {<span class="t-key">"id"</span>:<span class="t-num">2</span>,<span class="t-key">"result"</span>:{<span class="t-key">"tools"</span>:[{<span class="t-key">"name"</span>:<span class="t-str">"lookup_term"</span>,
+      <span class="t-key">"description"</span>:<span class="t-str">"팀 용어집에서 용어 하나의 뜻을 찾는다. ADR, SLO,
+        롤백, 카나리 배포 같은 팀 내부 용어의 정의가 필요할 때 사용한다.…"</span>,
+      <span class="t-key">"inputSchema"</span>:{…<span class="t-key">"required"</span>:[<span class="t-str">"term"</span>]}}, {<span class="t-key">"name"</span>:<span class="t-str">"list_terms"</span>,…}]}}
+&gt;&gt; {<span class="t-key">"id"</span>:<span class="t-num">3</span>,<span class="t-key">"method"</span>:<span class="t-str">"tools/call"</span>,
+    <span class="t-key">"params"</span>:{<span class="t-key">"name"</span>:<span class="t-str">"lookup_term"</span>,<span class="t-key">"arguments"</span>:{<span class="t-key">"term"</span>:<span class="t-str">"ADR"</span>}}}
+&lt;&lt; {<span class="t-key">"id"</span>:<span class="t-num">3</span>,<span class="t-key">"result"</span>:{<span class="t-key">"content"</span>:[{<span class="t-key">"type"</span>:<span class="t-str">"text"</span>,<span class="t-key">"text"</span>:<span class="t-str">"ADR: 중요한 설계
+      결정을 배경, 선택지, 결과와 함께 짧은 문서 한 장으로 남기는 방식.…"</span>}],
+      <span class="t-key">"isError"</span>:<span class="t-kw">false</span>}}</code></pre></figure>
   </div>
   <div class="ref">examples/02-mcp/m1-stdio-minimal</div>
   <aside class="notes">
     <p>SDK 없이 표준 라이브러리만으로 서버를 만들 수 있다는 것을 MCP 장에서 직접 보여 드립니다. 마법이 아니라 메시지 형식에 대한 약속이라는 점을 기억해 주세요.</p>
+    <p>모든 메시지에 "jsonrpc":"2.0"이 붙는데 화면에서는 줄였습니다. raw_session.py는 opencode 없이 서버를 직접 띄워 이 대화를 재현합니다. opencode 1.19.5는 initialize에서 2025-11-25 버전을 보냅니다.</p>
   </aside>
 </section>
 
