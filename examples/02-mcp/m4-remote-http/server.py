@@ -34,6 +34,17 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 
+
+class QuietHTTPServer(ThreadingHTTPServer):
+    """opencode 가 끝나면서 연결을 끊을 때 Windows 에서는 ConnectionResetError 가 나는데, 이건 정상 종료라서
+    traceback 을 찍지 않는다. 그 밖의 오류는 기본 동작대로 보여 준다."""
+
+    def handle_error(self, request, client_address):
+        if isinstance(sys.exc_info()[1], (ConnectionResetError, ConnectionAbortedError, BrokenPipeError)):
+            return
+        super().handle_error(request, client_address)
+
+
 sys.stdin.reconfigure(encoding="utf-8")
 sys.stdout.reconfigure(encoding="utf-8", newline="\n")
 sys.stderr.reconfigure(encoding="utf-8")
@@ -245,7 +256,7 @@ class McpHandler(BaseHTTPRequestHandler):
 def serve_http(host, port):
     if not API_TOKEN:
         sys.exit("API_TOKEN 환경 변수가 필요합니다. 예) API_TOKEN=demo-token-123 python server.py --http")
-    httpd = ThreadingHTTPServer((host, port), McpHandler)
+    httpd = QuietHTTPServer((host, port), McpHandler)
     log.info("HTTP 모드 시작: http://%s:%d%s  (Bearer 토큰 필요, 종료는 Ctrl+C)", host, port, ENDPOINT)
     try:
         httpd.serve_forever()

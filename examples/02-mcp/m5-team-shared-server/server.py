@@ -26,6 +26,17 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+
+class QuietHTTPServer(ThreadingHTTPServer):
+    """opencode 가 끝나면서 연결을 끊을 때 Windows 에서는 ConnectionResetError 가 나는데, 이건 정상 종료라서
+    traceback 을 찍지 않는다. 그 밖의 오류는 기본 동작대로 보여 준다."""
+
+    def handle_error(self, request, client_address):
+        if isinstance(sys.exc_info()[1], (ConnectionResetError, ConnectionAbortedError, BrokenPipeError)):
+            return
+        super().handle_error(request, client_address)
+
+
 for _s in (sys.stdout, sys.stderr):
     try:
         _s.reconfigure(encoding="utf-8")
@@ -228,7 +239,7 @@ def main() -> None:
     p.add_argument("--log-file", type=Path, default=HERE / "logs" / "server.log")
     a = p.parse_args()
     cfg = Config(a.tokens, a.oncall, a.status, a.log_file)
-    server = ThreadingHTTPServer((a.host, a.port), make_handler(cfg))
+    server = QuietHTTPServer((a.host, a.port), make_handler(cfg))
     print(f"{SERVER_NAME} MCP 서버: http://{a.host}:{a.port}  (감사 로그: {a.log_file})", file=sys.stderr, flush=True)
     if a.host not in ("127.0.0.1", "localhost", "::1"):
         print("주의: 이 컴퓨터 밖에서도 접속할 수 있는 주소입니다. 방화벽과 토큰을 확인하세요.", file=sys.stderr, flush=True)

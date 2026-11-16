@@ -24,6 +24,14 @@ import time as _time
 from http.server import BaseHTTPRequestHandler as _Handler, ThreadingHTTPServer as _Server
 
 
+class _QuietServer(_Server):
+    """opencode 가 끝나며 keep-alive 연결을 끊는 것(Windows 의 ConnectionResetError)은 정상이라 traceback 을 찍지 않는다."""
+
+    def handle_error(self, request, client_address):
+        if not isinstance(sys.exc_info()[1], (ConnectionResetError, ConnectionAbortedError, BrokenPipeError)):
+            super().handle_error(request, client_address)
+
+
 class ScriptedLLM:
     """steps[i] = [(도구이름, 인자dict), ...]  i 번째 응답에서 모델이 호출할 도구들.
     steps 를 다 쓰면 지금까지 받은 도구 결과를 그대로 읽어 주는 최종 문장을 돌려준다."""
@@ -75,7 +83,7 @@ class ScriptedLLM:
                 self.wfile.write(b"0\r\n\r\n")
                 self.wfile.flush()
 
-        self.server = _Server(("127.0.0.1", 0), Handler)
+        self.server = _QuietServer(("127.0.0.1", 0), Handler)
         self.port = self.server.server_address[1]
 
     def provider_config(self):
@@ -127,8 +135,11 @@ had_log = default_log.exists()
 port = free_port()
 url = f"http://127.0.0.1:{port}"
 # --log-file 을 주지 않아 기본 위치(logs/server.log)에 기록되는지도 함께 본다.
+# 서버는 감사 로그를 stderr 에도 찍는다. stderr 를 PIPE 로 받고 읽지 않으면, 파이프 버퍼가 작은 Windows 에서
+# 몇 KB 뒤에 서버의 print 가 멈추고 도구 호출이 시간 초과로 끝난다. 그래서 파일로 받는다.
+server_err = open(tmp / "server.stderr.log", "w", encoding="utf-8")
 server = subprocess.Popen([sys.executable, str(HERE / "server.py"), "--port", str(port), "--tokens", str(tokens)],
-                          stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True, encoding="utf-8")
+                          stdout=subprocess.DEVNULL, stderr=server_err)
 try:
     for _ in range(50):
         try:
@@ -219,8 +230,7 @@ finally:
         server.wait(timeout=10)
     except subprocess.TimeoutExpired:
         server.kill()
-    if server.stderr:
-        server.stderr.close()
+    server_err.close()
     shutil.rmtree(tmp, ignore_errors=True)
     if not had_log:
         shutil.rmtree(HERE / "logs", ignore_errors=True)

@@ -222,6 +222,7 @@ opencode에서 질문하면 모델이 부르는 도구가 `⚙ glossary-remote_l
 - `handle(msg)`와 도구 코드는 stdio와 HTTP가 **똑같이** 쓴다. `serve_stdio()`는 줄 단위로 읽고, `McpHandler`는 POST 본문을 읽는다.
 - 응답 본문은 `json.dumps(...).encode("utf-8")`로 UTF-8 바이트를 만들고 `Content-Type: application/json; charset=utf-8`을 붙인다. 파이썬의 기본 인코딩(Windows cp949)에 기대지 않으므로 한글이 안전하다.
 - `ThreadingHTTPServer`를 쓰고 `protocol_version = "HTTP/1.1"`로 연결을 재사용(keep-alive)한다. 그래서 `202`/`405` 응답에도 `Content-Length: 0`을 반드시 붙인다.
+- opencode가 끝나면서 연결을 끊으면 Windows에서는 서버 쪽에 `ConnectionResetError`가 난다. 정상 종료이므로 `QuietHTTPServer.handle_error`에서 traceback을 찍지 않고 넘긴다.
 - 토큰 비교는 `hmac.compare_digest`(상수 시간 비교)로 한다.
 - `API_TOKEN` 없이 `--http`로 시작하면 서버가 거부하고 종료한다. 토큰 없는 서버가 실수로 열리는 것을 막는 "안전한 기본값"이다.
 - 기본 바인딩은 `127.0.0.1`이다. 같은 PC에서만 접속된다.

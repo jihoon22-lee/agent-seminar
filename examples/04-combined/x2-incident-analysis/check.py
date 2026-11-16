@@ -30,6 +30,14 @@ import time as _time
 from http.server import BaseHTTPRequestHandler as _Handler, ThreadingHTTPServer as _Server
 
 
+class _QuietServer(_Server):
+    """opencode 가 끝나며 keep-alive 연결을 끊는 것(Windows 의 ConnectionResetError)은 정상이라 traceback 을 찍지 않는다."""
+
+    def handle_error(self, request, client_address):
+        if not isinstance(sys.exc_info()[1], (ConnectionResetError, ConnectionAbortedError, BrokenPipeError)):
+            super().handle_error(request, client_address)
+
+
 class ScriptedLLM:
     """steps[i] = [(도구이름, 인자dict), ...]  i 번째 응답에서 모델이 호출할 도구들.
     steps 를 다 쓰면 지금까지 받은 도구 결과를 그대로 읽어 주는 최종 문장을 돌려준다."""
@@ -81,7 +89,7 @@ class ScriptedLLM:
                 self.wfile.write(b"0\r\n\r\n")
                 self.wfile.flush()
 
-        self.server = _Server(("127.0.0.1", 0), Handler)
+        self.server = _QuietServer(("127.0.0.1", 0), Handler)
         self.port = self.server.server_address[1]
 
     def provider_config(self):
