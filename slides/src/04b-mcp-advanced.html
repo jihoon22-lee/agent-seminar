@@ -79,7 +79,7 @@
     <tr><th class="mcp">고장</th><th class="mcp">보이는 증상</th><th class="mcp">원인과 처방</th></tr>
     <tr><td><strong>stdout 오염</strong></td><td><code>failed</code> (Operation timed out)</td><td>줄바꿈 없이 찍은 배너가 다음 JSON 앞에 붙는다. 줄바꿈 있는 잡음은 우연히 무시된다. <strong>stdout엔 MCP 메시지만, 로그는 stderr</strong></td></tr>
     <tr><td><strong>인코딩</strong></td><td><code>connected</code>인데 한글이 <code>�ȳ��ϼ���</code></td><td>한국어 Windows(cp949)에서만 터진다. Linux에서는 멀쩡해서 놓친다. <code>sys.stdout.reconfigure(encoding="utf-8")</code></td></tr>
-    <tr><td><strong>느린 시작</strong></td><td><code>failed</code> (약 30초 초과)</td><td>서버별 <code>timeout</code>(ms)은 연결 제한, <code>experimental.mcp_timeout</code>은 호출 제한. 무거운 초기화는 첫 호출로 미루기</td></tr>
+    <tr><td><strong>느린 시작</strong></td><td><code>failed</code> (약 30초 초과)</td><td>서버별 <code>timeout</code>(ms)은 시작과 호출 모두, <code>experimental.mcp_timeout</code>은 호출만. 무거운 초기화는 첫 호출로 미루기</td></tr>
     <tr><td><strong>호출 중 예외</strong></td><td><code>connected</code>인데 호출하면 <code>Connection closed</code></td><td>서버가 죽고 그 도구가 목록에서 빠진다. traceback은 어디에도 안 남는다. <code>try/except</code>로 감싸 <code>isError: true</code> 반환</td></tr>
   </table>
   <p class="small" style="margin-top:18px">진단 순서: <code>opencode mcp list</code> → 서버를 터미널에서 직접 실행해 첫 줄 보기 → <code>opencode debug paths</code>의 로그 폴더</p>

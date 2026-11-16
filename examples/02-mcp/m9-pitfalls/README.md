@@ -182,7 +182,7 @@ MCP 는 UTF-8 JSON 을 주고받지만 Python 의 stdout/stdin 은 기본적으�
 | 키 없음, 도구 호출에 5~8초 | 성공 / 65초는 시간 초과 (호출 기본 제한은 약 60초로 보임) |
 | `mcp.<서버>.timeout: 3000`, 도구 호출에 8초 | 시간 초과 (서버별 `timeout` 은 호출에도 적용되는 것으로 관찰) |
 
-정리: **서버별 `timeout`(밀리초)이 연결(시작+도구 목록) 제한**이고, `experimental.mcp_timeout` 은 도구 호출 제한입니다. 이 예제의 `opencode.json` 은 데모가 빨리 끝나도록 일부러 `slow_start` 를 3초, `slow_start_ok` 를 15초로 둡니다.
+정리: **서버별 `timeout`(밀리초)은 연결(시작+도구 목록)과 도구 호출에 모두 적용**되고, `experimental.mcp_timeout` 은 도구 호출에만 적용됩니다(시작 제한이 아님). 이 예제의 `opencode.json` 은 데모가 빨리 끝나도록 일부러 `slow_start` 를 3초, `slow_start_ok` 를 15초로 둡니다.
 시작이 느린 진짜 원인은 보통 무거운 초기화입니다. 입력을 읽기 전에 끝내려 하지 말고, 첫 도구 호출 때 하거나 백그라운드 스레드로 미루세요.
 
 ### 고장 4. 호출 시 크래시 (`crash_on_call.py`)

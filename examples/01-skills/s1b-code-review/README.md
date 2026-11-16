@@ -124,5 +124,5 @@ I'll load the code-review skill to follow the team's checklist.
 
 - **이 폴더에서 바로 실행한다.** 이 예제는 `sandbox/`를 쓰지 않는다(git 변경이 필요 없기 때문). 폴더 이름이 길어 헷갈리면 `cd`한 뒤 `opencode debug skill`로 `location`이 이 폴더의 `.opencode/skills/code-review/SKILL.md`인지 확인하자.
 - **등급은 모델마다 다르다.** 같은 결함을 어떤 모델은 "주의", 다른 모델은 "치명"으로 쓴다. 결함 목록이 빠짐없이 나왔는지를 먼저 보고, 등급은 SKILL.md의 심각도 표를 더 구체적으로 고쳐서 맞추자.
-- **`.opencode/`가 있는 폴더에서 처음 실행하면** opencode가 `.opencode/` 안에 `package.json`, `node_modules/`, `.gitignore`를 자동으로 만든다(`@opencode-ai/plugin` 설치). 인터넷이나 패키지 미러에 접근할 수 없으면 첫 시작이 약 1분 이상 멈춘 것처럼 보일 수 있다.
+- **`.opencode/`가 있는 폴더에서 처음 실행하면** opencode가 `.opencode/` 안에 `package.json`, `node_modules/`, `.gitignore`를 자동으로 만든다(`@opencode-ai/plugin` 설치). 인터넷이나 패키지 미러에 접근할 수 없으면 첫 시작이 약 70초 멈춘 것처럼 보일 수 있다.
 - **샘플 코드는 실행용이 아니다.** `python sample/orders.py`는 메모리 DB로 한 줄만 출력한다. 결함을 일부러 고치지 않고 두는 것이 이 예제의 목적이다. Linux에서 `python` 명령이 없으면 `python3`로 바꾸세요.

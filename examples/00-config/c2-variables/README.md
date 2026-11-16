@@ -137,7 +137,7 @@ c2-variables/
 |---|---|
 | `{env:NAME}` | 문자열 안 어디서나 치환된다. `"Bearer {env:TOKEN}"`, `"{env:A}-{env:B}"` 처럼 조합 가능. `command` 배열, `environment`, `headers`, `username`, `instructions` 등 문자열이면 어디든 된다 |
 | `{env:없는변수}` | 오류 없이 **빈 문자열**. `command` 의 인자가 `""` 로, `Bearer {env:X}` 는 `"Bearer "` 로 바뀐다. `username` 이 빈 문자열이면 OS 사용자 이름으로 대체된다 |
-| `{file:경로}` | 파일 내용으로 치환. **끝의 줄바꿈은 제거**된다. 상대 경로는 **그 설정 파일이 있는 폴더** 기준이다 (`.opencode/opencode.json` 에서는 `.opencode/` 기준). `OPENCODE_CONFIG_CONTENT` 안에서는 실행 위치(cwd) 기준. 절대 경로와 `~/` 도 된다 |
+| `{file:경로}` | 파일 내용으로 치환. **앞뒤 공백과 줄바꿈은 제거**된다. 상대 경로는 **그 설정 파일이 있는 폴더** 기준이다 (`.opencode/opencode.json` 에서는 `.opencode/` 기준). `OPENCODE_CONFIG_CONTENT` 안에서는 실행 위치(cwd) 기준. 절대 경로와 `~/` 도 된다 |
 | `{file:없는파일}` | 빈 문자열이 아니라 **설정 오류** (`bad file reference ... does not exist`). opencode 가 시작되지 않는다 |
 | `${NAME}` | **치환되지 않는다.** 글자 그대로 MCP 서버에 전달된다 |
 

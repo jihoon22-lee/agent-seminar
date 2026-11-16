@@ -179,7 +179,7 @@ opencode는 설정 파일을 읽을 때 `{...}` 자리표시자를 먼저 값으
 
 - 값이 **비어 있어도** `***`로 나온다. 즉 `debug config`만으로는 "환경 변수가 없어서 빈 값"인지 "값이 있는지"를 구분할 수 없다. 이럴 땐 `server_info` 도구처럼 서버가 상태를 알려 주게 하면 된다.
 - 원격 서버의 `headers` 값은 전부 `***`로 가려진다 (M4).
-- 마스킹은 **이름 패턴** 기준이다. `API_TOKEN_FILE`, `ACCESS_KEY_ID`, `PASSWD`, `DB_URL` 같은 이름은 가려지지 않고 값이 그대로 출력된다. 화면 공유나 로그에 `debug config` 결과가 남을 수 있으니, 비밀 값의 변수 이름은 `..._TOKEN`, `..._KEY`, `..._SECRET`, `..._PASSWORD`로 짓는 것이 안전하다.
+- 마스킹은 **이름 패턴** 기준이다. `API_TOKEN_FILE`, `ACCESS_KEY_ID`, `PASSWD`, `DB_URL` 같은 이름은 가려지지 않고 값이 그대로 출력된다. 화면 공유나 로그에 `debug config` 결과가 남을 수 있으니, 비밀 값의 변수 이름은 `..._TOKEN`, `..._API_KEY`, `..._SECRET`, `..._PASSWORD`로 짓는 것이 안전하다. `..._KEY`만으로는 부족하다(`ACCESS_KEY`, `SIGNING_KEY`는 그대로 보인다).
 
 ## 직접 바꿔 보기
 
