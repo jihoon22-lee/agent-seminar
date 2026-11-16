@@ -50,7 +50,7 @@ body { font-family: var(--sans); color: var(--ink); -webkit-font-smoothing: anti
   padding: 92px 128px 96px 152px;
   display: none; flex-direction: column;
   overflow: hidden;
-  font-size: 36px; line-height: 1.55;
+  font-size: 36px; line-height: 1.55; color: var(--ink);
   word-break: keep-all; overflow-wrap: break-word;
 }
 .slide.active { display: flex; }
@@ -261,7 +261,7 @@ body.presenter .presenter-view { display: grid; grid-template-columns: 62vw 1fr;
 .presenter-view .pv-frame { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
 .presenter-view .pv-frame .slide { display: flex; position: relative; left: 0; top: 0; transform: none; }
 .presenter-view .pv-frame .step { visibility: visible; }
-.presenter-view .pv-side { display: flex; flex-direction: column; gap: 14px; min-height: 0; }
+.presenter-view .pv-side { grid-row: 1 / 3; display: flex; flex-direction: column; gap: 14px; min-height: 0; }
 .presenter-view .pv-meta { font: 600 28px var(--mono); display: flex; justify-content: space-between; }
 .presenter-view .pv-notes { flex: 1; overflow: auto; font-size: 22px; line-height: 1.65; background: #17242e; padding: 18px 22px; border-radius: 10px; }
 .presenter-view .pv-notes p { max-width: none; }

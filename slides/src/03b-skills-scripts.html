@@ -6,7 +6,7 @@
         <li>모델이 스킬을 열면 opencode가 본문 끝에 <strong>스킬 폴더의 절대 경로</strong>와 파일 목록을 붙여 준다</li>
         <li>모델은 그 경로를 앞에 붙여 <code>python &lt;스킬 폴더&gt;/scripts/x.py</code>를 bash 도구로 실행한다</li>
         <li>작업 폴더는 그대로 프로젝트 루트다. 데이터 경로는 프로젝트 기준, 스크립트 경로는 스킬 폴더 기준</li>
-        <li>스크립트는 결과를 <strong>짧은 요약(JSON, 표)</strong>으로 돌려준다. 원본 2,000줄 대신 요약 수십 줄이 컨텍스트에 들어간다</li>
+        <li>스크립트는 결과를 <strong>짧은 요약(JSON, 표)</strong>으로 돌려준다. 원본 2,059줄(약 120KB) 대신 JSON 요약 약 250줄(5.6KB)이 컨텍스트에 들어간다</li>
       </ul>
     </div>
     <script type="text/x-code" data-lang="text" class="term sm" data-title="skill 도구가 모델에게 돌려준 끝부분 (실제, 경로 줄임)" data-mark="1,2,3,6-8">
@@ -40,7 +40,8 @@
     - &&, export, $변수, 파이프 없이 명령 한 줄만 실행한다.
 
     ## 2. 필요하면 범위를 좁혀 다시 실행
-    ... --from 10:30 --to 10:40 --sample 15
+    ... --from 2026-11-03T10:30:00
+        --to 2026-11-03T10:40:00 --sample 15
     ... --component db --window 1m
 
     ## 3. 해석해서 보고
@@ -187,7 +188,7 @@
   <aside class="notes"><p>예제의 sample-app에는 orders → payments → notifications → orders 순환을 일부러 심어 두었습니다. 생성된 Mermaid는 mermaid 파서로 문법을 확인했습니다.</p></aside>
 </section>
 
-<section class="slide" data-chapter="skill" data-title="스크립트 설계 원칙">
+<section class="slide" data-optional data-chapter="skill" data-title="스크립트 설계 원칙">
   <h2>스킬에 넣을 스크립트를 만들 때</h2>
   <div class="cols">
     <div>
@@ -214,7 +215,7 @@
   <aside class="notes"><p>S3a와 S3b를 만들 때 실제 모델이 스킬을 열지 않고 바로 grep, git log를 실행한 적이 있었습니다. description을 다듬는 것이 근본 대책이지만, 데모처럼 실패하면 안 되는 자리에서는 "log-analysis 스킬로"처럼 이름을 직접 말하는 편이 안전합니다.</p></aside>
 </section>
 
-<section class="slide demo" data-chapter="skill" data-title="데모: S3a">
+<section class="slide demo" data-optional data-chapter="skill" data-title="데모: S3a">
   <div class="demo-mark">데모</div>
   <h2>로그를 읽지 않고 장애 원인 찾기</h2>
   <div class="cols c64">

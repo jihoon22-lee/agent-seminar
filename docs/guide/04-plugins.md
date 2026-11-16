@@ -27,17 +27,20 @@ export const ShellEnv = async ({ directory }) => {
 
 ## export 함정: 함수가 아닌 것을 내보내면 파일 전체가 사라집니다
 
-가장 오래 헤맨 함정입니다. opencode는 모듈이 export한 **값을 모두 플러그인 함수로 호출**합니다. 상수(`export const X = 1`)나 보조 함수를 export하면 오류도 경고도 없이 **그 파일의 플러그인이 모두 로드되지 않습니다.**
+가장 오래 헤맨 함정입니다. opencode는 모듈이 export한 **것을 모두 플러그인 함수로 호출**합니다.
+
+- 상수, 배열, 객체처럼 **함수가 아닌 값**을 하나라도 export하면 **그 파일의 플러그인이 모두 로드되지 않습니다.** 평소 실행 화면에는 아무 표시가 없고, `opencode --print-logs`로 실행해야 `level=ERROR message="failed to load plugin" ... error="Plugin export is not a function"`이 보입니다.
+- 보조 **함수**를 export하면 파일은 로드되지만, 그 함수도 플러그인으로 한 번 불립니다. 의도하지 않은 코드가 실행되니 역시 export하지 않습니다.
 
 ```js
-export const RULES = [ ... ]          // 이것 때문에 파일 전체가 조용히 사라진다
+export const RULES = [ ... ]          // 함수가 아니라서 이 파일 전체가 로드되지 않는다
 export const MyPlugin = async () => ({ ... })
 ```
 
 - **export는 플러그인 함수만** 합니다. 도우미 함수와 상수는 파일 안에서만 씁니다.
 - 테스트를 위해 내보내고 싶어지면 export하지 말고, 테스트가 플러그인을 불러와 훅을 직접 호출하게 하세요. (P1, P2의 `tests/*.test.mjs`가 그렇게 합니다.)
 - `.opencode/plugins/`의 **모든 `.js`가 플러그인으로 로드**됩니다. 보조 모듈이나 테스트 파일을 그 폴더에 두지 마세요.
-- 로드 실패는 대부분 조용합니다. `import` 오류, 문법 오류, 잘못된 진입점은 로그에도 안 남습니다. 플러그인 첫 줄에서 마커 파일에 한 줄을 쓰게 해 두면 "로드 자체가 안 된 건지, 훅이 안 불린 건지"를 가를 수 있습니다. (이 저장소의 플러그인은 `logs/plugin-load.log`에 씁니다.) 플러그인 함수가 **초기화 중 예외**를 던지면 `opencode --print-logs`에서 `level=ERROR message="failed to load plugin"`이 보입니다.
+- 로드 실패는 대부분 조용합니다. 함수가 아닌 export와 초기화 중 예외는 `--print-logs`에만 보이고, `import` 오류, 문법 오류, 잘못된 진입점은 그 로그에도 안 남습니다. 플러그인 첫 줄에서 마커 파일에 한 줄을 쓰게 해 두면 "로드 자체가 안 된 건지, 훅이 안 불린 건지"를 가를 수 있습니다. (이 저장소의 플러그인은 `logs/plugin-load.log`에 씁니다.) 플러그인 함수가 **초기화 중 예외**를 던지면 `opencode --print-logs`에서 `level=ERROR message="failed to load plugin"`이 보입니다.
 - 플러그인을 고친 뒤에는 opencode를 다시 시작해야 합니다.
 
 ## 첫 실행: @opencode-ai/plugin 자동 설치
@@ -47,7 +50,7 @@ export const MyPlugin = async () => ({ ... })
 | 상황 | 결과 |
 |---|---|
 | 레지스트리에 닿음 | 첫 시작 6~10초, 이후 1초 안팎 |
-| 연결이 거부/차단되어 응답 없음 | **약 70초 동안 시작이 멈춘 뒤** 계속 진행. 설치가 안 됐으므로 `@opencode-ai/plugin`을 import하는 플러그인(P6의 `tool()` 등)이 오류 메시지 없이 사라진다 |
+| 연결이 거부/차단되어 응답 없음 | 플러그인(`.opencode/plugins/*.js`)이 있는 폴더는 **시작할 때마다 약 70초 멈춘 뒤** 계속 진행(새 환경의 첫 시작은 약 130초, 패킷을 조용히 버리는 레지스트리는 200초 넘게). 스킬만 있는 폴더는 설치를 시도하지만 눈에 띄게 멈추지 않았다(`run` 4초). 설치가 안 됐으므로 `@opencode-ai/plugin`을 import하는 플러그인(P6의 `tool()` 등)이 오류 메시지 없이 사라진다 |
 | 응답은 하지만 패키지가 없음(404) | 지연 없이 바로 실패, 마찬가지로 조용히 사라진다 |
 
 도구가 안 보이면 `opencode --print-logs`로 실행해 `message="background dependency install failed"` 줄을 찾으세요. 일반 실행에는 출력되지 않습니다.

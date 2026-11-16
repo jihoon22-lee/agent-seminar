@@ -25,13 +25,13 @@
 
 - **opencode 1.19.5** (`opencode --version`으로 확인)
 - **Python 3.10 이상**: 예제 스크립트와 MCP 서버는 표준 라이브러리만 씁니다. M2 예제만 `mcp` 패키지를 설치합니다.
-- **git**
+- **git 2.28 이상**: 예제 준비 스크립트(`prepare.py`)가 `git init -b`를 씁니다.
 - **Node/npm** (선택): 플러그인 예제의 단위 테스트와 패키지 미러 지정(`npm config`)에 씁니다. npm이 없으면 `%USERPROFILE%\.npmrc`(Linux `~/.npmrc`) 파일에 `registry=<미러 주소>` 한 줄을 직접 써도 됩니다.
 - **모델**: 평소 쓰는 모델을 그대로 쓰면 됩니다. 설정된 모델이 없다면 무료 모델 `opencode/big-pickle`을 `-m`으로 지정할 수 있습니다.
 
 예제는 실행 중에 인터넷에 접속하지 않습니다.
 다만 `.opencode/` 폴더가 있는 예제는 시작할 때 opencode가 npm 패키지 `@opencode-ai/plugin`을 설치하려고 합니다.
-**인터넷이 막힌 환경이라면 먼저 npm 패키지 미러를 지정하세요.** 레지스트리에 닿지 않으면 시작할 때마다 약 70초씩 멈추고, 이 패키지를 쓰는 플러그인 도구(P6, X1-c)는 조용히 사라집니다.
+**인터넷이 막힌 환경이라면 먼저 npm 패키지 미러를 지정하세요.** 레지스트리에 닿지 않으면 플러그인이 있는 예제(`.opencode/plugins/`)는 시작할 때마다 약 70초(새 환경의 첫 시작은 약 130초) 멈추고, 이 패키지를 쓰는 플러그인 도구(P6, X1-c)는 조용히 사라집니다. 스킬만 있는 예제는 설치를 시도하지만 눈에 띄게 멈추지는 않았습니다.
 
 ```powershell
 npm config set registry https://<패키지 미러 주소>/     # %USERPROFILE%\.npmrc 에 저장됩니다
@@ -46,6 +46,8 @@ PowerShell:
 ```powershell
 git clone https://github.com/jihoon22-lee/agent-seminar
 cd agent-seminar\examples\01-skills\s1a-commit-message
+python prepare.py      # 실습용 git 저장소 sandbox\ 를 만듭니다
+cd sandbox
 opencode
 ```
 
@@ -54,10 +56,13 @@ Linux bash:
 ```bash
 git clone https://github.com/jihoon22-lee/agent-seminar
 cd agent-seminar/examples/01-skills/s1a-commit-message
+python3 prepare.py     # 실습용 git 저장소 sandbox/ 를 만듭니다
+cd sandbox
 opencode
 ```
 
 예제 폴더 하나하나가 독립된 opencode 프로젝트입니다. 폴더에 들어가서 opencode를 실행하면 그 예제의 설정, 스킬, 플러그인만 적용됩니다.
+`prepare.py`가 있는 예제는 먼저 실행하세요. git 저장소가 필요한 예제는 `sandbox/`에 실습용 저장소를 만들고, 그 안에서 opencode를 실행합니다.
 각 README는 같은 순서로 되어 있습니다: 무엇을 보여 주나, 실무에서는, 파일 구성, 따라 하기, 기대 결과, 동작 원리, 직접 바꿔 보기, 주의할 점.
 
 Linux에서 `python` 명령이 없으면 예제 설정과 명령의 `python`을 `python3`로 바꾸세요.
@@ -120,8 +125,8 @@ python3 tools/run_checks.py examples --model
 ## 알려 둘 것
 
 - 실제 모델 응답 예시는 무료 모델로 얻은 것입니다. 무료 모델 한도 때문에 확인하지 못한 부분은 각 README에 "미검증"으로 표시했습니다.
-- opencode는 빠르게 바뀝니다. 공식 문서 사이트에는 다음 버전의 설정 형식(`mcp.servers`, `plugins`)이 먼저 올라와 있는데, 1.19.5에서는 동작하지 않습니다.
-- [S2a 작업 기록 스킬](examples/01-skills/s2a-workthrough/)은 MIT 라이선스 스킬을 옮겨 온 것입니다. 출처와 라이선스는 해당 폴더의 `NOTICE.md`에 있습니다.
+- opencode는 빠르게 바뀝니다. 공식 문서 사이트에는 다음 버전의 설정 형식이 먼저 올라와 있습니다. 1.19.5에서 `plugins`(새 형식)는 오류 없이 무시되어 플러그인이 하나도 불리지 않습니다. `mcp.servers`와 `"disabled": true`는 1.19.5도 받아들입니다. 이 세 형태만 확인했으니, 문서를 볼 때는 버전부터 확인하세요.
+- [S2a 작업 기록 스킬](examples/01-skills/s2a-workthrough/)은 MIT 라이선스 스킬을 옮겨 온 것입니다. 출처와 라이선스는 `examples/01-skills/s2a-workthrough/.opencode/skills/workthrough/NOTICE.md`에 있습니다.
 - 글꼴: 발표 자료는 IBM Plex Sans KR / IBM Plex Mono(SIL Open Font License 1.1)를 발표에 쓰는 글자만 남겨 줄인 것입니다. 라이선스 조건에 따라 이름을 바꿨습니다. 자세한 내용은 [slides/assets/fonts](slides/assets/fonts/)를 보세요.
 
 ## 라이선스

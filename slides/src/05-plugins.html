@@ -7,7 +7,7 @@
     </div>
     <x-diagram focus="plugin"></x-diagram>
   </div>
-  <aside class="notes"><p>8분. 플러그인의 생김새, 훅이 불리는 순서를 보고 예제 다섯 개를 빠르게 훑습니다. 데모는 P1(.env 차단).</p></aside>
+  <aside class="notes"><p>7분. 플러그인의 생김새, 훅이 불리는 순서를 보고 P1–P3을 봅니다(P4–P8은 심화). 데모는 P1(.env 차단).</p></aside>
 </section>
 
 <section class="slide" data-chapter="plugin" data-title="플러그인의 생김새">
@@ -35,12 +35,12 @@
         <li>돌려주는 객체의 키가 훅 이름이다</li>
         <li><code>throw</code>하면 도구가 실행되지 않고 <strong>메시지가 모델에게 오류로 전달</strong>된다. 이유와 대안을 써 주면 모델이 그대로 따른다</li>
       </ul>
-      <div class="callout warn small"><p>파일에서 <strong>플러그인 함수만 export</strong>하세요. 상수나 보조 함수를 export하면 opencode가 그것도 플러그인으로 부르다가 <strong>파일 전체를 아무 오류 없이 건너뜁니다.</strong></p></div>
+      <div class="callout warn small"><p>파일에서 <strong>플러그인 함수만 export</strong>하세요. opencode는 export된 것을 모두 플러그인으로 부릅니다. 상수나 객체처럼 <strong>함수가 아닌 값</strong>이 하나라도 있으면 <strong>파일 전체가 로드되지 않고</strong>, 평소 화면에는 아무것도 안 나옵니다 (<code>--print-logs</code>에만 <code>Plugin export is not a function</code>). 보조 함수를 export하면 그 함수까지 플러그인으로 불립니다.</p></div>
     </div>
   </div>
   <div class="ref">examples/03-plugins/p1-env-guard</div>
   <aside class="notes">
-    <p>export 함정은 실제로 한참 헤맨 부분입니다. 오류도 경고도 없이 플러그인이 안 불립니다. 로드될 때 로그 한 줄을 남기게 해 두면 바로 알 수 있습니다. 이 레포의 모든 플러그인은 logs/plugin-load.log에 한 줄을 씁니다.</p>
+    <p>export 함정은 실제로 한참 헤맨 부분입니다. 규칙 표를 테스트하려고 export const RULES를 붙였더니 플러그인이 통째로 사라졌는데, 평소 실행 화면에는 아무 표시가 없었습니다. opencode --print-logs로 실행하면 failed to load plugin 오류가 보입니다. import나 문법 오류는 그 로그에도 안 남으니, 로드될 때 파일에 한 줄을 남기게 해 두는 것이 가장 확실합니다. 이 레포의 플러그인은 logs/plugin-load.log에 한 줄을 씁니다.</p>
   </aside>
 </section>
 
@@ -106,9 +106,9 @@
     PS> cd examples\03-plugins\p1-env-guard
     PS> python prepare.py           # 가짜 값이 든 .env 생성
     PS> opencode run --auto ".env 파일을 read 도구로 읽어서 보여줘"
-    PS> Get-Content logs\plugin-load.log
+    PS> Get-Content logs\plugin-load.log -Encoding UTF8
     ... env-guard loaded
-    PS> Get-Content logs\env-guard.log
+    PS> Get-Content logs\env-guard.log -Encoding UTF8
     ... BLOCKED read :: read 도구로 C:\…\p1-env-guard\.env 접근
     PS> opencode                    # TUI에서 "cat .env 로 출력해 줘"도 시도
     </script>
@@ -119,7 +119,7 @@
     </ol>
   </div>
   <div class="ref">examples/03-plugins/p1-env-guard</div>
-  <aside class="notes"><p>처음 실행할 때 opencode가 .opencode 폴더에 @opencode-ai/plugin 패키지를 npm으로 설치합니다. 레지스트리에 못 닿으면 시작할 때마다 70초쯤 멈춥니다. 발표 PC에는 npm 미러를 지정하고 한 번 미리 실행해 두세요.</p></aside>
+  <aside class="notes"><p>처음 실행할 때 opencode가 .opencode 폴더에 @opencode-ai/plugin 패키지를 npm으로 설치합니다. 레지스트리에 못 닿으면 플러그인이 있는 폴더는 시작할 때마다 70초쯤(새 환경의 첫 시작은 130초쯤) 멈춥니다. 발표 PC에는 npm 미러를 지정하고 한 번 미리 실행해 두세요.</p></aside>
 </section>
 
 <section class="slide" data-chapter="plugin" data-title="P2 위험한 명령">

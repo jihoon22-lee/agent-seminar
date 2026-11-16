@@ -89,7 +89,7 @@ python3 demo.py
 opencode 1.19.5의 검사는 반쪽만 엄격합니다.
 
 - 알 수 없는 **최상위 키**는 오류 없이 버려집니다. `"plugins"`(복수형), `"permision"`, `"skills": {"path": ...}`는 에러 없이 사라지고 opencode는 그냥 뜹니다. "플러그인을 등록했는데 안 불린다"면 `plugins` 오타부터 의심하세요.
-- `mcp` 항목 안의 오타나 잘못된 값(`"bash": "maybe"`)은 `Configuration is invalid`로 시작 자체를 막습니다.
+- `mcp` 항목 안의 오타, 잘못된 권한 값(`"permission": {"bash": "maybe"}`, 메시지 `Expected PermissionActionConfig`)은 `Configuration is invalid`로 시작 자체를 막습니다.
 
 공식 문서에는 다음 버전 형식(`mcp.servers`, `plugins`)이 먼저 올라와 있습니다. 1.19.5에서 `plugins`는 조용히 무시되는 키입니다. 문서를 볼 때 버전을 꼭 확인하고, 적은 뒤에는 `debug config`에 실제로 남았는지 보세요. `$schema`를 넣으면 편집기가 미리 빨간 줄을 그어 줍니다.
 

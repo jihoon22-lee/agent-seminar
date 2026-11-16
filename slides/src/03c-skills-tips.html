@@ -2,18 +2,19 @@
   <h2><span class="tag skill">S5a</span>description 한 줄이 스킬의 운명을 정합니다</h2>
   <div class="cols">
     <div>
-      <script type="text/x-code" data-lang="md" class="sm" data-title="variant-bad">
+      <script type="text/x-code" data-lang="md" class="sm" data-title="variant-bad/.opencode/skills/team-glossary/SKILL.md">
       ---
       name: team-glossary
-      description: 도움을 줍니다.
+      description: 팀 업무에 도움을 줍니다.
       ---
       </script>
-      <script type="text/x-code" data-lang="md" class="sm" data-title="variant-good">
+      <script type="text/x-code" data-lang="md" class="sm" data-title="variant-good/.opencode/skills/team-glossary/SKILL.md">
       ---
       name: team-glossary
-      description: 팀 내부 용어와 약어의 뜻을 설명한다. "팀 용어",
-        "약어", "~가 뭐야", "우리 팀에서 말하는 ~"처럼 팀에서만
-        쓰는 단어를 물을 때 사용한다.
+      description: 팀 내부 용어·약어·코드네임(블루문, 팔콘,
+        RFC-lite 등)의 뜻을 담은 사전. 사용자가 "팀 용어", "약어",
+        "~가 뭐야", "무슨 뜻이야"처럼 이 팀에서만 쓰는 말의 의미를
+        물을 때, 또는 신규 팀원용 용어 정리를 요청할 때 사용한다.
       ---
       </script>
       <p class="tiny muted">두 변형은 이 한 줄만 다르고 본문은 같습니다.</p>
@@ -80,17 +81,17 @@
     <div>
       <h3>실험에서 드러난 함정</h3>
       <ul class="small">
-        <li>같은 이름이 두 곳에 있으면 <strong>매번 이기는 쪽이 다르다</strong> (로그에 "duplicate skill name"). 이름을 겹치지 않게</li>
+        <li>같은 이름이 두 곳에 있으면 <strong>이기는 쪽이 보장되지 않는다</strong>. 대개 프로젝트가 이기지만 가끔 뒤집힌다 (로그에 "duplicate skill name"). 이름을 겹치지 않게</li>
         <li><code>skills.paths</code>의 상대 경로는 설정 파일이 아니라 <strong>opencode를 실행한 폴더</strong> 기준. 하위 폴더에서 실행하면 못 찾는다 → 절대 경로나 <code>~/</code></li>
         <li><code>skills.urls</code>는 <code>version</code>을 안 바꾸면 캐시를 계속 쓴다</li>
       </ul>
     </div>
   </div>
   <div class="ref">examples/01-skills/s5c-scope-global-project</div>
-  <aside class="notes"><p>"전역보다 프로젝트가 이긴다"고 생각하기 쉬운데, 같은 이름 충돌은 경합이었습니다. 51번 중 2번은 반대로 나왔습니다. 이름을 겹치지 않게 짓는 것이 유일한 안전한 방법입니다.</p></aside>
+  <aside class="notes"><p>"전역보다 프로젝트가 이긴다"고 생각하기 쉬운데, 같은 이름 충돌은 경합이었습니다. 53번 중 2번은 반대로 나왔고, 6번 중 2번이 뒤집힌 날도 있었습니다. 이름을 겹치지 않게 짓는 것이 유일한 안전한 방법입니다.</p></aside>
 </section>
 
-<section class="slide" data-chapter="skill" data-title="스크립트와 Windows">
+<section class="slide" data-optional data-chapter="skill" data-title="스크립트와 Windows">
   <h2>스크립트를 시킬 때: Windows의 셸은 PowerShell입니다</h2>
   <div class="cols">
     <div>
@@ -109,5 +110,5 @@
       <p>셸 문법이 필요한 일은 스크립트 안으로 옮기세요.</p>
     </div>
   </div>
-  <aside class="notes"><p>Linux 서버에서만 스킬을 만들면 Windows 사용자의 데모에서 터집니다. 이 레포의 모든 스킬은 두 셸에서 검증했습니다.</p></aside>
+  <aside class="notes"><p>Linux 서버에서만 스킬을 만들면 Windows 사용자의 데모에서 터집니다. 이 레포의 스킬 예제는 가짜 모델이 정해진 명령을 부르게 해서 Windows PowerShell과 Linux bash 양쪽에서 check.py로 확인했습니다. 실제 모델이 어떤 명령을 만들지는 모델마다 다르니, 스킬에 "한 줄 명령만"을 적어 두는 것이 중요합니다.</p></aside>
 </section>

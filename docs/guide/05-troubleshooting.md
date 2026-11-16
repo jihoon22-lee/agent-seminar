@@ -16,8 +16,8 @@
 
 | 증상 | 원인 | 해결 |
 |---|---|---|
-| 플러그인을 등록했는데 안 불린다. 권한이나 스킬 경로 설정이 안 먹는다 | 최상위 키 오타(`plugins`, `permision`, `"skills": {"path": ...}`)는 오류 없이 버려진다. 공식 문서의 다음 버전 형식(`mcp.servers`, `plugins`)도 1.19.5에서는 무시된다 | `opencode debug config`에 키가 실제로 남았는지 확인. `$schema`를 넣어 편집기가 미리 경고하게 한다. 문서를 볼 때 버전을 확인 |
-| `Configuration is invalid`로 시작이 안 된다 | `mcp` 항목 안의 오타나 잘못된 값(`"bash": "maybe"`) | 메시지가 가리키는 키를 고친다 |
+| 플러그인을 등록했는데 안 불린다. 권한이나 스킬 경로 설정이 안 먹는다 | 최상위 키 오타(`plugins`, `permision`, `"skills": {"path": ...}`)는 오류 없이 버려진다. 공식 문서의 다음 버전 형식 중 `plugins`도 1.19.5에서는 오류 없이 무시된다(`mcp.servers`와 `"disabled": true`는 예전 형식으로 바꿔 읽으므로 동작한다) | `opencode debug config`에 키가 실제로 남았는지 확인. `$schema`를 넣어 편집기가 미리 경고하게 한다. 문서를 볼 때 버전을 확인 |
+| `Configuration is invalid`로 시작이 안 된다 | `mcp` 항목 안의 오타, 또는 잘못된 권한 값(`"permission": {"bash": "maybe"}` → `Expected PermissionActionConfig`) | 메시지가 가리키는 키를 고친다 |
 | `Configuration is invalid ... bad file reference ... does not exist` | `{file:경로}`의 파일이 없다 (`enabled: false` 항목이어도 시작 거부) | 파일을 만들거나(예제: `python prepare.py`) 경로를 고친다. 상대 경로는 **설정 파일이 있는 폴더** 기준 |
 | `Config file at ... is not valid JSON(C)` | JSON 문법 오류 (주석과 끝 쉼표는 허용) | 메시지의 줄 번호 확인 |
 | 서버가 인증에 실패한다. 토큰이 비어 있다 | `{env:NAME}`이 미설정이면 오류 없이 **빈 문자열**. 환경 변수는 opencode를 실행한 셸에서 읽는다 | 같은 터미널에서 설정하고 opencode를 다시 시작. 서버가 실제로 받은 값을 확인(C2의 `received.json`) |
@@ -98,14 +98,14 @@
 
 | 증상 | 원인 | 해결 |
 |---|---|---|
-| 플러그인이 아무 일도 안 한다. 오류도 없다 | 함수가 아닌 값(상수, 보조 함수)을 export해서 **파일 전체가 조용히 건너뛰어졌다** | export는 플러그인 함수만. 테스트는 훅을 직접 호출 |
+| 플러그인이 아무 일도 안 한다. 화면에 오류도 없다 | 함수가 아닌 값(상수, 배열, 객체)을 export해서 **파일 전체가 로드되지 않았다**. `--print-logs`에는 `Plugin export is not a function`. (import·문법 오류는 그 로그에도 안 남는다) | export는 플러그인 함수만. 보조 함수도 export하면 플러그인으로 불리니 내보내지 않는다. 테스트는 훅을 직접 호출 |
 | 플러그인이 로드됐는지 모르겠다 | 로드 실패(import/문법 오류)는 로그에도 안 남는다 | 플러그인 첫 줄에서 마커 파일에 쓴다. `opencode debug config`도 플러그인을 로드하므로 모델 없이 확인 가능. 초기화 예외는 `--print-logs`의 `failed to load plugin` |
 | 플러그인에서 `@opencode-ai/plugin`을 import하는데 도구가 사라진다 | 설치가 실패했다 (레지스트리에 못 닿음). 오류 메시지 없이 사라진다 | `opencode --print-logs`에서 `background dependency install failed` 확인. 패키지 미러 지정 |
-| 시작할 때마다 약 70초 멈춘다 | `.opencode/`가 있으면 `@opencode-ai/plugin`을 npm에서 설치하려 하는데 레지스트리가 응답하지 않는다 | `~/.npmrc`의 `registry=` 또는 `npm_config_registry`. 프로젝트 루트 `.npmrc`는 적용되지 않는다 |
+| 시작할 때마다 약 70초 멈춘다 (새 환경의 첫 시작은 약 130초) | 플러그인이 있는 `.opencode/`는 `@opencode-ai/plugin`을 npm에서 설치하려 하는데 레지스트리가 응답하지 않는다. 스킬만 있는 폴더는 거의 멈추지 않는다 | `~/.npmrc`의 `registry=` 또는 `npm_config_registry`. 프로젝트 루트 `.npmrc`는 적용되지 않는다 |
 | 미러를 지정했는데도 `.opencode/` 설치가 안 된다 | 미러에 패키지나 의존 패키지가 없다 | 설치된 곳의 `.opencode/node_modules`를 복사. 단 전역 폴더 설치 지연(약 71초)은 남는다 |
 | 플러그인을 고쳤는데 반영이 안 된다 | 시작할 때만 읽는다 | opencode를 다시 시작 |
 | 같은 가드가 두 번 돈다. 로그가 두 줄이다 | 같은 플러그인이 전역과 프로젝트 두 곳에 있다 (파일 위치가 다르면 별개) | 한 곳에만 둔다 |
-| 설정에 `plugin`을 적었는데 안 불린다 | 키 이름이 `plugins`(복수형)다. 로컬 패키지 폴더는 `package.json`의 `main`이 없다 | `plugin`으로 고친다. `main`을 쓴다 |
+| 설정에 적은 플러그인이 안 불린다 | 키 이름을 `plugins`(복수형)로 썼다. 로컬 패키지 폴더는 `package.json`의 `main`이 없다 | `plugin`으로 고친다. `main`을 쓴다 |
 | `--pure`로 하면 사라진다 | `--pure`는 외부 플러그인을 로드하지 않는다 | 의도한 동작. 플러그인이 원인인지 가를 때 쓴다 |
 | 가드가 막지 않았는데 `rm -rf`가 실행됐다 | 가드 플러그인이 로드되지 않았다 | 시험은 `echo`로 문장만 출력해서. 먼저 로드 여부 확인 |
 | 가드 규칙이 우회된다 | 정규식은 명령 문자열만 본다 (`python -c`, 파일 속 SQL, 심볼릭 링크) | 방어선의 일부로 쓰고 `permission`과 병행. 진짜 격리는 컨테이너나 별도 계정 |

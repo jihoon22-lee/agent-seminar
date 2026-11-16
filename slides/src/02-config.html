@@ -65,7 +65,7 @@
         <li><code>plugin</code>: 폴더 밖 플러그인. <code>.opencode/plugins/</code>는 적지 않아도 로드된다</li>
         <li><code>permission</code>: 도구별 허용, 확인, 거부</li>
       </ul>
-      <div class="callout warn small"><p><strong>최상위 키 오타는 오류 없이 무시됩니다.</strong> <code>"plugins"</code>, <code>"permision"</code>, <code>"skills": {"path": …}</code>는 조용히 사라지고 opencode는 그냥 뜹니다. <code>mcp</code> 항목 안의 오타나 잘못된 값(<code>"bash": "maybe"</code>)만 시작을 막습니다. 적은 뒤에는 <code>opencode debug config</code>로 실제로 남았는지 보세요.</p></div>
+      <div class="callout warn small"><p><strong>최상위 키 오타는 오류 없이 무시됩니다.</strong> <code>"plugins"</code>, <code>"permision"</code>, <code>"skills": {"path": …}</code>는 조용히 사라지고 opencode는 그냥 뜹니다. 반대로 <code>mcp</code> 항목 안의 오타, 잘못된 권한 값(<code>"permission": {"bash": "maybe"}</code>)은 시작을 막습니다. 적은 뒤에는 <code>opencode debug config</code>로 실제로 남았는지 보세요.</p></div>
     </div>
   </div>
   <aside class="notes">

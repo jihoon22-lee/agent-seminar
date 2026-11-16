@@ -7,7 +7,7 @@
     </div>
     <x-diagram></x-diagram>
   </div>
-  <aside class="notes"><p>8분. 비유 하나씩과 비교표로 끝냅니다.</p></aside>
+  <aside class="notes"><p>9분. 비유 하나씩과 비교표로 끝냅니다.</p></aside>
 </section>
 
 <section class="slide" data-chapter="concept" data-title="opencode의 확장 지점">
@@ -108,7 +108,7 @@
   </aside>
 </section>
 
-<section class="slide" data-chapter="mcp" data-part="개념: MCP" data-title="MCP는 JSON 줄 주고받기">
+<section class="slide" data-optional data-chapter="mcp" data-part="개념: MCP" data-title="MCP는 JSON 줄 주고받기">
   <h2>속을 열어 보면 JSON 메시지를 주고받을 뿐입니다</h2>
   <div class="cols c46">
     <ol class="steps small">
@@ -191,10 +191,11 @@
     <tr><td><strong>정체</strong></td><td>폴더 + <code>SKILL.md</code></td><td>별도 프로세스나 서버</td><td>JS/TS 파일</td></tr>
     <tr><td><strong>누가 언제 쓰나</strong></td><td>모델이 description을 보고 판단</td><td>모델이 도구를 고를 때</td><td>opencode가 이벤트마다 항상</td></tr>
     <tr><td><strong>바꾸는 것</strong></td><td>에이전트가 <strong>아는 것</strong></td><td>에이전트가 <strong>할 수 있는 것</strong></td><td>opencode의 <strong>동작 자체</strong></td></tr>
-    <tr><td><strong>컨텍스트 비용</strong></td><td>평소엔 description만</td><td>도구 정의가 항상 들어간다</td><td>거의 없음</td></tr>
+    <tr><td><strong>컨텍스트 비용</strong></td><td>평소엔 description만</td><td>도구 정의가 항상 들어간다</td><td>훅은 0. 직접 만든 도구만 정의가 들어간다</td></tr>
     <tr><td><strong>만드는 언어</strong></td><td>Markdown (+ 아무 언어 스크립트)</td><td>아무 언어</td><td>JavaScript / TypeScript</td></tr>
     <tr><td><strong>다른 에이전트에서</strong></td><td class="yes">대부분 그대로</td><td class="yes">표준이라 그대로</td><td class="no">opencode 전용</td></tr>
   </table>
+  <p class="tiny muted" style="margin-top:14px">컨텍스트: 모델이 요청마다 받는 글 전체(시스템 프롬프트, 도구 정의, 대화). 길수록 느리고 비싸며, 지시가 흐려집니다.</p>
   <aside class="notes">
     <p>사진 찍어 가셔도 되는 슬라이드입니다. 레포의 docs/guide/00-concepts.md에 같은 표가 있습니다.</p>
   </aside>

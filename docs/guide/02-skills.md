@@ -145,7 +145,7 @@ S1b처럼 출력 형식(심각도 표 + 요약)까지 정해 두면 누가 시�
 | `--help`를 친절하게. 모델도 읽는다 | "하지 말 것"을 쓴다: 원본 전체 읽기, 스크립트 고치기, 숫자 지어내기 |
 | 네트워크 없이 동작. 결과물에도 외부 링크를 넣지 않는다 | |
 
-**Windows 주의.** opencode 1.19.5의 `bash` 도구는 Windows에서 Git Bash가 설치되어 있어도 **Windows PowerShell 5.1**로 실행됩니다. `&&`, `export X=1`, `$APP_ENV`, `wc`, `head`, `2>/dev/null`이 모두 안 됩니다. 한 모델이 스스로 붙인 `wc -l`이 실패한 적도 있습니다. 그래서 `SKILL.md`에는 `python <스킬 폴더>/scripts/x.py 인자` 한 줄만 시키고, 셸 문법이 필요한 일은 스크립트 안으로 옮깁니다. 경로 구분자는 `\`로 와도 `/`로 바꿔 넘기면 Python이 처리합니다. 자세한 내용은 [5. 문제 해결](05-troubleshooting.md)의 Windows 절을 보세요.
+**Windows 주의.** opencode 1.19.5의 `bash` 도구는 Windows에서 Git Bash가 설치되어 있어도 **Windows PowerShell 5.1**로 실행됩니다. `&&`는 문법 오류, `export X=1`, `wc`, `head`는 없는 명령, `2>/dev/null`은 경로 오류이고, `$APP_ENV`는 오류 없이 빈 값이 됩니다. Linux에서 한 모델이 시키지도 않은 `wc -l`을 스스로 붙인 적이 있는데(S3a), Windows였다면 그 줄은 실패했을 것입니다. 그래서 `SKILL.md`에는 `python <스킬 폴더>/scripts/x.py 인자` 한 줄만 시키고, 셸 문법이 필요한 일은 스크립트 안으로 옮깁니다. 경로 구분자는 `\`로 와도 `/`로 바꿔 넘기면 Python이 처리합니다. 자세한 내용은 [5. 문제 해결](05-troubleshooting.md)의 Windows 절을 보세요.
 
 날짜처럼 OS마다 명령이 다른 것은 두 가지를 모두 적어 둡니다. ([S2c](../../examples/01-skills/s2c-adr/)는 `date +%F`와 `Get-Date -Format yyyy-MM-dd`를 모두 적었습니다.)
 

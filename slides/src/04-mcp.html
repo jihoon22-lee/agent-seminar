@@ -7,7 +7,7 @@
     </div>
     <x-diagram focus="mcp"></x-diagram>
   </div>
-  <aside class="notes"><p>12분. M1에서 서버의 속을 보고, M4에서 원격으로 옮기고, M6에서 실제 시스템처럼 쓰는 모습을 봅니다. 데모는 M1, M4, M6.</p></aside>
+  <aside class="notes"><p>11분. M1에서 서버의 속을 보고, M4에서 원격으로 옮기고, M6에서 실제 시스템처럼 쓰는 모습을 봅니다. 데모는 M1, M4. M6 데모는 심화(시간이 남을 때).</p></aside>
 </section>
 
 <section class="slide" data-chapter="mcp" data-title="MCP 서버가 할 일">
@@ -82,7 +82,7 @@
   </aside>
 </section>
 
-<section class="slide" data-chapter="mcp" data-title="M1 도구 설명">
+<section class="slide" data-optional data-chapter="mcp" data-title="M1 도구 설명">
   <h2><span class="tag mcp">M1</span>모델은 도구의 설명을 보고 고릅니다</h2>
   <div class="cols c64">
     <script type="text/x-code" data-lang="json" class="sm" data-title="tools/list 응답 (raw_session.py 실제 출력)">
@@ -138,7 +138,7 @@
     </div>
   </div>
   <div class="ref">examples/02-mcp/m1-stdio-minimal</div>
-  <aside class="notes"><p>raw_session.py 출력에서 4번(isError)과 6번(-32602)의 차이를 짚어 주세요. 도구 실행 실패는 결과로, 프로토콜 오류는 error로.</p></aside>
+  <aside class="notes"><p>raw_session.py 출력에서 5번(isError)과 6번(-32602)의 차이를 짚어 주세요. 도구 실행 실패는 결과로, 프로토콜 오류는 error로.</p></aside>
 </section>
 
 <section class="slide" data-chapter="mcp" data-title="M2 공식 SDK">
@@ -177,7 +177,7 @@
   </aside>
 </section>
 
-<section class="slide" data-chapter="mcp" data-title="M3 환경 변수로 설정 넘기기">
+<section class="slide" data-optional data-chapter="mcp" data-title="M3 환경 변수로 설정 넘기기">
   <h2><span class="tag mcp">M3</span>토큰과 경로는 환경 변수로 넘깁니다</h2>
   <div class="cols c46">
     <script type="text/x-code" data-lang="json" class="sm" data-title="opencode.json" data-mark="6,7,13">
@@ -250,17 +250,19 @@
   <div class="cols">
     <script type="text/x-code" data-lang="powershell" data-title="터미널 1: 서버">
     PS> cd examples\02-mcp\m4-remote-http
-    PS> $env:DEMO_TOKEN = "demo-token-123"
-    PS> python server.py --http --port 3917
+    PS> $env:API_TOKEN = "demo-token-123"   # 서버가 받을 토큰
+    PS> python server.py --http             # 127.0.0.1:3917
     </script>
     <script type="text/x-code" data-lang="powershell" data-title="터미널 2: opencode">
     PS> cd examples\02-mcp\m4-remote-http
-    PS> $env:DEMO_TOKEN = "demo-token-123"
+    PS> $env:DEMO_TOKEN = "demo-token-123"  # 클라이언트가 보낼 토큰
     PS> python http_probe.py         # 날것의 HTTP 요청과 응답
     PS> opencode mcp list
     ●  ✓ glossary-remote connected
     PS> $env:DEMO_TOKEN = "wrong"; opencode mcp list
-    ●  ✗ glossary-remote failed  (401)
+    ●  ✗ glossary-remote failed
+    │      SSE error: Non-200 status code (401)
+    PS> $env:DEMO_TOKEN = "demo-token-123"  # 되돌려 두기
     </script>
   </div>
   <div class="ref">examples/02-mcp/m4-remote-http</div>

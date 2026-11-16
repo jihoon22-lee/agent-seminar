@@ -224,7 +224,7 @@ class Sandbox:
 
 MODEL_UNAVAILABLE = "<<model-unavailable>>"
 RATE_LIMIT_RE = re.compile(
-    r"FreeTierError|usage limit|rate.?limit|\b429\b|\b403\b.*(forbidden|quota)|quota exceeded", re.I)
+    r"FreeTierError|usage limit|rate.?limit|\b429 Too Many|status(?:Code)?\W{0,4}429\b|\b403\b.*(forbidden|quota)|quota exceeded", re.I)
 
 
 def _refused(*paths: Path) -> bool:

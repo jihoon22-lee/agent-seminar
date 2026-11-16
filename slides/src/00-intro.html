@@ -17,22 +17,23 @@
   <h2>오늘의 순서 (60분)</h2>
   <div class="cols c64">
     <ol class="steps">
-      <li><strong>들어가며</strong> <span class="muted">에이전트가 모르는 것들, 3분</span></li>
-      <li><strong>개념</strong> <span class="muted">스킬, MCP, 플러그인은 각각 무엇인가, 8분</span></li>
+      <li><strong>들어가며</strong> <span class="muted">에이전트가 모르는 것들, 4분</span></li>
+      <li><strong>개념</strong> <span class="muted">스킬, MCP, 플러그인은 각각 무엇인가, 9분</span></li>
       <li><strong>opencode.json</strong> <span class="muted">설정 위치, 병합, 환경 변수, 7분</span></li>
-      <li><strong>스킬</strong> <span class="muted">파일 하나부터 스크립트까지, 12분</span></li>
-      <li><strong>MCP</strong> <span class="muted">로컬 서버부터 원격 서버까지, 12분</span></li>
-      <li><strong>플러그인</strong> <span class="muted">막고, 기록하고, 주입하기, 8분</span></li>
-      <li><strong>종합과 마무리</strong> <span class="muted">셋을 함께 쓰기, 개발 체크리스트, 10분</span></li>
+      <li><strong>스킬</strong> <span class="muted">파일 하나부터 스크립트까지, 10분</span></li>
+      <li><strong>MCP</strong> <span class="muted">로컬 서버부터 원격 서버까지, 11분</span></li>
+      <li><strong>플러그인</strong> <span class="muted">막고, 기록하고, 주입하기, 7분</span></li>
+      <li><strong>종합과 마무리</strong> <span class="muted">셋을 함께 쓰기, 개발 체크리스트, 7분</span></li>
+      <li><strong>질문</strong> <span class="muted">5분</span></li>
     </ol>
     <div class="callout">
       <p><strong>예제 38개</strong>가 모두 레포에 있습니다.</p>
       <p class="small">발표에서는 몇 개만 시연하고, 나머지는 각 예제의 README를 따라 직접 해 볼 수 있게 만들었습니다.</p>
-      <p class="small">슬라이드 오른쪽 아래의 <code>examples/…</code> 경로가 해당 예제입니다.</p>
+      <p class="small">슬라이드 왼쪽 아래의 <code>examples/…</code> 경로가 해당 예제입니다.</p>
     </div>
   </div>
   <aside class="notes">
-    <p>시간 배분 안내. 각 장 끝에 데모가 있습니다. 데모 화면은 어두운 배경으로 바뀌니, 그때 터미널로 넘어간다고 보시면 됩니다.</p>
+    <p>시간 배분 안내. 개념 장을 뺀 각 장에 데모가 있습니다(설정 1개, 스킬 1개, MCP 2개, 플러그인 1개, 종합 1개). 데모 화면은 어두운 배경으로 바뀌니, 그때 터미널로 넘어간다고 보시면 됩니다.</p>
   </aside>
 </section>
 
@@ -44,10 +45,10 @@
       <ul>
         <li><strong>opencode 1.19.5</strong> <span class="small muted">이 버전으로 모든 예제를 검증</span></li>
         <li><strong>Python 3.10 이상</strong> <span class="small muted">예제 스크립트와 MCP 서버는 표준 라이브러리만 사용</span></li>
-        <li><strong>git</strong></li>
+        <li><strong>git 2.28 이상</strong> <span class="small muted"><code>git init -b</code> 사용</span></li>
         <li class="small">모델: 평소 쓰는 모델 그대로. 설정된 모델이 없으면 무료 모델 <code>opencode/big-pickle</code></li>
       </ul>
-      <p class="small muted">인터넷 없이 돌아가도록 만들었습니다. 다만 <code>.opencode/</code> 폴더가 있는 예제는 시작할 때 opencode가 npm 패키지 하나(<code>@opencode-ai/plugin</code>)를 설치하려 합니다. 레지스트리에 닿지 않으면 시작할 때마다 약 70초 멈추니, <code>npm config set registry</code>로 패키지 미러를 먼저 지정하세요. 플러그인 단위 테스트에는 Node가 있으면 좋습니다.</p>
+      <p class="small muted">예제는 인터넷 없이 돕니다. 단, 플러그인이 있는 예제는 시작할 때 npm 패키지(<code>@opencode-ai/plugin</code>)를 설치하려 해서, 레지스트리가 막혀 있으면 시작마다 약 70초 멈춥니다. <code>npm config set registry</code>로 패키지 미러를 먼저 지정하세요.</p>
     </div>
     <div>
       <script type="text/x-code" data-lang="powershell" class="term" data-title="PowerShell">
@@ -55,18 +56,21 @@
       PS> cd agent-seminar\examples\01-skills\s1a-commit-message
       PS> opencode --version
       1.19.5
+      PS> python prepare.py     # 실습용 저장소 sandbox/ 를 만든다
+      PS> cd sandbox
       PS> opencode
       </script>
       <script type="text/x-code" data-lang="bash" class="term" data-title="Linux">
       $ git clone https://github.com/jihoon22-lee/agent-seminar
       $ cd agent-seminar/examples/01-skills/s1a-commit-message
+      $ python3 prepare.py && cd sandbox
       $ opencode
       </script>
     </div>
   </div>
   <div class="ref">README.md</div>
   <aside class="notes">
-    <p>예제 폴더 하나하나가 그 자체로 opencode 프로젝트입니다. 해당 폴더로 들어가서 opencode를 실행하면 그 예제의 설정만 적용됩니다.</p>
+    <p>예제 폴더 하나하나가 그 자체로 opencode 프로젝트입니다. 해당 폴더로 들어가서 opencode를 실행하면 그 예제의 설정만 적용됩니다. git 저장소가 필요한 예제(S1a 등)는 <code>prepare.py</code>가 <code>sandbox/</code>에 실습용 저장소를 만들고, 그 안에서 실행합니다. 각 README의 "따라 하기"를 그대로 따르면 됩니다.</p>
     <p>Linux에서 python 명령이 없으면 예제 설정의 python을 python3로 바꾸면 됩니다. README마다 적어 두었습니다.</p>
   </aside>
 </section>

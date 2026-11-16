@@ -83,6 +83,19 @@
       code.dataset.fit = "1";
     });
   }
+  // Fit every slide once the real fonts are in, so overview and print are right too.
+  // Each slide is laid out briefly (hidden) because display:none slides measure 0.
+  function fitAll() {
+    document.querySelectorAll("figure.code pre code[data-fit]").forEach((code) => {
+      delete code.dataset.fit; code.style.fontSize = ""; code.style.whiteSpace = "";
+    });
+    slides.forEach((s) => {
+      const was = s.style.cssText;
+      s.style.display = "flex"; s.style.visibility = "hidden";
+      fitCode(s);
+      s.style.cssText = was;
+    });
+  }
 
   function show(i, opts = {}) {
     index = Math.max(0, Math.min(total - 1, i));
@@ -123,6 +136,12 @@
     if (isPresenter) renderPresenter();
   }
   document.body.classList.toggle("short-mode", shortMode());
+  // The other window (presenter or audience) toggled S: follow it.
+  window.addEventListener("storage", (e) => {
+    if (e.key !== SHORT_KEY) return;
+    document.body.classList.toggle("short-mode", shortMode());
+    if (isPresenter) renderPresenter();
+  });
 
   function next() {
     const hidden = stepsOf(slides[index]).filter((s) => !s.classList.contains("shown"));
@@ -193,6 +212,7 @@
     const clone = slide.cloneNode(true);
     clone.classList.add("active");
     frame.appendChild(clone);
+    fitCode(clone);
     const s = Math.min(box.clientWidth / 1920, box.clientHeight / 1080);
     frame.style.transform = `scale(${s})`;
   }
@@ -259,6 +279,7 @@
     if (n && n - 1 !== index) show(n - 1, { allSteps: true });
   });
   window.addEventListener("beforeprint", () => { slides.forEach((s) => stepsOf(s).forEach((st) => st.classList.add("shown"))); fitCode(document); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (!isPresenter) fitAll(); else renderPresenter(); });
 
   // ---------------------------------------------------------------- start
   if (isPresenter) buildPresenter();
