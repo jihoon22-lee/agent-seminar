@@ -87,7 +87,7 @@ python show_model_tools.py --overlay overlays/legacy-on.json   # legacy 를 켠 
 ```
 
 `overlays/legacy-on.json` 은 `{"mcp":{"legacy":{"enabled":true}}}` 한 줄짜리 설정 조각으로, 스크립트가 `OPENCODE_CONFIG_CONTENT` 로 얹어서 실행합니다(프로젝트 `opencode.json` 은 그대로). JSON 문자열을 직접 줄 수도 있지만 PowerShell 은 따옴표 처리가 까다로워서 파일을 권장합니다.
-이 스크립트는 가짜 LLM 서버를 모델로 지정해 `opencode run` 을 한 번 실행합니다. 인터넷도 계정도 필요 없고, 내 opencode 에 세션 기록이 하나 남을 뿐 설정 파일은 바뀌지 않습니다.
+이 스크립트는 가짜 LLM 서버를 모델로 지정해 `opencode run` 을 한 번 실행합니다. 인터넷도 계정도 필요 없습니다. opencode 는 임시 폴더로 격리해서 실행하므로 내 전역 설정의 MCP 서버가 섞이지 않고 세션 기록도 남지 않습니다.
 
 ### 4. 실제 모델로 (평소 쓰는 모델로 실행하면 됩니다)
 

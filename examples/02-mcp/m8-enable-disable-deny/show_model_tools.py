@@ -9,7 +9,7 @@
     python show_model_tools.py --overlay overlays/legacy-on.json                 # 설정 조각(JSON 파일)을 얹어서 비교
     python show_model_tools.py --overlay '{"mcp":{"legacy":{"enabled":true}}}'   # 인라인 JSON 도 가능 (PowerShell 에서는 따옴표가 까다로우니 파일 권장)
 
-주의: 내 opencode 환경에서 `opencode run` 을 한 번 실행하므로 세션 기록이 하나 남는다(설정 파일은 건드리지 않음).
+opencode 는 임시 폴더로 격리해서 실행한다. 내 전역 설정의 MCP 서버가 섞이지 않고, 세션 기록도 남지 않는다.
 """
 import argparse
 import json
@@ -18,6 +18,7 @@ import pathlib
 import shutil
 import subprocess
 import sys
+import tempfile
 
 sys.stdout.reconfigure(encoding="utf-8")
 
@@ -47,6 +48,18 @@ def model_tools(cwd=HERE, agent=None, overlay=None, opencode=None, env=None):
         return [t["function"] for t in main[-1]["tools"]]
 
 
+def isolated_env(root):
+    """opencode 의 설정·데이터·캐시 폴더를 임시 폴더로 돌린 환경 변수. 내 전역 설정과 세션 기록을 건드리지 않는다."""
+    env = {k: v for k, v in os.environ.items() if not k.startswith("OPENCODE_CONFIG")}
+    for name in ("CONFIG", "DATA", "CACHE", "STATE"):
+        path = pathlib.Path(root) / name.lower()
+        path.mkdir(parents=True, exist_ok=True)
+        env[f"XDG_{name}_HOME"] = str(path)
+    env["OPENCODE_DISABLE_AUTOUPDATE"] = "1"
+    env["OPENCODE_DISABLE_EXTERNAL_SKILLS"] = "1"
+    return env
+
+
 def mcp_servers(cwd=HERE):
     config = json.loads((pathlib.Path(cwd) / "opencode.json").read_text(encoding="utf-8"))
     return list(config.get("mcp", {}))
@@ -71,13 +84,17 @@ def main():
     if args.overlay:
         text = args.overlay.strip()
         overlay = json.loads(text if text.startswith("{") else pathlib.Path(args.overlay).read_text(encoding="utf-8"))
-    tools = model_tools(agent=args.agent, overlay=overlay)
+    sandbox = tempfile.mkdtemp(prefix="m8-tools-")
+    try:
+        tools = model_tools(agent=args.agent, overlay=overlay, env=isolated_env(sandbox))
+    finally:
+        shutil.rmtree(sandbox, ignore_errors=True)
     groups = group(tools, mcp_servers())
     size = sum(len(json.dumps(t, ensure_ascii=False)) for t in tools)
     print(f"에이전트: {args.agent or 'build(기본)'}   모델이 받은 도구: {len(tools)}개")
     if not any(k for k in groups if k != "(내장·기타)"):
         print("!! 이 예제의 MCP 서버(docs/ops/legacy) 도구가 하나도 없습니다. `opencode mcp list` 로 연결 상태를 확인하세요 "
-              "(Linux 에서 `python` 명령이 없으면 failed 입니다). 아래 '(내장·기타)' 에는 내 전역 설정의 MCP 도구도 섞일 수 있습니다.")
+              "(Linux 에서 `python` 명령이 없으면 failed 입니다).")
     for owner, names in groups.items():
         print(f"  {owner:<8} {len(names):>2}개  {', '.join(sorted(names))}")
     mcp_size = sum(len(json.dumps(t, ensure_ascii=False)) for t in tools if t["name"] not in BUILTIN)
