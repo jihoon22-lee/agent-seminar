@@ -1,0 +1,25 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "glossary-env": {
+      "type": "local",
+      "command": ["python", "server.py"],
+      "environment": {
+        "GLOSSARY_PATH": "glossary.json",
+        "API_TOKEN": "{env:DEMO_API_TOKEN}",
+        "LOG_LEVEL": "INFO"
+      },
+      "enabled": true
+    },
+    "glossary-file": {
+      "type": "local",
+      "command": ["python", "server.py"],
+      "environment": {
+        "GLOSSARY_PATH": "glossary.json",
+        "API_TOKEN": "{file:./secrets/token.txt}",
+        "LOG_LEVEL": "DEBUG"
+      },
+      "enabled": false
+    }
+  }
+}

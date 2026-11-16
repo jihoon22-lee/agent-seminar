@@ -1,0 +1,2 @@
+# 공식 MCP Python SDK. 2.x는 FastMCP가 MCPServer로 바뀐 새 메이저 버전이다.
+mcp==2.3.0
