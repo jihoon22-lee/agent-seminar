@@ -1,0 +1,92 @@
+<section class="slide" data-chapter="wrap" data-title="개발 체크리스트">
+  <h2>만들기 전에, 만든 뒤에: 체크리스트</h2>
+  <div class="cols three">
+    <div>
+      <h3 style="color:var(--c-skill-ink)">스킬</h3>
+      <ul class="small">
+        <li>description에 <strong>무엇을</strong>과 <strong>언제</strong>, 사용자가 칠 문장을 넣었다</li>
+        <li>본문은 짧게, 긴 내용은 <code>references/</code>로 나눴다</li>
+        <li>계산과 집계는 스크립트에 맡겼다 (표준 라이브러리만)</li>
+        <li>명령은 PowerShell과 bash에서 모두 도는 한 줄이다</li>
+        <li><code>opencode debug skill</code>에 보인다</li>
+        <li>다른 위치의 스킬과 이름이 겹치지 않는다</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="color:var(--c-mcp)">MCP 서버</h3>
+      <ul class="small">
+        <li>도구는 좁게, 이름과 설명은 모델이 고르기 쉽게</li>
+        <li>결과는 작게. 목록은 개수 제한, 긴 본문은 요약</li>
+        <li>stdout에는 프로토콜만, 로그는 stderr</li>
+        <li>입출력 UTF-8 (Windows cp949 대비)</li>
+        <li>토큰은 <code>{env:…}</code>로, 원격은 <code>127.0.0.1</code>부터</li>
+        <li><code>opencode mcp list</code>가 <code>✓ connected</code>다</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="color:var(--c-plugin)">플러그인</h3>
+      <ul class="small">
+        <li>플러그인 함수만 export했다</li>
+        <li>로드될 때 로그 한 줄을 남긴다</li>
+        <li>차단 메시지에 이유와 대안이 있다</li>
+        <li>판정 로직을 단위 테스트로 고정했다 (막을 것, 허용할 것)</li>
+        <li>훅 안의 예외가 다른 기능을 망치지 않게 감쌌다</li>
+        <li>단순 허용/거부라면 <code>permission</code>으로 충분한지 먼저 봤다</li>
+      </ul>
+    </div>
+  </div>
+  <aside class="notes"><p>오늘 예제를 만들며 실제로 걸려 넘어진 것만 모았습니다. 각 항목 뒤에는 예제 하나씩이 있습니다. 예를 들어 "플러그인 함수만 export"는 P1을 만들다가, "UTF-8"은 M9에서 나왔습니다.</p></aside>
+</section>
+
+<section class="slide" data-chapter="wrap" data-title="이 레포로 직접 해 보기">
+  <h2>발표가 끝나면: 이 레포로 직접 해 보기</h2>
+  <div class="cols c46">
+    <div class="tree" style="font-size:22px">agent-seminar/
+├── examples/
+│   ├── 00-config/     설정 C1–C5
+│   ├── 01-skills/     스킬 S1a–S5c
+│   ├── 02-mcp/        MCP M1–M9
+│   ├── 03-plugins/    플러그인 P1–P8
+│   └── 04-combined/   종합 X1, X2
+├── docs/guide/        글로 읽는 가이드 00–05
+├── slides/            이 발표 자료
+└── tools/run_checks.py  예제 자동 검사</div>
+    <div>
+      <h3>추천 순서 (1시간)</h3>
+      <ol class="steps small">
+        <li><span class="tag skill">S1a</span> 커밋 메시지 스킬을 내 저장소에 복사해 본다</li>
+        <li><span class="tag mcp">M1</span> 표준 라이브러리 서버를 띄우고 <code>mcp list</code>로 확인</li>
+        <li><span class="tag plugin">P1</span> .env 차단 플러그인을 켜고 막히는지 본다</li>
+        <li><span class="tag config">C1</span> <code>demo.py</code>로 설정 병합을 눈으로 본다</li>
+        <li>각 예제 README의 "직접 바꿔 보기"를 하나씩</li>
+      </ol>
+      <script type="text/x-code" data-lang="powershell" class="term sm" data-title="예제가 내 PC에서 도는지 한 번에 확인">
+      PS> python tools\run_checks.py examples\01-skills
+      PS> python tools\run_checks.py examples --model   # 모델까지
+      </script>
+    </div>
+  </div>
+  <aside class="notes">
+    <p>모든 예제 폴더의 README는 같은 순서입니다. 무엇을 보여 주나, 실무에서는, 파일 구성, 따라 하기, 기대 결과, 동작 원리, 직접 바꿔 보기, 주의할 점.</p>
+    <p>check.py는 실제 opencode 설정을 건드리지 않습니다. 임시 폴더로 격리해서 실행하고 끝나면 지웁니다.</p>
+  </aside>
+</section>
+
+<section class="slide statement" data-chapter="wrap" data-title="정리">
+  <div class="big">아는 것은 <span style="color:var(--c-skill)">스킬</span>로,<br>닿는 것은 <span style="color:var(--c-mcp)">MCP</span>로,<br>지켜야 할 것은 <span style="color:var(--c-plugin)">플러그인</span>으로.</div>
+  <p>그리고 셋을 켜고 끄는 곳은 <code>opencode.json</code> 하나입니다.</p>
+  <aside class="notes"><p>오늘 내용을 한 문장으로 줄이면 이렇습니다. 프롬프트에 매번 붙여 넣던 것이 있다면 그게 첫 번째 스킬 후보입니다.</p></aside>
+</section>
+
+<section class="slide title" data-chapter="wrap" data-title="질문">
+  <div class="cols center" style="flex:1;grid-template-columns:780px 1fr;gap:40px">
+    <div>
+      <h1>질문</h1>
+      <p class="lead" style="margin-top:28px">예제, 가이드, 이 발표 자료가<br>모두 한 레포에 있습니다.</p>
+      <p class="small" style="margin-top:40px;white-space:nowrap"><strong>github.com/jihoon22-lee/agent-seminar</strong></p>
+      <p class="small muted" style="white-space:nowrap">발표 자료: jihoon22-lee.github.io/agent-seminar</p>
+    </div>
+    <x-diagram></x-diagram>
+  </div>
+  <aside class="notes"><p>예상 질문: 다른 에이전트에서도 되나요? 스킬(SKILL.md)과 MCP는 여러 에이전트가 같은 형식을 읽습니다. 플러그인과 opencode.json은 opencode 전용입니다. 오늘 예제는 모두 opencode 1.19.5에서 확인했습니다.</p></aside>
+</section>

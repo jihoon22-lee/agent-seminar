@@ -22,7 +22,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def main() -> int:
-    filters = [a for a in sys.argv[1:] if not a.startswith("--")]
+    # Accept Windows-style paths (examples\01-skills) and trailing slashes.
+    filters = [a.replace("\\", "/").rstrip("/") for a in sys.argv[1:] if not a.startswith("--")]
     env = dict(os.environ, PYTHONUTF8="1")
     if "--model" in sys.argv:
         env["AGENT_SEMINAR_MODEL_CHECKS"] = "1"
