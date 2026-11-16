@@ -1,0 +1,284 @@
+<section class="slide divider" data-chapter="config" data-title="3. opencode.json">
+  <div class="cols c46 center">
+    <div>
+      <div class="num">3</div>
+      <h2>opencode.json</h2>
+      <p class="lead">설정 파일은 어디에 두고, 여러 개면 어떻게 합쳐지는가</p>
+    </div>
+    <x-diagram focus="config"></x-diagram>
+  </div>
+  <aside class="notes"><p>7분. 스킬, MCP, 플러그인 모두 결국 이 파일과 폴더 구조로 켭니다. 그래서 먼저 봅니다.</p></aside>
+</section>
+
+<section class="slide" data-chapter="config" data-title="설정 파일 위치">
+  <h2>설정은 세 곳에 둘 수 있습니다</h2>
+  <table>
+    <tr><th class="config">범위</th><th class="config">위치</th><th class="config">이럴 때</th></tr>
+    <tr><td><strong>전역</strong></td><td><code>~/.config/opencode/opencode.json</code><br><span class="small muted">Windows: <code>%USERPROFILE%\.config\opencode\opencode.json</code></span></td><td>나만 쓰는 설정, 모든 프로젝트 공통</td></tr>
+    <tr><td><strong>프로젝트</strong></td><td><code>&lt;프로젝트&gt;/opencode.json</code></td><td>팀이 git으로 공유하는 설정</td></tr>
+    <tr><td><strong>프로젝트</strong> (폴더형)</td><td><code>&lt;프로젝트&gt;/.opencode/opencode.json</code></td><td>스킬, 플러그인과 한 폴더에 모으고 싶을 때</td></tr>
+  </table>
+  <div class="gap"></div>
+  <div class="cols">
+    <div class="callout small">
+      <p>스킬과 플러그인 폴더도 같은 범위를 따릅니다.</p>
+      <p><code>~/.config/opencode/skills/</code> ↔ <code>.opencode/skills/</code><br><code>~/.config/opencode/plugins/</code> ↔ <code>.opencode/plugins/</code></p>
+    </div>
+    <p class="small muted">opencode는 실행한 폴더부터 git 루트까지 올라가며 설정을 찾습니다. 그래서 프로젝트 하위 폴더에서 실행해도 루트의 설정이 적용됩니다.</p>
+  </div>
+  <div class="ref">examples/00-config/c1-scope-merge</div>
+  <aside class="notes">
+    <p>팀이 공유할 것은 프로젝트에, 개인 취향은 전역에. 토큰 같은 비밀값은 어디에도 직접 쓰지 않고 환경 변수로 넘깁니다. 잠시 뒤에 봅니다.</p>
+  </aside>
+</section>
+
+<section class="slide" data-chapter="config" data-title="opencode.json 뼈대">
+  <h2>오늘 다루는 키는 이 정도입니다</h2>
+  <div class="cols c64">
+    <script type="text/x-code" data-lang="json" data-title="opencode.json">
+    {
+      "$schema": "https://opencode.ai/config.json",
+      "instructions": ["docs/team-rules.md"],
+      "skills": { "paths": ["../team-skills"] },
+      "mcp": {
+        "glossary": {
+          "type": "local",
+          "command": ["python", "server.py"],
+          "environment": { "API_TOKEN": "{env:GLOSSARY_TOKEN}" }
+        },
+        "team": {
+          "type": "remote",
+          "url": "http://127.0.0.1:3917/mcp",
+          "headers": { "Authorization": "Bearer {env:DEMO_TOKEN}" }
+        }
+      },
+      "plugin": ["./plugins/audit-log.js"],
+      "permission": { "bash": { "*": "ask", "git status*": "allow" } }
+    }
+    </script>
+    <div>
+      <ul class="small">
+        <li><code>$schema</code>: 편집기가 자동 완성과 오류 표시를 해 준다</li>
+        <li><code>instructions</code>: 항상 읽힐 규칙 문서</li>
+        <li><code>skills.paths</code>: 기본 위치 밖의 스킬 폴더</li>
+        <li><code>mcp</code>: 붙일 MCP 서버. 이름이 도구 이름 앞에 붙는다</li>
+        <li><code>plugin</code>: 폴더 밖 플러그인. <code>.opencode/plugins/</code>는 적지 않아도 로드된다</li>
+        <li><code>permission</code>: 도구별 허용, 확인, 거부</li>
+      </ul>
+      <p class="tiny muted">opencode 1.19.5 기준 형식입니다. 공식 문서에는 다음 버전 형식(<code>mcp.servers</code>, <code>plugins</code>)이 먼저 올라와 있으니 버전을 확인하세요.</p>
+    </div>
+  </div>
+  <aside class="notes">
+    <p>설정은 엄격하게 검사됩니다. 키 이름이 틀리면 opencode가 시작되지 않습니다. $schema를 꼭 넣으세요.</p>
+  </aside>
+</section>
+
+<section class="slide" data-chapter="config" data-title="병합과 우선순위">
+  <h2>여러 파일은 덮어쓰지 않고 합쳐집니다</h2>
+  <div class="flow" style="margin:6px 0 30px">
+    <div class="node config"><b>① 전역</b><code>~/.config/opencode/</code></div>
+    <div class="arrow">›</div>
+    <div class="node config"><b>② OPENCODE_CONFIG</b>로 지정한 파일</div>
+    <div class="arrow">›</div>
+    <div class="node config"><b>③ 프로젝트</b><code>opencode.json</code></div>
+    <div class="arrow">›</div>
+    <div class="node config"><b>④ 프로젝트</b><code>.opencode/opencode.json</code></div>
+    <div class="arrow">›</div>
+    <div class="node config fill"><b>⑤ OPENCODE_CONFIG_CONTENT</b>환경 변수 속 JSON</div>
+  </div>
+  <div class="cols">
+    <ul>
+      <li>오른쪽으로 갈수록 우선한다. <strong>같은 키</strong>만 오른쪽 값이 이긴다</li>
+      <li>다른 키는 모두 살아남는다. 전역에 둔 MCP와 프로젝트의 MCP가 <strong>둘 다</strong> 켜진다</li>
+      <li><code>OPENCODE_CONFIG</code> 파일은 프로젝트 설정보다 <strong>약하다</strong> <span class="small muted">헷갈리기 쉬운 지점</span></li>
+    </ul>
+    <div class="callout small">
+      <p>직접 실험해서 확인한 순서입니다. 다섯 가지 경우를 차례로 돌려 보는 <code>demo.py</code>가 예제에 있습니다.</p>
+    </div>
+  </div>
+  <div class="ref">examples/00-config/c1-scope-merge</div>
+  <aside class="notes">
+    <p>이 순서는 1.19.5에서 같은 키를 다섯 군데에 넣고 하나씩 빼 보며 확인했습니다. 문서만 믿지 말고 debug config로 확인하는 습관을 권합니다.</p>
+  </aside>
+</section>
+
+<section class="slide" data-chapter="config" data-title="설정 확인 명령">
+  <h2>지금 무엇이 적용됐는지 확인하는 명령</h2>
+  <div class="cols c64">
+    <script type="text/x-code" data-lang="bash" class="term" data-title="확인 명령 네 가지">
+    # 모든 파일을 합친 최종 설정
+    $ opencode debug config
+
+    # 찾아낸 스킬 목록 (이름, 설명, 위치)
+    $ opencode debug skill
+
+    # MCP 서버 연결 상태
+    $ opencode mcp list
+    ●  ✓ glossary connected
+    ●  ✗ team failed
+
+    # 설정, 데이터, 로그 폴더 위치
+    $ opencode debug paths
+    </script>
+    <div>
+      <p class="small">"설정했는데 안 된다"의 대부분은 이 네 명령으로 원인이 보입니다.</p>
+      <ul class="small">
+        <li>키 오타, 다른 파일이 덮어쓴 값 → <code>debug config</code></li>
+        <li>스킬이 안 보인다 → <code>debug skill</code></li>
+        <li>MCP 서버가 안 붙는다 → <code>mcp list</code></li>
+      </ul>
+      <p class="tiny muted">설정은 시작할 때 한 번만 읽습니다. 고친 뒤에는 opencode를 다시 실행하세요.</p>
+    </div>
+  </div>
+  <aside class="notes">
+    <p>데모 중에 막히면 저도 이 명령부터 칩니다.</p>
+  </aside>
+</section>
+
+<section class="slide" data-chapter="config" data-title="환경 변수와 파일 치환">
+  <h2>비밀값은 설정 파일에 직접 쓰지 않습니다</h2>
+  <div class="cols c64">
+    <script type="text/x-code" data-lang="json" data-title="opencode.json" data-mark="6,7,11">
+    {
+      "mcp": {
+        "glossary": {
+          "type": "local",
+          "command": ["python", "server.py"],
+          "environment": {
+            "API_TOKEN": "{env:GLOSSARY_TOKEN}",
+            "TOKEN_FILE_VALUE": "{file:./secrets/token.txt}"
+          }
+        },
+        "team": { "type": "remote", "url": "{env:TEAM_MCP_URL}",
+                  "headers": { "Authorization": "Bearer {env:TEAM_MCP_TOKEN}" } }
+      }
+    }
+    </script>
+    <div>
+      <ul class="small">
+        <li><code>{env:이름}</code>: 환경 변수 값으로 바뀐다</li>
+        <li><code>{file:경로}</code>: 파일 내용으로 바뀐다</li>
+        <li><code>${이름}</code>처럼 셸 문법은 바뀌지 않는다</li>
+        <li><code>environment</code>: 로컬 MCP 서버 프로세스에 넘길 환경 변수</li>
+      </ul>
+      <div class="callout small"><p><code>debug config</code>에서 <code>environment</code> 값은 <code>***</code>로 가려져 나옵니다. 화면 공유 중에도 안전합니다.</p></div>
+    </div>
+  </div>
+  <div class="ref">examples/00-config/c2-variables</div>
+  <aside class="notes">
+    <p>이렇게 하면 opencode.json은 그대로 git에 올리고, 토큰은 각자 환경 변수로 넣습니다. 팀원 모두 같은 파일을 씁니다.</p>
+  </aside>
+</section>
+
+<section class="slide" data-chapter="config" data-title="실전 사례: 설정 덧씌우기">
+  <h2>실전 사례: 사용자 설정을 건드리지 않고 MCP 붙이기</h2>
+  <div class="cols c46">
+    <div>
+      <p class="small"><strong>agent-browser</strong>는 크롬을 opencode 에이전트가 조작하게 해 주는 프로젝트입니다. 브라우저 MCP 서버를 붙여야 하는데, 사용자의 전역 설정 파일은 고치고 싶지 않았습니다.</p>
+      <ul class="small">
+        <li>자기가 띄우는 opencode 프로세스에만 <code>OPENCODE_CONFIG_CONTENT</code>로 <code>mcp.browser</code>를 넣는다</li>
+        <li>우선순위가 가장 높아서 기존 모델, 인증, 다른 MCP 설정은 그대로 두고 덧씌워진다</li>
+        <li>MCP 서버에 필요한 값(WSL 연결 정보)은 <code>environment</code>로 넘긴다</li>
+      </ul>
+      <p class="tiny muted">github.com/jihoon22-lee/agent-browser</p>
+    </div>
+    <script type="text/x-code" data-lang="python" data-title="launch.py (요지)">
+    import json, os, subprocess
+
+    overlay = {
+        "mcp": {
+            "clock": {
+                "type": "local",
+                "command": ["python", "clock_server.py"],
+            }
+        }
+    }
+    env = dict(os.environ,
+               OPENCODE_CONFIG_CONTENT=json.dumps(overlay))
+    # 이 프로세스에서만 clock MCP가 켜진다.
+    # 어떤 설정 파일도 바뀌지 않는다.
+    subprocess.run(["opencode"], env=env)
+    </script>
+  </div>
+  <div class="ref">examples/00-config/c3-config-content-overlay</div>
+  <aside class="notes">
+    <p>도구를 배포하는 입장이라면 이 패턴이 유용합니다. 설치 스크립트가 사용자의 설정 파일을 고치면 충돌과 복구 문제가 생기는데, 실행할 때만 덧씌우면 그런 문제가 없습니다.</p>
+  </aside>
+</section>
+
+<section class="slide" data-chapter="config" data-title="안전하게 실험하기">
+  <h2>내 설정을 망치지 않고 실험하는 법</h2>
+  <div class="cols c46">
+    <div>
+      <ul class="small">
+        <li><code>XDG_CONFIG_HOME</code>, <code>XDG_DATA_HOME</code>, <code>XDG_CACHE_HOME</code>, <code>XDG_STATE_HOME</code>을 임시 폴더로 바꾸면 전역 설정, 세션 기록, 캐시가 모두 격리된다</li>
+        <li><code>OPENCODE_DISABLE_EXTERNAL_SKILLS=1</code>: 다른 에이전트용 스킬 폴더(<code>~/.claude/skills</code>, <code>~/.agents/skills</code>)를 읽지 않는다</li>
+        <li><code>OPENCODE_DISABLE_AUTOUPDATE=1</code>: 실험 중 자동 업데이트를 막는다</li>
+      </ul>
+      <p class="tiny muted">이 레포의 모든 예제 검사(<code>check.py</code>)는 이렇게 격리한 상태에서 돌아갑니다.</p>
+    </div>
+    <script type="text/x-code" data-lang="powershell" class="term" data-title="격리해서 실행 (예제의 isolated.py)">
+    PS> python isolated.py debug paths
+    config  C:\Users\me\AppData\Local\Temp\oc-xyz\config\opencode
+    data    C:\Users\me\AppData\Local\Temp\oc-xyz\data\opencode
+    ...
+    PS> python isolated.py run "안녕"
+    # 끝나면 임시 폴더째 지워진다
+    </script>
+  </div>
+  <div class="ref">examples/00-config/c4-isolated-testing</div>
+  <aside class="notes">
+    <p>스킬이나 플러그인을 만들 때 내 평소 설정과 섞이면 "왜 되지?"와 "왜 안 되지?"를 구분할 수 없습니다. 격리가 개발의 기본입니다.</p>
+  </aside>
+</section>
+
+<section class="slide" data-chapter="config" data-title="permission">
+  <h2>권한 설정: 가장 간단한 안전장치</h2>
+  <div class="cols c46">
+    <script type="text/x-code" data-lang="json" data-title="opencode.json">
+    {
+      "permission": {
+        "edit": "ask",
+        "bash": {
+          "*": "ask",
+          "git status*": "allow",
+          "git diff*": "allow",
+          "rm *": "deny"
+        }
+      }
+    }
+    </script>
+    <div>
+      <ul class="small">
+        <li><code>allow</code> 바로 실행, <code>ask</code> 물어본 뒤 실행, <code>deny</code> 거부</li>
+        <li>패턴은 <strong>나중에 쓴 규칙이 이긴다</strong>. 넓은 규칙을 먼저, 좁은 규칙을 뒤에</li>
+        <li><code>opencode run --auto</code>는 <code>ask</code>를 자동으로 허용하지만 <code>deny</code>는 그대로 막는다</li>
+      </ul>
+      <div class="callout small"><p>패턴으로 충분하면 permission, 조건이 복잡하거나 기록과 알림까지 필요하면 플러그인. 둘 다 플러그인 장에서 비교합니다.</p></div>
+    </div>
+  </div>
+  <div class="ref">examples/00-config/c5-permissions</div>
+  <aside class="notes">
+    <p>스킬이나 MCP 도구도 permission으로 제어할 수 있습니다. 예를 들어 특정 스킬은 deny, 특정 MCP 도구는 ask.</p>
+  </aside>
+</section>
+
+<section class="slide demo" data-chapter="config" data-title="데모: 설정 병합">
+  <div class="demo-mark">데모</div>
+  <h2>설정 다섯 겹을 차례로 쌓아 보기</h2>
+  <div class="cols c46">
+    <ol class="steps small">
+      <li>예제 폴더로 이동한다</li>
+      <li><code>demo.py</code>가 임시 전역 폴더를 만들고 다섯 경우를 차례로 실행한다</li>
+      <li>키마다 어느 파일의 값이 이겼는지 표로 본다</li>
+    </ol>
+    <script type="text/x-code" data-lang="powershell" data-title="PowerShell">
+    PS> cd examples\00-config\c1-scope-merge
+    PS> python demo.py
+    </script>
+  </div>
+  <div class="ref">examples/00-config/c1-scope-merge</div>
+  <aside class="notes">
+    <p>demo.py는 실제 전역 설정을 건드리지 않습니다. 임시 폴더를 만들고 끝나면 지웁니다.</p>
+  </aside>
+</section>

@@ -1,0 +1,48 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "docs": {
+      "type": "local",
+      "command": [
+        "python",
+        "mcp_server.py",
+        "--profile",
+        "docs"
+      ]
+    },
+    "ops": {
+      "type": "local",
+      "command": [
+        "python",
+        "mcp_server.py",
+        "--profile",
+        "ops"
+      ]
+    },
+    "legacy": {
+      "type": "local",
+      "command": [
+        "python",
+        "mcp_server.py",
+        "--profile",
+        "legacy"
+      ],
+      "enabled": false
+    }
+  },
+  "permission": {
+    "ops_noisy_*": "deny",
+    "ops_restart": "ask"
+  },
+  "agent": {
+    "reviewer": {
+      "description": "읽기 전용 검토 에이전트: 파일 수정과 운영 도구를 쓰지 못한다",
+      "mode": "primary",
+      "tools": {
+        "ops_*": false,
+        "write": false,
+        "edit": false
+      }
+    }
+  }
+}

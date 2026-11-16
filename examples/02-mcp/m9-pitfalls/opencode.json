@@ -1,0 +1,35 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "broken_stdout": {
+      "type": "local",
+      "command": ["python", "broken_stdout.py"],
+      "timeout": 5000
+    },
+    "broken_encoding": {
+      "type": "local",
+      "command": ["python", "broken_encoding.py"],
+      "environment": { "PYTHONUTF8": "0" }
+    },
+    "slow_start": {
+      "type": "local",
+      "command": ["python", "slow_start.py"],
+      "environment": { "SLOW_START_SECONDS": "8" },
+      "timeout": 3000
+    },
+    "slow_start_ok": {
+      "type": "local",
+      "command": ["python", "slow_start.py"],
+      "environment": { "SLOW_START_SECONDS": "8" },
+      "timeout": 15000
+    },
+    "crash_on_call": {
+      "type": "local",
+      "command": ["python", "crash_on_call.py"]
+    },
+    "fixed_server": {
+      "type": "local",
+      "command": ["python", "fixed_server.py"]
+    }
+  }
+}

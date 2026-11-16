@@ -143,6 +143,8 @@ class Sandbox:
     def opencode(self, args: list[str], cwd: Path | str, timeout: int = 180,
                  extra_env: dict[str, str] | None = None) -> subprocess.CompletedProcess:
         env = dict(self.env)
+        # `opencode run` takes its project directory from $PWD, not from the process cwd.
+        env["PWD"] = str(Path(cwd).resolve())
         env.update(extra_env or {})
         # Large outputs (e.g. `debug skill`) get truncated when read through a pipe,
         # so stdout/stderr go to files and are read back afterwards.
@@ -190,11 +192,14 @@ class Sandbox:
         if auto:
             args.append("--auto")
         args.append(prompt)
-        with _model_lock():
-            try:
-                proc = self.opencode(args, cwd, timeout=timeout, extra_env=extra_env)
-            except subprocess.TimeoutExpired:
-                return "<<timeout>>"
+        try:
+            with _model_lock():
+                try:
+                    proc = self.opencode(args, cwd, timeout=timeout, extra_env=extra_env)
+                except subprocess.TimeoutExpired:
+                    return MODEL_UNAVAILABLE + "\n<<timeout>>"
+        except RuntimeError as exc:  # lock wait exceeded
+            return MODEL_UNAVAILABLE + f"\n<<{exc}>>"
         out = proc.stdout + "\n" + proc.stderr
         if RATE_LIMIT_RE.search(out):
             return MODEL_UNAVAILABLE + "\n" + out
@@ -223,32 +228,37 @@ def model_check(label: str, transcript: str, ok: bool) -> bool:
 
 
 class _model_lock:
-    """Serialises model runs across processes (and across WSL/Windows) when
-    AGENT_SEMINAR_MODEL_LOCK points at a shared lock-file path. No-op otherwise."""
+    """Limits concurrent model runs across processes (and across WSL/Windows) when
+    AGENT_SEMINAR_MODEL_LOCK points at a shared lock-file path: at most
+    AGENT_SEMINAR_MODEL_SLOTS (default 3) runs at once. No-op otherwise."""
 
     def __init__(self) -> None:
-        self.path = os.environ.get("AGENT_SEMINAR_MODEL_LOCK")
+        self.base = os.environ.get("AGENT_SEMINAR_MODEL_LOCK")
+        self.slots = int(os.environ.get("AGENT_SEMINAR_MODEL_SLOTS", "3"))
+        self.path: str | None = None
         self.fd: int | None = None
 
     def __enter__(self) -> None:
-        if not self.path:
+        if not self.base:
             return
         import time
-        deadline = time.time() + 1800
+        deadline = time.time() + 5400
         while True:
-            try:
-                self.fd = os.open(self.path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-                return
-            except FileExistsError:
+            for slot in range(self.slots):
+                path = f"{self.base}.{slot}"
                 try:
-                    if time.time() - os.path.getmtime(self.path) > 600:  # stale lock
-                        os.remove(self.path)
-                        continue
-                except OSError:
-                    pass
-                if time.time() > deadline:
-                    raise RuntimeError("model lock wait exceeded 30 minutes")
-                time.sleep(3)
+                    self.fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                    self.path = path
+                    return
+                except FileExistsError:
+                    try:
+                        if time.time() - os.path.getmtime(path) > 600:  # stale lock
+                            os.remove(path)
+                    except OSError:
+                        pass
+            if time.time() > deadline:
+                raise RuntimeError("model lock wait exceeded 90 minutes")
+            time.sleep(3)
 
     def __exit__(self, *exc: object) -> None:
         if self.fd is not None:
