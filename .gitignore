@@ -17,6 +17,7 @@ __pycache__/
 **/reports/
 **/secrets/
 **/report.html
+!**/templates/report.html
 .env
 .env.*
 !.env.example
