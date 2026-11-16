@@ -131,7 +131,7 @@ class Sandbox:
 
     def __exit__(self, *exc: object) -> None:
         if not self.keep:
-            shutil.rmtree(self.root, ignore_errors=True)
+            _force_rmtree(self.root)
 
     # -- config --------------------------------------------------------------
     def write_global_config(self, cfg: dict[str, Any]) -> Path:
@@ -151,11 +151,25 @@ class Sandbox:
         self._calls += 1
         out_path = self.root / f"out-{self._calls}.txt"
         err_path = self.root / f"err-{self._calls}.txt"
+        import time
         with open(out_path, "wb") as out, open(err_path, "wb") as err:
-            code = subprocess.run(
-                [self.bin, *args], cwd=str(cwd), env=env, stdout=out, stderr=err,
-                timeout=timeout, stdin=subprocess.DEVNULL,
-            ).returncode
+            proc = subprocess.Popen(
+                [self.bin, *args], cwd=str(cwd), env=env, stdout=out, stderr=err, stdin=subprocess.DEVNULL,
+            )
+            deadline = time.time() + timeout
+            # `opencode run` keeps retrying forever when the provider refuses (e.g. free-tier
+            # limit), so watch the output and stop early instead of waiting for the timeout.
+            while proc.poll() is None:
+                if time.time() > deadline:
+                    proc.kill()
+                    proc.wait()
+                    raise subprocess.TimeoutExpired(args, timeout)
+                if args[:1] == ["run"] and _refused(out_path, err_path):
+                    proc.kill()
+                    proc.wait()
+                    break
+                time.sleep(2)
+            code = proc.returncode
         stdout = strip_ansi(out_path.read_bytes().decode("utf-8", errors="replace"))
         stderr = strip_ansi(err_path.read_bytes().decode("utf-8", errors="replace"))
         return subprocess.CompletedProcess([self.bin, *args], code, stdout, stderr)
@@ -188,7 +202,9 @@ class Sandbox:
           → Skill "name"              a skill was loaded        (see skill_loaded)
           ⚙ server_tool {...}         an MCP / custom tool call (see tool_called)
         """
-        args = ["run", "-m", model or DEFAULT_MODEL]
+        # --print-logs at ERROR level surfaces provider refusals ("Free usage limit reached")
+        # on stderr; without it `opencode run` retries silently until the timeout.
+        args = ["run", "--print-logs", "--log-level", "ERROR", "-m", model or DEFAULT_MODEL]
         if auto:
             args.append("--auto")
         args.append(prompt)
@@ -207,7 +223,35 @@ class Sandbox:
 
 
 MODEL_UNAVAILABLE = "<<model-unavailable>>"
-RATE_LIMIT_RE = re.compile(r"FreeTierError|rate.?limit|\b429\b|\b403\b.*(forbidden|quota)|quota exceeded", re.I)
+RATE_LIMIT_RE = re.compile(
+    r"FreeTierError|usage limit|rate.?limit|\b429\b|\b403\b.*(forbidden|quota)|quota exceeded", re.I)
+
+
+def _refused(*paths: Path) -> bool:
+    for path in paths:
+        try:
+            if RATE_LIMIT_RE.search(path.read_bytes().decode("utf-8", errors="replace")):
+                return True
+        except OSError:
+            pass
+    return False
+
+
+def _force_rmtree(path: Path) -> None:
+    """rmtree that also removes read-only files (opencode's git snapshot objects on Windows)."""
+    import stat
+
+    def onerror(func, p, _exc):  # noqa: ANN001
+        try:
+            os.chmod(p, stat.S_IWRITE)
+            func(p)
+        except OSError:
+            pass
+
+    if sys.version_info >= (3, 12):
+        shutil.rmtree(path, onexc=onerror)
+    else:
+        shutil.rmtree(path, onerror=onerror)
 
 
 def skill_loaded(transcript: str, name: str) -> bool:
@@ -216,7 +260,8 @@ def skill_loaded(transcript: str, name: str) -> bool:
 
 def tool_called(transcript: str, name: str) -> bool:
     """True if the transcript shows a call to a tool whose name contains `name`."""
-    return any(name in line for line in transcript.splitlines() if line.lstrip().startswith(("⚙", "→")))
+    # "⚙ name {args}" success, "✗ name {args} failed" error result, "→ Skill ..." built-ins
+    return any(name in line for line in transcript.splitlines() if line.lstrip().startswith(("⚙", "→", "✗")))
 
 
 def model_check(label: str, transcript: str, ok: bool) -> bool:

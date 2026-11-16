@@ -1,0 +1,89 @@
+<section class="slide" data-chapter="mcp" data-title="M7 resources와 prompts">
+  <h2><span class="tag mcp">M7</span>도구 말고도: resources와 prompts</h2>
+  <div class="cols">
+    <div>
+      <h3>prompts → <code>/</code> 명령이 된다</h3>
+      <ul class="small">
+        <li>서버가 준 프롬프트가 <code>/runbooks:incident-report</code> 같은 명령으로 TUI 자동 완성에 뜬다</li>
+        <li>인자는 opencode가 직접 끼워 넣는다. 서버는 <code>"$1"</code> 같은 자리표시만 받는다</li>
+        <li>CLI에서는 <code>opencode run --command runbooks:incident-report INC-1</code></li>
+      </ul>
+      <h3 style="margin-top:22px">resources → <code>@</code>로 첨부한다</h3>
+      <ul class="small">
+        <li>TUI에서 <code>@</code>를 치면 <code>runbook://payment/restart</code> 같은 문서가 목록에 뜬다</li>
+        <li>서버에 resources가 있으면 모델에게 <code>list_mcp_resources</code>, <code>read_mcp_resource</code> 도구가 생긴다</li>
+      </ul>
+    </div>
+    <div>
+      <script type="text/x-code" data-lang="text" class="term" data-title="실제 모델이 런북을 읽은 기록">
+      ⚙ list_mcp_resources
+      ⚙ read_mcp_resource MCP resource: runbook://payment/restart
+      </script>
+      <div class="callout small">
+        <p><strong>언제 쓰나</strong>: 팀 런북, 장애 대응 문서처럼 "사람이 골라서 첨부할 문서"는 resources, 자주 쓰는 질문 틀은 prompts로 내보내면 팀 전체가 같은 형식을 씁니다.</p>
+      </div>
+      <p class="tiny muted">capabilities에 prompts, resources를 선언하지 않은 서버에는 opencode가 묻지 않습니다.</p>
+    </div>
+  </div>
+  <div class="ref">examples/02-mcp/m7-resources-prompts</div>
+  <aside class="notes">
+    <p>대부분의 MCP 서버는 tools만 씁니다. resources, prompts는 TUI에서 사람이 고를 때 빛납니다. opencode run에서는 --command만 됩니다.</p>
+    <p>인자 치환을 opencode가 한다는 점은 의외였습니다. 서버의 prompts/get에는 "$1"이 그대로 옵니다.</p>
+  </aside>
+</section>
+
+<section class="slide" data-chapter="mcp" data-title="M8 도구가 많아지면">
+  <h2><span class="tag mcp">M8</span>도구가 많아지면: 끄고, 숨기고, 재 보기</h2>
+  <div class="cols c46">
+    <script type="text/x-code" data-lang="json" data-title="opencode.json (요약)" data-mark="5,8,9,13">
+    {
+      "mcp": {
+        "docs":   { "type": "local", "command": ["python", "mcp_server.py", "--profile", "docs"] },
+        "ops":    { "type": "local", "command": ["python", "mcp_server.py", "--profile", "ops"] },
+        "legacy": { "...": "...", "enabled": false }
+      },
+      "permission": {
+        "ops_noisy_*": "deny",
+        "ops_restart": "ask"
+      },
+      "agent": {
+        "reviewer": {
+          "mode": "primary",
+          "tools": { "ops_*": false, "write": false, "edit": false }
+        }
+      }
+    }
+    </script>
+    <div>
+      <ul class="small">
+        <li><code>"enabled": false</code>: 서버 자체를 띄우지 않는다. <code>mcp list</code>에 <code>○ disabled</code></li>
+        <li><code>permission</code>에서 <code>deny</code>한 도구는 <strong>모델에게 아예 전달되지 않는다</strong>. <code>ask</code>는 목록에는 남는다</li>
+        <li><code>agent.&lt;이름&gt;.tools</code>로 에이전트마다 다르게 줄 수 있다. <code>--agent reviewer</code>는 운영 도구와 파일 수정 없이 동작한다</li>
+        <li>나중에 쓴 규칙이 이긴다. 예전 형식 <code>"tools": {"x_*": false}</code>도 같은 deny 규칙으로 바뀐다</li>
+      </ul>
+      <div class="callout small"><p><strong>측정해 보니</strong>: 도구 12개짜리 서버 하나를 켜면 매 요청마다 약 <strong>1,600 토큰</strong>이 늘었습니다. 안 쓰는 서버는 끄고, 안 쓰는 도구는 deny로 숨기세요.</p></div>
+    </div>
+  </div>
+  <div class="ref">examples/02-mcp/m8-enable-disable-deny</div>
+  <aside class="notes">
+    <p>토큰 수는 count_tool_tokens.py로 도구 설명 크기를 재고, 가짜 모델 서버로 opencode가 실제로 보낸 요청을 기록해서 확인했습니다.</p>
+    <p>예전 형식의 "tools": {"x_*": false}도 같은 deny 규칙으로 바뀝니다.</p>
+  </aside>
+</section>
+
+<section class="slide" data-chapter="mcp" data-title="M9 고장 갤러리">
+  <h2><span class="tag mcp">M9</span>MCP 서버가 안 붙을 때: 흔한 고장 네 가지</h2>
+  <table class="compact">
+    <tr><th class="mcp">고장</th><th class="mcp">보이는 증상</th><th class="mcp">원인과 처방</th></tr>
+    <tr><td><strong>stdout 오염</strong></td><td><code>failed</code> (Operation timed out)</td><td>줄바꿈 없이 찍은 배너가 다음 JSON 앞에 붙는다. 줄바꿈 있는 잡음은 우연히 무시된다. <strong>stdout엔 MCP 메시지만, 로그는 stderr</strong></td></tr>
+    <tr><td><strong>인코딩</strong></td><td><code>connected</code>인데 한글이 <code>�ȳ��ϼ���</code></td><td>한국어 Windows(cp949)에서만 터진다. Linux에서는 멀쩡해서 놓친다. <code>sys.stdout.reconfigure(encoding="utf-8")</code></td></tr>
+    <tr><td><strong>느린 시작</strong></td><td><code>failed</code> (약 30초 초과)</td><td>서버별 <code>timeout</code>(ms)은 연결 제한, <code>experimental.mcp_timeout</code>은 호출 제한. 무거운 초기화는 첫 호출로 미루기</td></tr>
+    <tr><td><strong>호출 중 예외</strong></td><td><code>connected</code>인데 호출하면 <code>Connection closed</code></td><td>서버가 죽고 그 도구가 목록에서 빠진다. traceback은 어디에도 안 남는다. <code>try/except</code>로 감싸 <code>isError: true</code> 반환</td></tr>
+  </table>
+  <p class="small" style="margin-top:18px">진단 순서: <code>opencode mcp list</code> → 서버를 터미널에서 직접 실행해 첫 줄 보기 → <code>opencode debug paths</code>의 로그 폴더</p>
+  <div class="ref">examples/02-mcp/m9-pitfalls</div>
+  <aside class="notes">
+    <p>이 표는 전부 1.19.5에서 일부러 고장 낸 서버로 측정한 결과입니다. demo.py 한 번이면 네 가지가 한꺼번에 재현됩니다.</p>
+    <p>특히 인코딩 문제는 "성공한 것처럼 보이는데 내용이 깨져 있다"는 점에서 가장 위험합니다. 한국어 Windows에서 데모를 하는 우리에게 가장 현실적인 함정입니다.</p>
+  </aside>
+</section>
