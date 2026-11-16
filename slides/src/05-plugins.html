@@ -1,0 +1,263 @@
+<section class="slide divider" data-chapter="plugin" data-title="6. 플러그인">
+  <div class="cols c46 center">
+    <div>
+      <div class="num">6</div>
+      <h2>플러그인</h2>
+      <p class="lead">모델이 무엇을 하든 항상 실행되는 코드: 막고, 기록하고, 주입하기</p>
+    </div>
+    <x-diagram focus="plugin"></x-diagram>
+  </div>
+  <aside class="notes"><p>8분. 플러그인의 생김새, 훅이 불리는 순서를 보고 예제 다섯 개를 빠르게 훑습니다. 데모는 P1(.env 차단).</p></aside>
+</section>
+
+<section class="slide" data-chapter="plugin" data-title="플러그인의 생김새">
+  <h2>플러그인은 훅을 돌려주는 함수입니다</h2>
+  <div class="cols c64">
+    <script type="text/x-code" data-lang="js" class="sm" data-title=".opencode/plugins/env-guard.js (P1, 핵심만)" data-mark="1,3,4,7">
+    export const EnvGuard = async ({ directory }) => {
+      // 로드될 때 한 번 실행. directory = 실행 폴더, worktree = git 루트
+      return {
+        "tool.execute.before": async (input, output) => {
+          const reason = findViolation(input.tool, output.args);
+          if (!reason) return;
+          throw new Error(
+            "[env-guard] .env 파일은 비밀 값이 들어 있어 에이전트가 읽거나 " +
+            "수정할 수 없습니다. 변수 이름과 형식이 필요하면 .env.example 을 읽으세요."
+          );
+        },
+      };
+    };
+    </script>
+    <div>
+      <ul class="small">
+        <li><code>.opencode/plugins/</code>에 두면 자동 로드</li>
+        <li>함수가 받는 것: <code>client</code>, <code>project</code>, <code>directory</code>, <code>worktree</code>, <code>$</code>(셸 실행)</li>
+        <li>돌려주는 객체의 키가 훅 이름이다</li>
+        <li><code>throw</code>하면 도구가 실행되지 않고 <strong>메시지가 모델에게 오류로 전달</strong>된다. 이유와 대안을 써 주면 모델이 그대로 따른다</li>
+      </ul>
+      <div class="callout warn small"><p>파일에서 <strong>플러그인 함수만 export</strong>하세요. 상수나 보조 함수를 export하면 opencode가 그것도 플러그인으로 부르다가 <strong>파일 전체를 아무 오류 없이 건너뜁니다.</strong></p></div>
+    </div>
+  </div>
+  <div class="ref">examples/03-plugins/p1-env-guard</div>
+  <aside class="notes">
+    <p>export 함정은 실제로 한참 헤맨 부분입니다. 오류도 경고도 없이 플러그인이 안 불립니다. 로드될 때 로그 한 줄을 남기게 해 두면 바로 알 수 있습니다. 이 레포의 모든 플러그인은 logs/plugin-load.log에 한 줄을 씁니다.</p>
+  </aside>
+</section>
+
+<section class="slide" data-chapter="plugin" data-title="훅이 불리는 순서">
+  <h2>bash 명령 하나가 실행될 때 훅이 불리는 순서</h2>
+  <div class="flow" style="margin:10px 0 34px">
+    <div class="node plugin fill"><b>tool.execute.before</b>검사, 인자 수정, 차단</div>
+    <div class="arrow">›</div>
+    <div class="node config"><b>permission</b><code>ask</code>면 사용자에게 묻는다<br><span class="tiny muted">이벤트 <code>permission.asked</code></span></div>
+    <div class="arrow">›</div>
+    <div class="node plugin fill"><b>shell.env</b>환경 변수 주입</div>
+    <div class="arrow">›</div>
+    <div class="node"><b>명령 실행</b></div>
+    <div class="arrow">›</div>
+    <div class="node plugin fill"><b>tool.execute.after</b>결과 기록, 후처리</div>
+  </div>
+  <table class="compact">
+    <tr><th class="plugin">도구</th><th class="plugin"><code>output.args</code>의 키 (1.19.5 관찰)</th></tr>
+    <tr><td><code>bash</code></td><td><code>command</code>, <code>description</code></td></tr>
+    <tr><td><code>read</code></td><td><code>filePath</code></td></tr>
+    <tr><td><code>write</code> / <code>edit</code></td><td><code>filePath</code>, <code>content</code> / <code>filePath</code>, <code>oldString</code>, <code>newString</code></td></tr>
+  </table>
+  <aside class="notes">
+    <p>before가 권한 확인보다 먼저입니다. 그래서 플러그인이 막으면 사용자에게 묻지도 않고 끝납니다. --auto로 실행해도 플러그인의 차단은 그대로입니다.</p>
+  </aside>
+</section>
+
+<section class="slide" data-chapter="plugin" data-title="P1 .env 차단">
+  <h2><span class="tag plugin">P1</span>비밀 파일은 모델이 원해도 못 읽게</h2>
+  <div class="cols c46">
+    <div>
+      <ul class="small">
+        <li><code>read</code>, <code>write</code>, <code>edit</code>의 경로가 <code>.env</code>, <code>.env.*</code>이면 차단</li>
+        <li><code>bash</code>의 <code>cat .env</code>, <code>Get-Content .env</code> 같은 우회도 차단</li>
+        <li><code>.env.example</code>은 허용: 변수 <strong>이름</strong>은 알아야 일을 하니까</li>
+        <li>Windows 경로(<code>C:\...\.env</code>)도 처리</li>
+      </ul>
+      <p class="tiny muted">차단 30가지, 허용 21가지 사례를 node 단위 테스트로 고정했습니다.</p>
+    </div>
+    <script type="text/x-code" data-lang="text" class="term sm" data-title="opencode 1.19.5 실제 실행 (도구 호출은 가짜 모델이 지시)">
+    > .env 를 보여줘
+    ✗ Read .env failed
+    Error: [env-guard] .env 파일은 비밀 값이 들어 있어 에이전트가
+    읽거나 수정할 수 없습니다. 변수 이름과 형식이 필요하면
+    .env.example 을 읽으세요.
+    ✗ cat .env failed
+    Error: [env-guard] .env 파일은 ... (같은 메시지)
+    → Read .env.example
+    </script>
+  </div>
+  <div class="ref">examples/03-plugins/p1-env-guard</div>
+  <aside class="notes">
+    <p>이 출력은 실제 opencode를 실행했고, 어떤 도구를 부를지만 가짜 모델 서버가 정했습니다. 그래서 차단 동작은 매번 똑같이 재현됩니다. 실제 모델이 차단 뒤에 어떻게 반응하는지는 무료 모델 한도로 확인하지 못했습니다.</p>
+  </aside>
+</section>
+
+<section class="slide demo" data-chapter="plugin" data-title="데모: P1">
+  <div class="demo-mark">데모</div>
+  <h2>.env 읽기를 막는 플러그인</h2>
+  <div class="cols c64">
+    <script type="text/x-code" data-lang="powershell" data-title="PowerShell">
+    PS> cd examples\03-plugins\p1-env-guard
+    PS> python prepare.py           # 가짜 값이 든 .env 생성
+    PS> opencode run --auto ".env 파일을 read 도구로 읽어서 보여줘"
+    PS> Get-Content logs\plugin-load.log
+    ... env-guard loaded
+    PS> Get-Content logs\env-guard.log
+    ... BLOCKED read :: read 도구로 C:\…\p1-env-guard\.env 접근
+    PS> opencode                    # TUI에서 "cat .env 로 출력해 줘"도 시도
+    </script>
+    <ol class="steps small">
+      <li>모델에게 .env를 보여 달라고 한다</li>
+      <li>로드 기록과 차단 기록을 본다</li>
+      <li>TUI에서 bash로 우회해도 막히는지, 모델이 .env.example로 돌아가는지 본다</li>
+    </ol>
+  </div>
+  <div class="ref">examples/03-plugins/p1-env-guard</div>
+  <aside class="notes"><p>처음 실행할 때 opencode가 .opencode 폴더에 @opencode-ai/plugin 패키지를 npm으로 설치합니다. 레지스트리에 못 닿으면 1분 넘게 멈출 수 있으니 발표 전에 한 번 미리 실행해 두세요.</p></aside>
+</section>
+
+<section class="slide" data-chapter="plugin" data-title="P2 위험한 명령">
+  <h2><span class="tag plugin">P2</span>위험한 명령: 설정으로 할까, 플러그인으로 할까</h2>
+  <div class="cols c46">
+    <div>
+      <script type="text/x-code" data-lang="js" class="sm" data-title="danger-guard.js 의 규칙 표 (정규식은 줄임)">
+      const RULES = [
+        { id: "rm-recursive-big-target",
+          pattern: /\brm\b ... -r ... (\/|~|\*|\.)/i,
+          message: "루트·홈·현재 폴더 전체를 재귀 삭제하는
+                    명령은 막혀 있습니다. 구체적인 경로로…" },
+        { id: "git-push-force", ... },   // --force-with-lease는 허용
+        { id: "powershell-remove-item-root", ... },
+        ...
+      ];
+      </script>
+      <p class="tiny muted">막아야 할 47가지, 허용해야 할 36가지 사례를 테스트로 고정</p>
+    </div>
+    <table class="compact">
+      <tr><th></th><th class="config"><code>permission.bash</code></th><th class="plugin">플러그인</th></tr>
+      <tr><td>작성</td><td>JSON 몇 줄</td><td>JS, 정규식, 테스트</td></tr>
+      <tr><td>판정</td><td><code>*</code> 와일드카드</td><td>임의의 코드 (옵션 순서, 예외)</td></tr>
+      <tr><td>결과</td><td>허용 / <strong>사람에게 묻기</strong> / 거부</td><td>차단 또는 통과</td></tr>
+      <tr><td>메시지</td><td>기본 거부 문구</td><td>이유와 대안을 직접</td></tr>
+      <tr><td>기록</td><td>없음</td><td>원하는 대로</td></tr>
+    </table>
+  </div>
+  <p class="small" style="margin-top:4px">현실적인 구성: 설정으로 큰 틀(기본 <code>ask</code>)을 잡고, 정말 위험한 몇 가지만 플러그인으로 못 박는다.</p>
+  <div class="ref">examples/03-plugins/p2-dangerous-command-guard · examples/00-config/c5-permissions</div>
+  <aside class="notes"><p>"git push는 되지만 --force는 안 되고 --force-with-lease는 된다" 같은 규칙은 와일드카드로 표현하기 어렵습니다. 그때가 플러그인 차례입니다.</p></aside>
+</section>
+
+<section class="slide" data-chapter="plugin" data-title="P3 감사 로그">
+  <h2><span class="tag plugin">P3</span>에이전트가 한 일을 모두 남기기</h2>
+  <div class="cols c64">
+    <script type="text/x-code" data-lang="json" class="sm" data-title="logs/audit.jsonl (실제 기록, 원래는 기록 하나가 한 줄)">
+    {"ts":"2026-11-16T17:10:22Z","tool":"read",
+     "args":{"filePath":".../notes.txt"},
+     "title":"notes.txt","outputLength":237}
+    {"ts":"2026-11-16T17:10:23Z","tool":"bash",
+     "args":{"command":"echo audit-demo"},
+     "title":"echo audit-demo","outputLength":11}
+    {"ts":"2026-11-16T17:10:23Z","tool":"write",
+     "args":{"filePath":".../logs/scratch.txt",
+             "content":"<23자 생략>"},"outputLength":24}
+    </script>
+    <div>
+      <ul class="small">
+        <li><code>tool.execute.after</code>에서 한 줄씩 JSONL로 남긴다</li>
+        <li><strong>파일 내용과 비밀값은 남기지 않는다</strong>. 긴 문자열은 길이만, 토큰처럼 보이는 값은 가린다</li>
+        <li>크기가 넘으면 파일을 돌려 쓴다 (rotation)</li>
+        <li><code>summarize_audit.py</code>로 도구별 횟수와 타임라인을 본다</li>
+      </ul>
+    </div>
+  </div>
+  <div class="ref">examples/03-plugins/p3-audit-log</div>
+  <aside class="notes"><p>"에이전트가 어젯밤에 뭘 했지?"에 답할 수 있어야 팀에서 안심하고 맡깁니다. 감사 로그는 모델과 상관없이 항상 남아야 하므로 플러그인의 일입니다.</p></aside>
+</section>
+
+<section class="slide" data-chapter="plugin" data-title="P4 알림">
+  <h2><span class="tag plugin">P4</span>작업이 끝나거나 승인이 필요할 때 알림</h2>
+  <div class="cols">
+    <div>
+      <ul class="small">
+        <li><code>event</code> 훅은 opencode의 모든 이벤트를 받는다</li>
+        <li><code>session.idle</code>: 응답이 끝나고 입력을 기다린다</li>
+        <li><code>permission.asked</code>: 도구 실행 전에 승인이 필요하다</li>
+        <li>Windows는 소리와 토스트, Linux는 <code>notify-send</code> 또는 터미널 벨</li>
+      </ul>
+      <p class="small">이벤트를 받아 외부 명령을 실행하는 구조는 발표자가 매일 쓰는 플러그인과 같습니다.</p>
+    </div>
+    <div>
+      <h3>직접 부딪힌 함정</h3>
+      <ul class="small">
+        <li>SDK 타입에는 <code>permission.updated</code>가 있지만 1.19.5는 <code>permission.asked</code>를 보낸다. <code>permission.ask</code> 훅은 한 번도 불리지 않았다. <strong>타입보다 실제 이벤트를 기록해서 확인하자</strong></li>
+        <li><code>opencode run</code>은 끝나자마자 자식 프로세스를 정리한다. 알림은 TUI처럼 오래 떠 있는 opencode에서만 울린다</li>
+        <li>Windows에서 <code>detached</code>로 띄운 PowerShell은 아무것도 안 했다. <code>cmd.exe /c start</code>로 해결</li>
+      </ul>
+    </div>
+  </div>
+  <div class="ref">examples/03-plugins/p4-notify-on-idle</div>
+  <aside class="notes"><p>모든 이벤트 이름을 파일로 남기는 진단 모드가 예제에 있습니다. 새 버전에서 이벤트 이름이 바뀌면 그걸로 확인하세요.</p></aside>
+</section>
+
+<section class="slide" data-chapter="plugin" data-title="P5 셸 환경 주입">
+  <h2><span class="tag plugin">P5</span>에이전트의 셸에만 환경 변수 넣기</h2>
+  <div class="cols c64">
+    <script type="text/x-code" data-lang="js" class="sm" data-title=".opencode/plugins/shell-env.js (일부)">
+    export const ShellEnv = async ({ directory }) => {
+      const injected = {
+        APP_ENV: "dev",
+        HTTP_PROXY: "http://127.0.0.1:3128",
+        NO_PROXY: "*",
+        REQUESTS_CA_BUNDLE:
+          join(directory, "certs", "demo-ca.pem"),
+      };
+      return {
+        "shell.env": async (input, output) => {
+          Object.assign(output.env, injected);
+        },
+      };
+    };
+    </script>
+    <div>
+      <ul class="small">
+        <li>에이전트가 실행하는 셸에만 들어간다. 내 터미널과 시스템 환경은 그대로</li>
+        <li>프록시, 사설 인증서 경로, 실행 환경 표시처럼 <strong>모두가 같아야 하는 값</strong>에 쓴다</li>
+        <li><code>bash</code> 도구에만 적용된다. MCP 서버에는 <code>environment</code> 설정을 쓴다</li>
+      </ul>
+      <div class="callout small"><p>Windows에서는 셸이 PowerShell이라 <code>$APP_ENV</code>는 빈 값, <code>$env:APP_ENV</code>로 읽어야 합니다. 그래서 예제는 <code>python show_env.py</code>로 확인합니다.</p></div>
+    </div>
+  </div>
+  <div class="ref">examples/03-plugins/p5-shell-env</div>
+  <aside class="notes"><p>"내 PC에서는 되는데 에이전트가 돌리면 프록시 때문에 안 된다" 같은 문제를 팀 단위로 없애는 용도입니다.</p></aside>
+</section>
+
+<section class="slide" data-chapter="plugin" data-title="P7 압축 훅">
+  <h2><span class="tag plugin">P7</span>대화가 압축돼도 잊으면 안 되는 것</h2>
+  <div class="cols c46">
+    <div>
+      <p class="small">대화가 길어지면 opencode가 앞부분을 요약(압축)합니다. 이때 <code>experimental.session.compacting</code> 훅으로 <strong>꼭 남길 사실</strong>을 요약 프롬프트에 덧붙입니다.</p>
+      <script type="text/x-code" data-lang="js" class="sm" data-title="compaction-context.js (요지)">
+      "experimental.session.compacting": safe(async (input, output) => {
+        // 플러그인 파일 위치 기준: ../memory/project-facts.md
+        const facts = readFileSync(FACTS_PATH, "utf8");
+        output.context.push(facts);   // 요약 프롬프트 끝에 붙는다
+      }),
+      </script>
+    </div>
+    <div>
+      <ul class="small">
+        <li><code>output.prompt</code>를 넣으면 프롬프트 전체가 바뀌고 <code>context</code>는 무시된다</li>
+        <li>훅이 예외를 던지면 <strong>압축 자체가 실패</strong>한다. 반드시 감싸서 실패를 삼킬 것</li>
+        <li>압축은 TUI의 <code>/compact</code>, 서버 API, 또는 컨텍스트가 가득 찰 때 일어난다</li>
+        <li>이름 그대로 <strong>실험적</strong> 훅이다. 버전이 바뀌면 다시 확인할 것</li>
+      </ul>
+    </div>
+  </div>
+  <div class="ref">examples/03-plugins/p7-compaction-context</div>
+  <aside class="notes"><p>"이 프로젝트는 pnpm을 쓴다" 같은 사실이 압축 후에 사라져서 모델이 npm을 다시 쓰는 일이 있습니다. 그걸 막는 훅입니다. 요약 모델에게 사실이 전달되는 것까지는 확인했지만, 요약 결과에 실제로 남는지는 무료 모델 한도로 확인하지 못했습니다.</p></aside>
+</section>

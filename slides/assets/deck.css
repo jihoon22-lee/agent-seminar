@@ -207,7 +207,10 @@ svg .dim { opacity: 0.22; }
 
 /* labelled boxes for flow diagrams built with HTML */
 .flow { display: flex; align-items: stretch; gap: 0; }
-.flow .node { flex: 1; border: 3px solid var(--ink); border-radius: 12px; padding: 20px 24px; font-size: 28px; line-height: 1.4; background: var(--paper); }
+.flow .node { flex: 1; min-width: 0; overflow-wrap: anywhere; border: 3px solid var(--ink); border-radius: 12px; padding: 20px 24px; font-size: 28px; line-height: 1.4; background: var(--paper); }
+.flow.sm .node { font-size: 22px; padding: 16px 18px; }
+.flow.sm .node b { font-size: 24px; }
+.flow.sm .arrow { flex-basis: 44px; font-size: 34px; }
 .flow .node b { display: block; font-size: 30px; margin-bottom: 6px; }
 .flow .arrow { flex: 0 0 72px; display: grid; place-items: center; font-size: 40px; color: var(--chapter); font-weight: 700; }
 .node.skill { border-color: var(--c-skill); } .node.mcp { border-color: var(--c-mcp); } .node.plugin { border-color: var(--c-plugin); } .node.config { border-color: var(--c-config); }

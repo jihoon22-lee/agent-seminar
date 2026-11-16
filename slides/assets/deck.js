@@ -59,10 +59,28 @@
   // ---------------------------------------------------------------- navigation
   function stepsOf(s) { return Array.from(s.querySelectorAll(".step")); }
 
+  // Shrink code blocks whose longest line is wider than the box (down to 70%), then wrap as a last resort.
+  // Runs on a slide once it is laid out (display:flex), so measurements are real.
+  function fitCode(root) {
+    root.querySelectorAll("figure.code pre").forEach((pre) => {
+      const code = pre.querySelector("code");
+      if (!code || code.dataset.fit || pre.clientWidth === 0) return;
+      let size = parseFloat(getComputedStyle(code).fontSize);
+      const min = size * 0.7;
+      while (pre.scrollWidth > pre.clientWidth + 1 && size > min) {
+        size -= 0.5;
+        code.style.fontSize = `${size}px`;
+      }
+      if (pre.scrollWidth > pre.clientWidth + 1) code.style.whiteSpace = "pre-wrap";
+      code.dataset.fit = "1";
+    });
+  }
+
   function show(i, opts = {}) {
     index = Math.max(0, Math.min(total - 1, i));
     slides.forEach((s, k) => s.classList.toggle("active", k === index));
     const cur = slides[index];
+    fitCode(cur);
     const steps = stepsOf(cur);
     steps.forEach((st) => st.classList.toggle("shown", !!opts.allSteps));
     progress.style.width = `${((index + 1) / total) * 100}%`;
@@ -207,7 +225,7 @@
     const n = Number(location.hash.slice(1));
     if (n && n - 1 !== index) show(n - 1, { allSteps: true });
   });
-  window.addEventListener("beforeprint", () => slides.forEach((s) => stepsOf(s).forEach((st) => st.classList.add("shown"))));
+  window.addEventListener("beforeprint", () => { slides.forEach((s) => stepsOf(s).forEach((st) => st.classList.add("shown"))); fitCode(document); });
 
   // ---------------------------------------------------------------- start
   if (isPresenter) buildPresenter();

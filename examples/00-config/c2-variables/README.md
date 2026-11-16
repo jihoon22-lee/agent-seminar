@@ -145,6 +145,7 @@ c2-variables/
 
 - `headers` 의 값은 **전부** `***` 입니다. (`X-Demo-Label: plain-header` 처럼 비밀이 아니어도 가려집니다.)
 - `environment` 의 값은 **키 이름**으로 판단합니다. 키 이름을 바꿔 가며 직접 실험했을 때 가려진 이름: `API_KEY`, `APIKEY`, `TOKEN`, `DEMO_TOKEN`, `BEARER_TOKEN`, `SECRET`, `MY_SECRET`, `PASSWORD`, `CREDENTIAL`, `PRIVATE_KEY`, `COOKIE`. (대소문자 구분 없음. `SECRETARY` 같은 이름도 가려짐)
+- `TOKEN` 만은 **이름 끝에 올 때만** 가려집니다. `GITHUB_TOKEN`, `MYTOKEN` 은 `***` 이지만 `TOKEN_PATH`, `TOKEN_X`, `ACCESS_TOKEN_FILE` 은 그대로 보입니다. 반면 `SECRET_NAME`, `PASSWORD_FILE`, `API_KEY_PATH` 처럼 `SECRET`·`PASSWORD`·`API_KEY` 는 어디에 있어도 가려집니다. (opencode 1.19.5, 2026-11-17 재확인)
 - 같은 실험에서 가려지지 **않은** 이름: `AUTH`, `BEARER`, `PASS`, `PWD`, `PASSWD`, `ACCESS_KEY`, `CRED`, `SIGNATURE`, `SESSION`, `DSN`, `DATABASE_URL`, `CONNECTION_STRING`, `OAUTH`, `CERT`, 그리고 `WSL_INTEROP`, `GREETING` 같은 일반 이름. 즉 `DATABASE_URL` 에 비밀번호가 들어 있어도 화면에 그대로 나옵니다.
 - 값이 비어 있어도(`{env:미설정}`) 이름이 비밀스러우면 똑같이 `***` 로 보입니다.
 

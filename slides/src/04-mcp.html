@@ -39,29 +39,28 @@
 <section class="slide" data-chapter="mcp" data-title="M1 표준 라이브러리 서버">
   <h2><span class="tag mcp">M1</span>Python 표준 라이브러리만으로 만든 서버</h2>
   <div class="cols c64">
-    <script type="text/x-code" data-lang="python" class="sm" data-title="server.py (핵심 부분)" data-mark="1,2,14,15,19">
+    <script type="text/x-code" data-lang="python" class="sm" data-title="server.py (핵심 부분)" data-mark="1,2,17,20,21">
     sys.stdin.reconfigure(encoding="utf-8")
     sys.stdout.reconfigure(encoding="utf-8", newline="\n")
 
     def handle(msg):
-        if msg.get("id") is None:          # 알림: 답장하지 않는다
-            return None
+        if msg.get("id") is None: return None   # 알림에는 답장하지 않는다
         method = msg.get("method")
-        if method == "initialize":   result = {"protocolVersion": ..., "capabilities": {"tools": {}}, ...}
-        elif method == "tools/list": result = {"tools": TOOLS}
-        elif method == "tools/call": result = call_tool(msg["params"]["name"], msg["params"]["arguments"])
-        ...
+        if method == "initialize":
+            result = {"protocolVersion": ..., "capabilities": {"tools": {}}}
+        elif method == "tools/list":
+            result = {"tools": TOOLS}
+        elif method == "tools/call":
+            p = msg["params"]
+            result = call_tool(p["name"], p["arguments"])
         return {"jsonrpc": "2.0", "id": msg["id"], "result": result}
-
-    def send(obj):
-        sys.stdout.write(json.dumps(obj, ensure_ascii=False) + "\n")
-        sys.stdout.flush()   # 빼먹으면 응답이 버퍼에 갇힌다
 
     def main():
         for line in sys.stdin:             # 한 줄 읽고, 처리하고, 한 줄 쓴다
             response = handle(json.loads(line))
             if response is not None:
-                send(response)
+                sys.stdout.write(json.dumps(response, ensure_ascii=False) + "\n")
+                sys.stdout.flush()         # 빼먹으면 응답이 버퍼에 갇힌다
     </script>
     <div>
       <ul class="small">
@@ -297,7 +296,7 @@
   </div>
   <div class="ref">examples/02-mcp/m6-sqlite-tickets (prepare.py가 가상 티켓 DB를 만든다)</div>
   <aside class="notes">
-    <p>실제 시스템이라면 SQLite 대신 사내 API나 DB가 들어가는 자리입니다. 원칙은 같습니다. 읽기 전용, 좁은 도구, 작은 결과.</p>
+    <p>실제 시스템이라면 SQLite 대신 팀의 실제 API나 DB가 들어가는 자리입니다. 원칙은 같습니다. 읽기 전용, 좁은 도구, 작은 결과.</p>
     <p>모델에게 SQL 실행 도구를 통째로 주면 편하지만, 무엇을 할지 통제할 수 없고 결과가 커져 컨텍스트를 낭비합니다.</p>
   </aside>
 </section>

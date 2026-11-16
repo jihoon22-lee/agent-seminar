@@ -34,12 +34,14 @@
 
 <section class="slide" data-chapter="mcp" data-title="M8 도구가 많아지면">
   <h2><span class="tag mcp">M8</span>도구가 많아지면: 끄고, 숨기고, 재 보기</h2>
-  <div class="cols c46">
-    <script type="text/x-code" data-lang="json" data-title="opencode.json (요약)" data-mark="5,8,9,13">
+  <div class="cols c64">
+    <script type="text/x-code" data-lang="json" class="sm" data-title="opencode.json (요약)" data-mark="7,10,11,16">
     {
       "mcp": {
-        "docs":   { "type": "local", "command": ["python", "mcp_server.py", "--profile", "docs"] },
-        "ops":    { "type": "local", "command": ["python", "mcp_server.py", "--profile", "ops"] },
+        "docs": { "type": "local",
+          "command": ["python", "mcp_server.py", "--profile", "docs"] },
+        "ops": { "type": "local",
+          "command": ["python", "mcp_server.py", "--profile", "ops"] },
         "legacy": { "...": "...", "enabled": false }
       },
       "permission": {

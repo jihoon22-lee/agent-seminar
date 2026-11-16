@@ -1,0 +1,239 @@
+<section class="slide" data-chapter="skill" data-title="스크립트가 붙은 스킬">
+  <h2>스크립트가 붙으면: 계산은 코드가, 해석은 모델이</h2>
+  <div class="cols c37">
+    <div>
+      <ul class="small">
+        <li>모델이 스킬을 열면 opencode가 본문 끝에 <strong>스킬 폴더의 절대 경로</strong>와 파일 목록을 붙여 준다</li>
+        <li>모델은 그 경로를 앞에 붙여 <code>python &lt;스킬 폴더&gt;/scripts/x.py</code>를 bash 도구로 실행한다</li>
+        <li>작업 폴더는 그대로 프로젝트 루트다. 데이터 경로는 프로젝트 기준, 스크립트 경로는 스킬 폴더 기준</li>
+        <li>스크립트는 결과를 <strong>짧은 요약(JSON, 표)</strong>으로 돌려준다. 원본 2,000줄 대신 요약 수십 줄이 컨텍스트에 들어간다</li>
+      </ul>
+    </div>
+    <script type="text/x-code" data-lang="text" class="term sm" data-title="skill 도구가 모델에게 돌려준 끝부분 (실제, 경로 줄임)" data-mark="1,2,3,6-8">
+    Base directory for this skill: /…/s3a-log-analysis/.opencode/skills/log-analysis
+    Relative paths in this skill (e.g., scripts/, reference/)
+    are relative to this base directory.
+    Note: file list is sampled.
+
+    <skill_files>
+    <file>/…/.opencode/skills/log-analysis/scripts/summarize_log.py</file>
+    </skill_files>
+    </skill_content>
+    </script>
+  </div>
+  <aside class="notes">
+    <p>스크립트 경로를 SKILL.md에 절대 경로로 쓸 필요가 없습니다. opencode가 실행 시점의 위치를 알려 주므로 레포를 어디에 clone하든 그대로 동작합니다. Windows에서는 이 줄이 C:\…\log-analysis처럼 백슬래시 경로로 나옵니다.</p>
+  </aside>
+</section>
+
+<section class="slide" data-chapter="skill" data-title="S3a 로그 분석">
+  <h2><span class="tag skill">S3a</span>2,059줄 로그를 읽지 않고 분석하기</h2>
+  <div class="cols">
+    <script type="text/x-code" data-lang="md" class="sm" data-title="log-analysis/SKILL.md (일부)" data-mark="1,8">
+    로그 전체를 읽거나 cat/read 로 열지 않는다.
+    번들된 스크립트가 요약(JSON)만 만들어 준다.
+    너는 그 요약을 해석한다.
+
+    ## 1. 스크립트 먼저 실행
+    python <스킬 폴더>/scripts/summarize_log.py <로그>
+      --window 5m --top 10
+    - &&, export, $변수, 파이프 없이 명령 한 줄만 실행한다.
+
+    ## 2. 필요하면 범위를 좁혀 다시 실행
+    ... --from 10:30 --to 10:40 --sample 15
+    ... --component db --window 1m
+
+    ## 3. 해석해서 보고
+    스크립트 결과의 숫자만 근거로 쓴다.
+    추측은 추측이라고 표시한다.
+    </script>
+    <script type="text/x-code" data-lang="text" class="term sm" data-title="실제 실행 (Linux, big-pickle, 1회)">
+    → Skill "log-analysis"
+    $ wc -l logs/app.log
+    2059 logs/app.log
+    $ python3 /…/summarize_log.py logs/app.log
+        --window 5m --top 10
+    $ python3 /…/summarize_log.py logs/app.log
+        --from …T10:35:00 --to …T10:55:00 --window 1m --sample 15
+    $ python3 /…/summarize_log.py logs/app.log
+        … --component db --window 1m
+
+    1. 한 줄 요약 — 10:40~10:55에 payment(81건)·db(20건)
+       에서 총 101건 ERROR 급증. gateway timeout 64건,
+       pool exhausted 20건
+    2. 타임라인 — 급증 직전(10:35~10:39) db WARN
+       "connection pool usage 82~97%" 다수 ...
+    </script>
+  </div>
+  <div class="ref">examples/01-skills/s3a-log-analysis</div>
+  <aside class="notes">
+    <p>모델은 스크립트를 세 번 돌렸습니다. 전체 요약으로 급증 구간을 찾고, 그 직전 구간을 다시 보고, db만 따로 봤습니다. 급증 직전의 DB 풀 경고는 두 번째, 세 번째 실행에서 찾았습니다. SKILL.md의 2단계 지시가 그대로 작동한 장면입니다.</p>
+    <p>첫 줄의 wc -l은 모델이 스스로 붙인 것입니다. Windows PowerShell에는 wc가 없어서 이 줄은 실패합니다. 그래서 스킬에 "한 줄 명령만"이라고 써 둡니다.</p>
+  </aside>
+</section>
+
+<section class="slide" data-chapter="skill" data-title="S3b 릴리스 노트">
+  <h2><span class="tag skill">S3b</span>분류는 스크립트가, 문장은 모델이</h2>
+  <div class="cols c46">
+    <div>
+      <ul class="small">
+        <li><code>release_notes.py</code>: 마지막 태그 이후 커밋을 Conventional Commits 기준으로 분류한다. <code>BREAKING CHANGE</code>도 따로 뽑는다</li>
+        <li>모델: 분류된 목록을 <strong>사용자가 읽을 한국어 문장</strong>으로 바꾼다. 문체는 <code>references/korean-style.md</code>를 따른다</li>
+        <li>같은 커밋이면 매번 같은 분류. 목록을 스크립트가 만들므로 커밋이 빠지거나 섞이지 않는다</li>
+      </ul>
+      <p class="tiny muted"><code>prepare.py</code>가 태그 <code>v1.0.0</code>과 이후 커밋 12개가 있는 git 저장소를 <code>sandbox/</code>에 만듭니다.</p>
+    </div>
+    <script type="text/x-code" data-lang="md" class="term sm" data-title="스크립트 출력 = 모델이 받는 입력 (실제, 줄임)">
+    # Changes v1.0.0 -> HEAD
+    12 commits, 2026-10-12 .. 2026-10-26, 3 author(s).
+
+    ## Breaking changes
+    - **search**: replace /search?q= with /v2/search (`77fe600`)
+      - the old /search endpoint is removed; clients must call /v2/search.
+    ## Features
+    - **cart**: add coupon code support (`df6e7b0`)
+    - **auth**: support login with one-time email code (`3f2a39d`)
+    ## Bug fixes
+    - **cart**: round totals to whole won (`02b0954`)
+    - prevent duplicate orders on double click (`a2ea187`)
+    ...
+    </script>
+  </div>
+  <div class="ref">examples/01-skills/s3b-release-notes</div>
+  <aside class="notes"><p>"규칙대로 분류하기"는 코드가 훨씬 잘합니다. 모델에게 git log 원문 수백 줄을 주고 분류까지 시키면 빠뜨리거나 섞습니다. 모델이 잘하는 부분, 즉 사용자 관점의 문장으로 바꾸는 일만 남기는 것이 요령입니다.</p></aside>
+</section>
+
+<section class="slide" data-chapter="skill" data-title="S3c 비밀값 검사">
+  <h2><span class="tag skill">S3c</span>커밋 전에 비밀값이 섞였는지 검사</h2>
+  <div class="cols c64">
+    <script type="text/x-code" data-lang="text" class="term sm" data-title="scan_secrets.py --changed (실제, 일부)">
+    .env:1:known-token-prefix: API_KEY=sk-***(43 chars)
+    .env:2:url-credentials: DATABASE_URL=postgres://app:I3A***(14 chars)@…
+    config.py:3:hardcoded-credential: DB_PASSWORD = "I3A***(14 chars)"
+    config.py:6:high-entropy-string: BUILD_ID = "4a3***(40 chars)"
+    deploy/ci.yml:3:known-token-prefix: AWS_ACCESS_KEY_ID: AKI***(20 chars)
+    # 11 finding(s) in 5 file(s); 7 file(s) scanned
+    exit=1
+    </script>
+    <div>
+      <ul class="small">
+        <li>값은 앞 3글자와 길이만 보여 준다. <strong>모델에게도 비밀값이 전달되지 않는다</strong></li>
+        <li>종료 코드 1 = 발견. 모델이 "괜찮다"고 말해도 숫자는 바뀌지 않는다</li>
+        <li><code>BUILD_ID</code>는 git SHA일 수 있는 오탐 후보. 이걸 가려내 설명하는 것이 모델 몫</li>
+      </ul>
+      <p class="tiny muted">예제의 가짜 비밀값은 <code>prepare.py</code>가 실행할 때 조립합니다. 레포에는 비밀값처럼 생긴 문자열이 하나도 없습니다.</p>
+    </div>
+  </div>
+  <div class="ref">examples/01-skills/s3c-secret-scan</div>
+  <aside class="notes"><p>패턴 검사를 모델에게 맡기면 매번 결과가 달라집니다. 검사는 스크립트가 결정적으로 하고, 모델은 결과를 읽고 "이건 진짜 키, 이건 오탐 같다, 이렇게 고치자"를 설명합니다.</p></aside>
+</section>
+
+<section class="slide" data-chapter="skill" data-title="S4a HTML 리포트">
+  <h2><span class="tag skill">S4a</span>CSV를 브라우저로 여는 리포트로</h2>
+  <div class="cols c46">
+    <div>
+      <ul class="small">
+        <li><code>build_report.py</code>가 <code>data/sales.csv</code>를 읽어 <code>out/report.html</code> 한 파일을 만든다 (약 9 KB)</li>
+        <li>그래프는 파이썬이 만든 <strong>인라인 SVG</strong>. CDN, JS 라이브러리, 웹 폰트가 없어 인터넷 없이 열린다</li>
+        <li>stdout으로는 근거 숫자(JSON)를 낸다. 모델은 이 숫자로 인사이트를 쓴다</li>
+        <li>템플릿은 스킬 폴더의 <code>templates/report.html</code>. 팀 양식을 여기에 고정한다</li>
+      </ul>
+    </div>
+    <script type="text/x-code" data-lang="text" class="term sm" data-title="모델이 받는 근거 숫자 (실제, 발췌)">
+    output_absolute: …/s4a-html-report/out/report.html
+    total_revenue: 67,639,000원   total_units: 2,822
+    best_month: 2025-11 (8,021,000원)
+    biggest_mom_increase: 2025-11 +23.2%
+    biggest_mom_decrease: 2025-12 -8.7%
+    서울  비중 54.7%  하반기/상반기 +24.2%
+    부산  비중 26.2%  하반기/상반기 +4.0%
+          dip_months: 2025-07, 2025-08, 2025-09
+    광주  비중 19.1%  하반기/상반기 +46.2%
+    </script>
+  </div>
+  <div class="ref">examples/01-skills/s4a-html-report</div>
+  <aside class="notes"><p>모델에게 HTML과 차트를 매번 새로 짜게 하면 모양이 매번 다르고 숫자도 틀릴 수 있습니다. 양식과 계산은 스크립트에 고정하고, 모델은 "부산은 7~9월에 빠졌다가 회복했다" 같은 해석만 씁니다.</p></aside>
+</section>
+
+<section class="slide" data-chapter="skill" data-title="S4b 구조 다이어그램">
+  <h2><span class="tag skill">S4b</span>코드 구조를 Mermaid 다이어그램으로</h2>
+  <div class="cols c46">
+    <div>
+      <ul class="small">
+        <li><code>scan_structure.py</code>가 파이썬 파일의 import를 <strong>파싱</strong>해서 그래프를 만든다. 모델이 코드를 하나하나 읽지 않는다</li>
+        <li>순환 import를 찾아 빨간색으로 표시한다. 함수 안에서 하는 import는 점선</li>
+        <li>결과는 <code>out/architecture.md</code>. GitHub, GitLab, 대부분의 편집기가 Mermaid를 그림으로 보여 준다</li>
+        <li>모델 몫: 그림을 보고 구조를 설명하고, 순환을 끊을 방법을 제안</li>
+      </ul>
+    </div>
+    <script type="text/x-code" data-lang="text" class="term sm" data-title="out/architecture.md (실제, 줄임)">
+    8 modules, 13 import edges between them, 1 import cycle(s).
+
+    flowchart LR
+      subgraph pkg_services["services/"]
+        m_services_orders["services/orders.py"]
+        m_services_payments["services/payments.py"]
+        m_services_notifications["services/notifications.py"]
+        ...
+      end
+      m_services_orders --> m_services_payments
+      m_services_payments --> m_services_notifications
+      m_services_notifications --> m_services_orders
+      class m_services_notifications,m_services_orders,
+            m_services_payments cycle
+    </script>
+  </div>
+  <div class="ref">examples/01-skills/s4b-mermaid-diagram</div>
+  <aside class="notes"><p>예제의 sample-app에는 orders → payments → notifications → orders 순환을 일부러 심어 두었습니다. 생성된 Mermaid는 mermaid 파서로 문법을 확인했습니다.</p></aside>
+</section>
+
+<section class="slide" data-chapter="skill" data-title="스크립트 설계 원칙">
+  <h2>스킬에 넣을 스크립트를 만들 때</h2>
+  <div class="cols">
+    <div>
+      <h3>스크립트 쪽</h3>
+      <ul class="small">
+        <li><strong>표준 라이브러리만</strong>. 설치 단계가 없어야 누구 PC에서나 돈다</li>
+        <li>출력은 짧게. 원문 대신 요약, 필요하면 <code>--sample N</code>으로 일부만</li>
+        <li>종료 코드로 성공, 발견, 오류를 구분 (0 / 1 / 2)</li>
+        <li><code>--help</code>를 친절하게. 모델도 읽는다</li>
+        <li>네트워크 없이 동작. 결과물에도 외부 링크를 넣지 않는다</li>
+      </ul>
+    </div>
+    <div>
+      <h3>SKILL.md 쪽</h3>
+      <ul class="small">
+        <li>실행할 명령을 그대로 적는다: <code>python &lt;스킬 폴더&gt;/scripts/x.py 인자</code></li>
+        <li>"<code>python</code>이 없으면 <code>python3</code>" 한 줄 (Linux)</li>
+        <li><code>&amp;&amp;</code>, 파이프, <code>$변수</code> 없이 한 줄. Windows에서는 PowerShell이 받는다</li>
+        <li>"하지 말 것"을 쓴다: 원본 전체 읽기, 스크립트 고치기, 숫자 지어내기</li>
+        <li>스킬을 건너뛰고 <code>grep</code>부터 하는 모델도 있다. 데모 프롬프트에는 스킬 이름을 넣는다</li>
+      </ul>
+    </div>
+  </div>
+  <aside class="notes"><p>S3a와 S3b를 만들 때 실제 모델이 스킬을 열지 않고 바로 grep, git log를 실행한 적이 있었습니다. description을 다듬는 것이 근본 대책이지만, 데모처럼 실패하면 안 되는 자리에서는 "log-analysis 스킬로"처럼 이름을 직접 말하는 편이 안전합니다.</p></aside>
+</section>
+
+<section class="slide demo" data-chapter="skill" data-title="데모: S3a">
+  <div class="demo-mark">데모</div>
+  <h2>로그를 읽지 않고 장애 원인 찾기</h2>
+  <div class="cols c64">
+    <script type="text/x-code" data-lang="powershell" data-title="PowerShell">
+    PS> cd examples\01-skills\s3a-log-analysis
+    PS> python prepare.py          # logs\app.log 2,059줄 생성
+    PS> python .opencode\skills\log-analysis\scripts\summarize_log.py `
+          logs\app.log --window 5m --top 10      # 모델 없이 먼저
+    PS> opencode
+    > log-analysis 스킬로 logs/app.log 의 장애 원인을 분석해줘.
+      파일이 크니까 전체를 읽지는 마.
+    </script>
+    <ol class="steps small">
+      <li>스크립트를 직접 돌려 JSON 요약의 모양을 본다</li>
+      <li>모델에게 맡기고 <code>→ Skill "log-analysis"</code> 줄을 확인한다</li>
+      <li>스크립트를 몇 번, 어떤 옵션으로 다시 부르는지 본다</li>
+      <li>답의 숫자가 JSON과 맞는지 대조한다</li>
+    </ol>
+  </div>
+  <div class="ref">examples/01-skills/s3a-log-analysis</div>
+  <aside class="notes"><p>심어 둔 장애는 10:40~10:55의 결제 타임아웃 급증이고, 그 직전에 DB 커넥션 풀 경고가 쌓입니다. 모델이 경고까지 찾아내면 성공입니다.</p></aside>
+</section>
