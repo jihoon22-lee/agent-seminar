@@ -1,1 +1,493 @@
-<!doctype html><html lang="ko"><meta charset="utf-8"><title>agent-seminar</title><p>슬라이드 준비 중입니다.</p></html>
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="opencode에 스킬, MCP 서버, 플러그인을 붙여 에이전트를 확장하는 방법 — 세미나 슬라이드">
+<title>AI 에이전트 확장하기 — 스킬, MCP, 플러그인 (opencode 편)</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Crect width=%2216%22 height=%2216%22 rx=%223%22 fill=%22%2317242e%22/%3E%3Crect x=%223%22 y=%223%22 width=%223%22 height=%2210%22 fill=%22%23a96400%22/%3E%3Crect x=%227%22 y=%223%22 width=%223%22 height=%2210%22 fill=%22%231d5fa8%22/%3E%3Crect x=%2211%22 y=%223%22 width=%222%22 height=%2210%22 fill=%22%238e2f6b%22/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/deck.css">
+</head>
+<body>
+<div class="deck" data-total="17">
+<section class="slide title" data-chapter="intro" data-title="표지">
+  <div class="cols center" style="flex:1;grid-template-columns:780px 1fr;gap:40px">
+    <div>
+      <h1>AI 에이전트<br>확장하기</h1>
+      <p class="lead" style="margin-top:28px">스킬, MCP, 플러그인으로<br>opencode를 우리 팀에 맞추는 법</p>
+      <p class="small muted" style="margin-top:40px;white-space:nowrap">github.com/jihoon22-lee/agent-seminar</p>
+    </div>
+    <svg class="diagram wiring" viewBox="0 0 1600 760" role="img" aria-label="opencode에 스킬, MCP 서버, 플러그인이 연결되는 구조">
+  <g data-part="model">
+    <rect x="610" y="14" width="380" height="96" rx="14" fill="#ffffff" stroke="#17242e" stroke-width="4"/>
+    <text x="800" y="74" text-anchor="middle" font-size="36" font-weight="700">모델 (LLM)</text>
+    <path d="M790 110 V198 M810 198 V110" stroke="#17242e" stroke-width="5" fill="none"/>
+  </g>
+  <g data-part="core">
+    <rect x="500" y="200" width="600" height="390" rx="22" fill="#ffffff" stroke="#17242e" stroke-width="6"/>
+    <text x="534" y="258" font-size="42" font-weight="700">opencode</text>
+    <text x="534" y="302" font-size="25" class="t-muted">에이전트 루프: 모델이 고르고, 도구가 실행</text>
+    <g font-size="23" class="t-muted">
+      <rect x="534" y="328" width="96" height="44" rx="8" fill="#e6ebe8"/><text x="582" y="358" text-anchor="middle">read</text>
+      <rect x="642" y="328" width="96" height="44" rx="8" fill="#e6ebe8"/><text x="690" y="358" text-anchor="middle">edit</text>
+      <rect x="750" y="328" width="96" height="44" rx="8" fill="#e6ebe8"/><text x="798" y="358" text-anchor="middle">bash</text>
+      <rect x="858" y="328" width="96" height="44" rx="8" fill="#e6ebe8"/><text x="906" y="358" text-anchor="middle">grep</text>
+      <rect x="966" y="328" width="100" height="44" rx="8" fill="#e6ebe8"/><text x="1016" y="358" text-anchor="middle">skill</text>
+    </g>
+  </g>
+  <g data-part="plugin">
+    <path d="M600 432 v-14 M660 432 v-14 M720 432 v-14 M780 432 v-14 M840 432 v-14 M900 432 v-14 M960 432 v-14 M1020 432 v-14
+             M600 556 v14 M660 556 v14 M720 556 v14 M780 556 v14 M840 556 v14 M900 556 v14 M960 556 v14 M1020 556 v14"
+          class="w-plugin" stroke-width="5" fill="none"/>
+    <rect x="566" y="432" width="468" height="124" rx="10" fill="#f6edf2" class="w-plugin" stroke-width="5"/>
+    <text x="800" y="486" text-anchor="middle" font-size="34" font-weight="700" class="t-plugin">플러그인</text>
+    <text x="800" y="528" text-anchor="middle" font-size="24">opencode 안에서 도는 JS 훅</text>
+  </g>
+  <g data-part="skill">
+    <path class="wire w-skill" d="M330 352 C 410 352, 420 330, 500 330" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <path d="M70 232 H272 L330 290 V470 H70 Z" fill="#fbf3e6" class="w-skill" stroke-width="5"/>
+    <path d="M272 232 V290 H330" fill="none" class="w-skill" stroke-width="5"/>
+    <text x="96" y="318" font-size="38" font-weight="700" class="t-skill">스킬</text>
+    <text x="96" y="364" font-size="24">SKILL.md</text>
+    <text x="96" y="400" font-size="24">+ 문서, 스크립트</text>
+    <text x="96" y="446" font-size="22" class="t-muted">필요할 때 읽는 매뉴얼</text>
+  </g>
+  <g data-part="mcp">
+    <path class="wire w-mcp" d="M1100 300 C 1180 300, 1180 266, 1252 266" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <path class="wire w-mcp" d="M1100 470 C 1180 470, 1180 500, 1252 500" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <rect x="1252" y="196" width="312" height="140" rx="14" fill="#eaf1f9" class="w-mcp" stroke-width="5"/>
+    <text x="1280" y="250" font-size="32" font-weight="700" class="t-mcp">로컬 MCP 서버</text>
+    <text x="1280" y="292" font-size="23">내 PC 프로세스, stdio</text>
+    <rect x="1252" y="430" width="312" height="140" rx="14" fill="#eaf1f9" class="w-mcp" stroke-width="5" stroke-dasharray="14 8"/>
+    <text x="1280" y="484" font-size="32" font-weight="700" class="t-mcp">원격 MCP 서버</text>
+    <text x="1280" y="526" font-size="23">다른 곳에서 실행, HTTP</text>
+  </g>
+  <g data-part="config">
+    <path d="M800 590 V636" class="w-config" stroke-width="5" stroke-dasharray="8 6" fill="none"/>
+    <rect x="470" y="636" width="660" height="100" rx="14" fill="#e8f0f0" class="w-config" stroke-width="5"/>
+    <text x="800" y="682" text-anchor="middle" font-size="32" font-weight="700" class="t-config">opencode.json</text>
+    <text x="800" y="718" text-anchor="middle" font-size="23">무엇을 켤지, 어떻게 연결할지</text>
+  </g>
+</svg>
+  </div>
+  <aside class="notes">
+    <p>인사. 오늘은 opencode라는 코딩 에이전트에 "우리 팀의 지식, 시스템, 규칙"을 붙이는 세 가지 방법을 봅니다.</p>
+    <p>오른쪽 그림이 오늘 전체 지도입니다. 가운데가 opencode, 위가 모델, 왼쪽 주황 선이 스킬, 오른쪽 파란 선이 MCP, 안쪽 자주색 칩이 플러그인, 아래가 이걸 켜고 끄는 opencode.json입니다. 이 색은 발표 내내 그대로 씁니다.</p>
+  </aside>
+</section>
+
+<section class="slide" data-chapter="intro" data-title="오늘의 순서">
+  <h2>오늘의 순서 (60분)</h2>
+  <div class="cols c64">
+    <ol class="steps">
+      <li><strong>들어가며</strong> <span class="muted">에이전트가 모르는 것들, 3분</span></li>
+      <li><strong>개념</strong> <span class="muted">스킬, MCP, 플러그인은 각각 무엇인가, 8분</span></li>
+      <li><strong>opencode.json</strong> <span class="muted">설정 위치, 병합, 환경 변수, 7분</span></li>
+      <li><strong>스킬</strong> <span class="muted">파일 하나부터 스크립트까지, 12분</span></li>
+      <li><strong>MCP</strong> <span class="muted">로컬 서버부터 원격 서버까지, 12분</span></li>
+      <li><strong>플러그인</strong> <span class="muted">막고, 기록하고, 주입하기, 8분</span></li>
+      <li><strong>종합과 마무리</strong> <span class="muted">셋을 함께 쓰기, 개발 체크리스트, 10분</span></li>
+    </ol>
+    <div class="callout">
+      <p><strong>예제 38개</strong>가 모두 레포에 있습니다.</p>
+      <p class="small">발표에서는 몇 개만 시연하고, 나머지는 각 예제의 README를 따라 직접 해 볼 수 있게 만들었습니다.</p>
+      <p class="small">슬라이드 오른쪽 아래의 <code>examples/…</code> 경로가 해당 예제입니다.</p>
+    </div>
+  </div>
+  <aside class="notes">
+    <p>시간 배분 안내. 각 장 끝에 데모가 있습니다. 데모 화면은 어두운 배경으로 바뀌니, 그때 터미널로 넘어간다고 보시면 됩니다.</p>
+  </aside>
+</section>
+
+<section class="slide" data-chapter="intro" data-title="준비물">
+  <h2>따라 해 보려면</h2>
+  <div class="cols c46">
+    <div>
+      <h3>필요한 것</h3>
+      <ul>
+        <li><strong>opencode 1.19.5</strong> <span class="small muted">이 버전으로 모든 예제를 검증</span></li>
+        <li><strong>Python 3.10 이상</strong> <span class="small muted">예제 스크립트와 MCP 서버는 표준 라이브러리만 사용</span></li>
+        <li><strong>git</strong></li>
+        <li class="small">모델: 평소 쓰는 모델 그대로. 설정된 모델이 없으면 무료 모델 <code>opencode/big-pickle</code></li>
+      </ul>
+      <p class="small muted">인터넷 없이 돌아가도록 만들었습니다. 다만 플러그인 예제는 opencode가 npm 패키지 하나를 자동 설치하므로 npm 레지스트리나 미러가 필요합니다.</p>
+    </div>
+    <div>
+      <figure class="code term" data-lang="powershell"><figcaption>PowerShell</figcaption><pre><code><span class="t-prompt">PS C:\work&gt;</span> git clone https://github.com/jihoon22-lee/agent-seminar
+<span class="t-prompt">PS C:\work&gt;</span> cd agent-seminar\examples\01-skills\s1a-commit-message
+<span class="t-prompt">PS C:\work&gt;</span> opencode <span class="t-flag">--version</span>
+1.19.5
+<span class="t-prompt">PS C:\work&gt;</span> opencode</code></pre></figure>
+      <figure class="code term" data-lang="bash"><figcaption>Linux</figcaption><pre><code><span class="t-prompt">$</span> git clone https://github.com/jihoon22-lee/agent-seminar
+<span class="t-prompt">$</span> cd agent-seminar/examples/01-skills/s1a-commit-message
+<span class="t-prompt">$</span> opencode</code></pre></figure>
+    </div>
+  </div>
+  <div class="ref">README.md</div>
+  <aside class="notes">
+    <p>예제 폴더 하나하나가 그 자체로 opencode 프로젝트입니다. 해당 폴더로 들어가서 opencode를 실행하면 그 예제의 설정만 적용됩니다.</p>
+    <p>Linux에서 python 명령이 없으면 예제 설정의 python을 python3로 바꾸면 됩니다. README마다 적어 두었습니다.</p>
+  </aside>
+</section>
+
+<section class="slide statement" data-chapter="intro" data-title="문제 제기">
+  <div class="big">에이전트는 코드를 잘 짭니다.<br>그런데 우리 팀은 모릅니다.</div>
+  <p>커밋 규칙, 리뷰 기준, 장애 티켓이 쌓인 시스템, 절대 하면 안 되는 명령.</p>
+  <aside class="notes">
+    <p>모델은 인터넷 전체로 학습했지만, 우리 팀이 어제 정한 규칙이나 팀 안에만 있는 시스템은 알 수 없습니다.</p>
+  </aside>
+</section>
+
+<section class="slide" data-chapter="intro" data-title="매번 설명하면 생기는 일">
+  <h2>매번 프롬프트로 설명하면</h2>
+  <div class="cols">
+    <div>
+      <h3>이런 일이 반복됩니다</h3>
+      <ul>
+        <li>"커밋 메시지는 <code>type(scope): 요약</code> 형식이고…"를 <strong>매번</strong> 붙여 넣는다</li>
+        <li>사람마다 설명이 달라서 <strong>결과가 들쭉날쭉</strong>하다</li>
+        <li>티켓 시스템 내용은 <strong>복사해서 붙여 넣어야</strong> 한다</li>
+        <li>".env는 읽지 마"는 <strong>부탁일 뿐</strong>, 지켜진다는 보장이 없다</li>
+      </ul>
+    </div>
+    <div>
+      <h3>한 번 정리해서 붙여 두면</h3>
+      <table class="compact">
+        <tr><th>반복되는 것</th><th>붙이는 방법</th></tr>
+        <tr><td>팀의 절차와 지식</td><td><span class="tag skill">스킬</span></td></tr>
+        <tr><td>내부 시스템과 데이터</td><td><span class="tag mcp">MCP</span></td></tr>
+        <tr><td>반드시 지킬 규칙, 자동화</td><td><span class="tag plugin">플러그인</span></td></tr>
+        <tr><td>무엇을 켤지</td><td><span class="tag config">opencode.json</span></td></tr>
+      </table>
+    </div>
+  </div>
+  <aside class="notes">
+    <p>핵심 메시지: 반복되는 설명을 "확장"으로 바꾸면 매번 쓰는 비용이 사라지고, 팀원 모두가 같은 결과를 얻습니다.</p>
+    <p>특히 마지막 줄. 프롬프트로 하는 금지는 부탁입니다. 플러그인이나 권한 설정은 강제입니다. 이 차이를 오늘 여러 번 봅니다.</p>
+  </aside>
+</section>
+
+<section class="slide" data-chapter="intro" data-title="opencode 30초 소개">
+  <h2>opencode를 처음 보는 분을 위해</h2>
+  <div class="cols c46">
+    <div>
+      <ul>
+        <li>터미널에서 쓰는 오픈소스 <strong>코딩 에이전트</strong></li>
+        <li>모델을 고를 수 있다 <span class="small muted">유료 API, 직접 띄운 모델, 무료 모델</span></li>
+        <li>파일 읽기, 수정, 명령 실행 같은 <strong>기본 도구</strong>를 갖고 있다</li>
+        <li>설정은 <code>opencode.json</code> 하나로 한다</li>
+      </ul>
+    </div>
+    <div>
+      <figure class="code term" data-lang="bash"><figcaption>두 가지 실행 방법</figcaption><pre><code><span class="t-com"># 대화형 화면 (TUI)</span>
+<span class="t-prompt">$</span> opencode
+<span class="t-com">
+# 한 번만 묻고 끝내기 (스크립트, 테스트용)</span>
+<span class="t-prompt">$</span> opencode run <span class="t-str">"README를 요약해줘"</span>
+<span class="t-com">
+# 모델 지정 (설정된 모델이 없을 때 무료 모델)</span>
+<span class="t-prompt">$</span> opencode run <span class="t-flag">-m</span> opencode/big-pickle <span class="t-str">"안녕"</span></code></pre></figure>
+    </div>
+  </div>
+  <aside class="notes">
+    <p>오늘 데모는 대부분 opencode run으로 보여 드립니다. 결과가 바로 터미널에 찍혀서 보기 편하기 때문입니다. 실제로 쓸 때는 TUI가 편합니다.</p>
+  </aside>
+</section>
+
+<section class="slide" data-chapter="intro" data-title="에이전트 루프">
+  <h2>에이전트는 이렇게 일합니다</h2>
+  <div class="flow" style="margin-top:20px">
+    <div class="node"><b>1. 요청</b>"payment 장애 티켓 요약해줘"</div>
+    <div class="arrow">›</div>
+    <div class="node"><b>2. 모델이 판단</b>어떤 도구를 어떤 인자로 부를지 고른다</div>
+    <div class="arrow">›</div>
+    <div class="node"><b>3. 도구 실행</b>opencode가 실제로 실행한다</div>
+    <div class="arrow">›</div>
+    <div class="node"><b>4. 결과 전달</b>결과를 모델에게 돌려준다. 2로 돌아가 반복</div>
+  </div>
+  <div class="gap"></div>
+  <table class="compact">
+    <tr><th>확장</th><th>루프의 어디에 끼어드나</th></tr>
+    <tr><td><span class="tag skill">스킬</span></td><td>2단계에서 모델이 <strong>읽는 지식</strong>이 늘어난다. 모델이 필요하다고 판단할 때 불러온다</td></tr>
+    <tr><td><span class="tag mcp">MCP</span></td><td>2, 3단계에서 고를 수 있는 <strong>도구</strong>가 늘어난다. 도구는 opencode 바깥 프로세스에서 실행된다</td></tr>
+    <tr><td><span class="tag plugin">플러그인</span></td><td>3단계 <strong>앞뒤에 코드가 끼어든다</strong>. 모델의 판단과 상관없이 항상 실행된다</td></tr>
+  </table>
+  <aside class="notes">
+    <p>이 표가 오늘 내용의 요약입니다. 스킬은 지식, MCP는 능력, 플러그인은 강제. 나중에 비교표에서 다시 봅니다.</p>
+  </aside>
+</section>
+
+<section class="slide divider" data-chapter="concept" data-title="2. 개념">
+  <div class="cols c46 center">
+    <div>
+      <div class="num">2</div>
+      <h2>개념</h2>
+      <p class="lead">스킬, MCP, 플러그인은 각각 무엇이고 어디에 붙는가</p>
+    </div>
+    <svg class="diagram wiring" viewBox="0 0 1600 760" role="img" aria-label="opencode에 스킬, MCP 서버, 플러그인이 연결되는 구조">
+  <g data-part="model">
+    <rect x="610" y="14" width="380" height="96" rx="14" fill="#ffffff" stroke="#17242e" stroke-width="4"/>
+    <text x="800" y="74" text-anchor="middle" font-size="36" font-weight="700">모델 (LLM)</text>
+    <path d="M790 110 V198 M810 198 V110" stroke="#17242e" stroke-width="5" fill="none"/>
+  </g>
+  <g data-part="core">
+    <rect x="500" y="200" width="600" height="390" rx="22" fill="#ffffff" stroke="#17242e" stroke-width="6"/>
+    <text x="534" y="258" font-size="42" font-weight="700">opencode</text>
+    <text x="534" y="302" font-size="25" class="t-muted">에이전트 루프: 모델이 고르고, 도구가 실행</text>
+    <g font-size="23" class="t-muted">
+      <rect x="534" y="328" width="96" height="44" rx="8" fill="#e6ebe8"/><text x="582" y="358" text-anchor="middle">read</text>
+      <rect x="642" y="328" width="96" height="44" rx="8" fill="#e6ebe8"/><text x="690" y="358" text-anchor="middle">edit</text>
+      <rect x="750" y="328" width="96" height="44" rx="8" fill="#e6ebe8"/><text x="798" y="358" text-anchor="middle">bash</text>
+      <rect x="858" y="328" width="96" height="44" rx="8" fill="#e6ebe8"/><text x="906" y="358" text-anchor="middle">grep</text>
+      <rect x="966" y="328" width="100" height="44" rx="8" fill="#e6ebe8"/><text x="1016" y="358" text-anchor="middle">skill</text>
+    </g>
+  </g>
+  <g data-part="plugin">
+    <path d="M600 432 v-14 M660 432 v-14 M720 432 v-14 M780 432 v-14 M840 432 v-14 M900 432 v-14 M960 432 v-14 M1020 432 v-14
+             M600 556 v14 M660 556 v14 M720 556 v14 M780 556 v14 M840 556 v14 M900 556 v14 M960 556 v14 M1020 556 v14"
+          class="w-plugin" stroke-width="5" fill="none"/>
+    <rect x="566" y="432" width="468" height="124" rx="10" fill="#f6edf2" class="w-plugin" stroke-width="5"/>
+    <text x="800" y="486" text-anchor="middle" font-size="34" font-weight="700" class="t-plugin">플러그인</text>
+    <text x="800" y="528" text-anchor="middle" font-size="24">opencode 안에서 도는 JS 훅</text>
+  </g>
+  <g data-part="skill">
+    <path class="wire w-skill" d="M330 352 C 410 352, 420 330, 500 330" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <path d="M70 232 H272 L330 290 V470 H70 Z" fill="#fbf3e6" class="w-skill" stroke-width="5"/>
+    <path d="M272 232 V290 H330" fill="none" class="w-skill" stroke-width="5"/>
+    <text x="96" y="318" font-size="38" font-weight="700" class="t-skill">스킬</text>
+    <text x="96" y="364" font-size="24">SKILL.md</text>
+    <text x="96" y="400" font-size="24">+ 문서, 스크립트</text>
+    <text x="96" y="446" font-size="22" class="t-muted">필요할 때 읽는 매뉴얼</text>
+  </g>
+  <g data-part="mcp">
+    <path class="wire w-mcp" d="M1100 300 C 1180 300, 1180 266, 1252 266" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <path class="wire w-mcp" d="M1100 470 C 1180 470, 1180 500, 1252 500" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <rect x="1252" y="196" width="312" height="140" rx="14" fill="#eaf1f9" class="w-mcp" stroke-width="5"/>
+    <text x="1280" y="250" font-size="32" font-weight="700" class="t-mcp">로컬 MCP 서버</text>
+    <text x="1280" y="292" font-size="23">내 PC 프로세스, stdio</text>
+    <rect x="1252" y="430" width="312" height="140" rx="14" fill="#eaf1f9" class="w-mcp" stroke-width="5" stroke-dasharray="14 8"/>
+    <text x="1280" y="484" font-size="32" font-weight="700" class="t-mcp">원격 MCP 서버</text>
+    <text x="1280" y="526" font-size="23">다른 곳에서 실행, HTTP</text>
+  </g>
+  <g data-part="config">
+    <path d="M800 590 V636" class="w-config" stroke-width="5" stroke-dasharray="8 6" fill="none"/>
+    <rect x="470" y="636" width="660" height="100" rx="14" fill="#e8f0f0" class="w-config" stroke-width="5"/>
+    <text x="800" y="682" text-anchor="middle" font-size="32" font-weight="700" class="t-config">opencode.json</text>
+    <text x="800" y="718" text-anchor="middle" font-size="23">무엇을 켤지, 어떻게 연결할지</text>
+  </g>
+</svg>
+  </div>
+  <aside class="notes"><p>8분. 비유 하나씩과 비교표로 끝냅니다.</p></aside>
+</section>
+
+<section class="slide" data-chapter="concept" data-title="opencode의 확장 지점">
+  <h2>opencode에는 확장 지점이 여럿 있습니다</h2>
+  <table class="compact">
+    <tr><th>확장 지점</th><th>정체</th><th>언제 쓰이나</th><th>오늘</th></tr>
+    <tr><td><code>AGENTS.md</code>, <code>instructions</code></td><td>항상 읽히는 프로젝트 규칙 문서</td><td>모든 대화의 시작</td><td class="muted">짧게</td></tr>
+    <tr><td><strong>스킬</strong></td><td>폴더 + <code>SKILL.md</code></td><td>모델이 필요하다고 판단할 때</td><td><span class="tag skill">중점</span></td></tr>
+    <tr><td><strong>MCP 서버</strong></td><td>도구를 제공하는 별도 프로세스나 서버</td><td>모델이 도구를 부를 때</td><td><span class="tag mcp">중점</span></td></tr>
+    <tr><td><strong>플러그인</strong></td><td>opencode 안에서 도는 JS/TS 코드</td><td>이벤트가 생길 때마다</td><td><span class="tag plugin">중점</span></td></tr>
+    <tr><td><code>permission</code></td><td>설정으로 도구 사용 허용, 확인, 거부</td><td>도구를 실행하기 직전</td><td><span class="tag config">짧게</span></td></tr>
+    <tr><td>명령, 에이전트</td><td><code>/명령</code>으로 부르는 프롬프트, 역할별 하위 에이전트</td><td>사용자가 직접 고를 때</td><td class="muted">다루지 않음</td></tr>
+  </table>
+  <p class="small muted" style="margin-top:20px">AGENTS.md는 항상 컨텍스트에 들어가므로 짧고 꼭 필요한 규칙만 둡니다. 길고 가끔 필요한 내용은 스킬로 빼는 것이 오늘의 첫 번째 요령입니다.</p>
+  <aside class="notes">
+    <p>오늘은 가운데 세 줄이 주인공입니다. AGENTS.md와 스킬의 차이를 물어보시는 경우가 많은데, "항상 읽히나, 필요할 때만 읽히나"의 차이입니다.</p>
+  </aside>
+</section>
+
+<section class="slide" data-chapter="skill" data-part="개념: 스킬" data-title="스킬이란">
+  <h2>스킬: 필요할 때 꺼내 보는 업무 매뉴얼</h2>
+  <div class="cols">
+    <div>
+      <ul>
+        <li>폴더 하나에 <code>SKILL.md</code>가 들어 있으면 스킬이다</li>
+        <li>머리말(frontmatter)의 <code>description</code>을 보고 <strong>모델이 쓸지 말지 판단</strong>한다</li>
+        <li>본문에는 절차, 규칙, 예시를 쓴다</li>
+        <li>필요하면 참고 문서, 템플릿, <strong>스크립트</strong>를 같이 넣는다</li>
+        <li>형식이 표준이라 다른 에이전트에서도 대부분 그대로 쓸 수 있다</li>
+      </ul>
+    </div>
+    <div>
+      <div class="tree"><b>.opencode/skills/</b>
+└─ <b>commit-message/</b>
+   ├─ SKILL.md          <i>필수</i>
+   ├─ references/       <i>필요할 때 읽을 문서</i>
+   ├─ templates/        <i>결과물 틀</i>
+   └─ scripts/          <i>실행할 코드</i></div>
+      <figure class="code " data-lang="md"><figcaption>SKILL.md</figcaption><pre><code><span class="t-com">---</span>
+<span class="t-key">name</span>: commit-message
+<span class="t-key">description</span>: 커밋 메시지를 팀 규칙에 맞게 쓴다. "커밋 메시지
+  써줘", "커밋해줘" 같은 요청에 사용한다.
+<span class="t-com">---</span>
+<span class="t-kw"># 커밋 메시지 규칙</span>
+1. 형식: type(scope): 요약 (50자 이내)
+...</code></pre></figure>
+    </div>
+  </div>
+  <div class="ref">examples/01-skills/</div>
+  <aside class="notes">
+    <p>스킬은 코드가 아니라 문서입니다. 모델이 읽고 따릅니다. 실행되는 무언가가 아니라는 점이 MCP, 플러그인과 가장 큰 차이입니다.</p>
+  </aside>
+</section>
+
+<section class="slide" data-chapter="skill" data-part="개념: 스킬" data-title="스킬의 점진적 공개">
+  <h2>스킬은 세 단계로 나눠 읽힙니다</h2>
+  <ol class="steps">
+    <li><strong>항상</strong>: 모든 스킬의 <code>name</code>과 <code>description</code>만 모델에게 보인다 <span class="small muted">스킬이 수십 개여도 부담이 작다</span></li>
+    <li><strong>필요할 때</strong>: 모델이 <code>skill</code> 도구로 해당 스킬을 열면 <code>SKILL.md</code> 본문이 대화에 들어온다</li>
+    <li><strong>더 필요할 때</strong>: 본문이 시키는 경우에만 <code>references/</code> 문서를 읽거나 <code>scripts/</code>를 실행한다</li>
+  </ol>
+  <div class="callout" style="margin-top:12px">
+    <p>그래서 <strong>description이 스킬의 전부</strong>입니다. 모델은 처음에 description만 보고 이 스킬을 쓸지 정합니다. 모호하게 쓰면 쓰이지 않습니다.</p>
+  </div>
+  <aside class="notes">
+    <p>이 구조를 "점진적 공개"라고 부릅니다. 문서 전체를 매번 넣는 AGENTS.md와 달리, 정말 필요한 순간에만 비용을 냅니다.</p>
+    <p>description 작성법은 스킬 장에서 좋은 예와 나쁜 예로 실험한 결과를 보여 드립니다.</p>
+  </aside>
+</section>
+
+<section class="slide" data-chapter="mcp" data-part="개념: MCP" data-title="MCP란">
+  <h2>MCP: 에이전트에 도구를 꽂는 표준 규격</h2>
+  <div class="cols c64">
+    <div>
+      <ul>
+        <li>Model Context Protocol. 에이전트(클라이언트)와 <strong>도구 서버</strong> 사이의 약속</li>
+        <li>서버는 별도 프로세스다. <strong>어떤 언어로든</strong> 만들 수 있다</li>
+        <li>서버가 줄 수 있는 것 세 가지
+          <ul>
+            <li><strong>tools</strong>: 모델이 호출하는 함수 <span class="small muted">대부분 이것</span></li>
+            <li><strong>resources</strong>: 읽을 수 있는 문서나 데이터</li>
+            <li><strong>prompts</strong>: 미리 만든 프롬프트 틀</li>
+          </ul>
+        </li>
+        <li>표준이라 한 번 만든 서버를 <strong>여러 에이전트</strong>가 같이 쓴다</li>
+      </ul>
+    </div>
+    <div class="callout">
+      <p><strong>USB-C에 비유하면</strong></p>
+      <p class="small">기기(에이전트)와 주변기기(도구 서버)가 같은 단자 규격을 쓰기 때문에, 주변기기를 만드는 사람은 기기마다 따로 만들 필요가 없습니다.</p>
+      <p class="small">티켓 시스템, DB, 팀 위키, 배포 도구처럼 <strong>에이전트 바깥에 있는 것</strong>에 손을 뻗게 해 줍니다.</p>
+    </div>
+  </div>
+  <aside class="notes">
+    <p>MCP는 "능력"을 늘립니다. 스킬이 "어떻게 하라"는 지식이라면, MCP는 "이걸 할 수 있다"는 손발입니다.</p>
+  </aside>
+</section>
+
+<section class="slide" data-chapter="mcp" data-part="개념: MCP" data-title="MCP는 JSON 줄 주고받기">
+  <h2>속을 열어 보면 JSON 메시지를 주고받을 뿐입니다</h2>
+  <div class="cols c46">
+    <ol class="steps small">
+      <li>opencode가 서버를 시작하고 <code>initialize</code>로 인사한다</li>
+      <li><code>tools/list</code>로 도구 목록과 설명을 받는다</li>
+      <li>모델이 대화 중에 도구를 고른다</li>
+      <li>opencode가 <code>tools/call</code>로 호출하고 결과를 모델에게 준다</li>
+    </ol>
+    <figure class="code term sm" data-lang="json"><figcaption>실제 주고받은 메시지 (m1-stdio-minimal)</figcaption><pre><code>→ {<span class="t-key">"jsonrpc"</span>:<span class="t-str">"2.0"</span>,<span class="t-key">"id"</span>:<span class="t-num">1</span>,<span class="t-key">"method"</span>:<span class="t-str">"initialize"</span>,<span class="t-key">"params"</span>:{...}}
+← {<span class="t-key">"jsonrpc"</span>:<span class="t-str">"2.0"</span>,<span class="t-key">"id"</span>:<span class="t-num">1</span>,<span class="t-key">"result"</span>:{<span class="t-key">"protocolVersion"</span>:<span class="t-str">"…"</span>,
+    <span class="t-key">"capabilities"</span>:{<span class="t-key">"tools"</span>:{}},<span class="t-key">"serverInfo"</span>:{<span class="t-key">"name"</span>:<span class="t-str">"glossary"</span>}}}
+→ {<span class="t-key">"jsonrpc"</span>:<span class="t-str">"2.0"</span>,<span class="t-key">"method"</span>:<span class="t-str">"notifications/initialized"</span>}
+→ {<span class="t-key">"jsonrpc"</span>:<span class="t-str">"2.0"</span>,<span class="t-key">"id"</span>:<span class="t-num">2</span>,<span class="t-key">"method"</span>:<span class="t-str">"tools/list"</span>}
+← {<span class="t-key">"jsonrpc"</span>:<span class="t-str">"2.0"</span>,<span class="t-key">"id"</span>:<span class="t-num">2</span>,<span class="t-key">"result"</span>:{<span class="t-key">"tools"</span>:[{<span class="t-key">"name"</span>:<span class="t-str">"lookup_term"</span>,
+    <span class="t-key">"description"</span>:<span class="t-str">"팀 용어 사전에서 용어의 뜻을 찾는다"</span>, ...}]}}
+→ {<span class="t-key">"jsonrpc"</span>:<span class="t-str">"2.0"</span>,<span class="t-key">"id"</span>:<span class="t-num">3</span>,<span class="t-key">"method"</span>:<span class="t-str">"tools/call"</span>,
+   <span class="t-key">"params"</span>:{<span class="t-key">"name"</span>:<span class="t-str">"lookup_term"</span>,<span class="t-key">"arguments"</span>:{<span class="t-key">"term"</span>:<span class="t-str">"MCP"</span>}}}
+← {<span class="t-key">"jsonrpc"</span>:<span class="t-str">"2.0"</span>,<span class="t-key">"id"</span>:<span class="t-num">3</span>,<span class="t-key">"result"</span>:{<span class="t-key">"content"</span>:[{<span class="t-key">"type"</span>:<span class="t-str">"text"</span>,
+    <span class="t-key">"text"</span>:<span class="t-str">"Model Context Protocol ..."</span>}]}}</code></pre></figure>
+  </div>
+  <div class="ref">examples/02-mcp/m1-stdio-minimal</div>
+  <aside class="notes">
+    <p>SDK 없이 표준 라이브러리만으로 서버를 만들 수 있다는 것을 MCP 장에서 직접 보여 드립니다. 마법이 아니라 메시지 형식에 대한 약속이라는 점을 기억해 주세요.</p>
+  </aside>
+</section>
+
+<section class="slide" data-chapter="mcp" data-part="개념: MCP" data-title="로컬과 원격">
+  <h2>로컬 서버와 원격 서버</h2>
+  <table>
+    <tr><th></th><th class="mcp">로컬 (<code>type: "local"</code>)</th><th class="mcp">원격 (<code>type: "remote"</code>)</th></tr>
+    <tr><td><strong>누가 실행</strong></td><td>opencode가 직접 프로세스를 띄운다</td><td>누군가 미리 띄워 둔 서버에 접속한다</td></tr>
+    <tr><td><strong>통신</strong></td><td>표준 입출력 (stdio)</td><td>HTTP (Streamable HTTP)</td></tr>
+    <tr><td><strong>설정</strong></td><td><code>command</code>: 실행할 명령</td><td><code>url</code>, 필요하면 <code>headers</code></td></tr>
+    <tr><td><strong>인증</strong></td><td>내 PC 권한 그대로</td><td>토큰 헤더 또는 OAuth</td></tr>
+    <tr><td><strong>업데이트</strong></td><td>각자 PC에서 갱신</td><td>서버 한 곳만 갱신</td></tr>
+    <tr><td><strong>어울리는 곳</strong></td><td>내 파일, 로컬 DB, 개인 도구</td><td>팀이 함께 쓰는 시스템, 무거운 서버</td></tr>
+  </table>
+  <aside class="notes">
+    <p>같은 서버 코드를 두 방식으로 모두 붙일 수 있습니다. MCP 장에서 같은 서버를 로컬로 붙였다가 원격으로 바꾸는데, 설정이 몇 줄만 바뀝니다.</p>
+  </aside>
+</section>
+
+<section class="slide" data-chapter="plugin" data-part="개념: 플러그인" data-title="플러그인이란">
+  <h2>플러그인: opencode 안에 끼워 넣는 코드</h2>
+  <div class="cols c46">
+    <div>
+      <ul>
+        <li><code>.opencode/plugins/</code>에 JS/TS 파일을 두면 자동으로 로드된다</li>
+        <li>정해진 <strong>훅</strong>에 함수를 걸어 두면 opencode가 때마다 부른다</li>
+        <li><strong>모델이 고르지 않는다.</strong> 조건이 맞으면 항상 실행된다</li>
+        <li>opencode 전용이다. 다른 에이전트로 옮길 수 없다</li>
+      </ul>
+    </div>
+    <table class="compact">
+      <tr><th class="plugin">훅</th><th class="plugin">할 수 있는 일</th></tr>
+      <tr><td><code>tool.execute.before</code></td><td>도구 실행 전 검사, 인자 수정, <strong>차단</strong></td></tr>
+      <tr><td><code>tool.execute.after</code></td><td>실행 결과 기록, 후처리</td></tr>
+      <tr><td><code>shell.env</code></td><td>셸 명령에 환경 변수 주입</td></tr>
+      <tr><td><code>event</code></td><td>세션 종료, 권한 요청 같은 이벤트 수신</td></tr>
+      <tr><td><code>tool</code></td><td>새 도구 추가</td></tr>
+      <tr><td><code>permission.ask</code>, <code>config</code>, <code>chat.*</code></td><td>권한 판단, 설정 변경, 메시지 가공</td></tr>
+    </table>
+  </div>
+  <aside class="notes">
+    <p>플러그인은 "강제"입니다. 모델이 아무리 .env를 읽고 싶어 해도 플러그인이 막으면 못 읽습니다. 프롬프트로 하는 부탁과 다릅니다.</p>
+  </aside>
+</section>
+
+<section class="slide" data-chapter="concept" data-title="세 가지 비교">
+  <h2>한 장으로 비교하면</h2>
+  <table class="compact">
+    <tr><th></th><th class="skill">스킬</th><th class="mcp">MCP</th><th class="plugin">플러그인</th></tr>
+    <tr><td><strong>한 줄로</strong></td><td>필요할 때 읽는 매뉴얼</td><td>도구를 꽂는 표준 규격</td><td>opencode 안의 확장 코드</td></tr>
+    <tr><td><strong>정체</strong></td><td>폴더 + <code>SKILL.md</code></td><td>별도 프로세스나 서버</td><td>JS/TS 파일</td></tr>
+    <tr><td><strong>누가 언제 쓰나</strong></td><td>모델이 description을 보고 판단</td><td>모델이 도구를 고를 때</td><td>opencode가 이벤트마다 항상</td></tr>
+    <tr><td><strong>바꾸는 것</strong></td><td>에이전트가 <strong>아는 것</strong></td><td>에이전트가 <strong>할 수 있는 것</strong></td><td>opencode의 <strong>동작 자체</strong></td></tr>
+    <tr><td><strong>컨텍스트 비용</strong></td><td>평소엔 description만</td><td>도구 정의가 항상 들어간다</td><td>거의 없음</td></tr>
+    <tr><td><strong>만드는 언어</strong></td><td>Markdown (+ 아무 언어 스크립트)</td><td>아무 언어</td><td>JavaScript / TypeScript</td></tr>
+    <tr><td><strong>다른 에이전트에서</strong></td><td class="yes">대부분 그대로</td><td class="yes">표준이라 그대로</td><td class="no">opencode 전용</td></tr>
+  </table>
+  <aside class="notes">
+    <p>사진 찍어 가셔도 되는 슬라이드입니다. 레포의 docs/guide/00-concepts.md에 같은 표가 있습니다.</p>
+  </aside>
+</section>
+
+<section class="slide" data-chapter="concept" data-title="무엇을 쓸까">
+  <h2>무엇을 쓸까: 세 가지 질문</h2>
+  <div class="cols three" style="margin-top:12px">
+    <div class="node skill fill" style="--chapter:var(--c-skill);border:3px solid var(--c-skill);border-radius:12px;padding:26px 28px">
+      <h3 style="color:var(--c-skill-ink)">모델이 알아야 할<br>절차나 지식인가?</h3>
+      <p class="small">커밋 규칙, 리뷰 기준, 보고서 양식, 분석 순서</p>
+      <p class="small"><strong>→ 스킬</strong></p>
+    </div>
+    <div class="node mcp fill" style="--chapter:var(--c-mcp);border:3px solid var(--c-mcp);border-radius:12px;padding:26px 28px">
+      <h3 style="color:var(--c-mcp)">에이전트 바깥의<br>시스템에 닿아야 하나?</h3>
+      <p class="small">티켓 DB, 위키, 모니터링, 배포 API</p>
+      <p class="small"><strong>→ MCP 서버</strong></p>
+    </div>
+    <div class="node plugin fill" style="--chapter:var(--c-plugin);border:3px solid var(--c-plugin);border-radius:12px;padding:26px 28px">
+      <h3 style="color:var(--c-plugin)">모델 판단과 상관없이<br>항상 일어나야 하나?</h3>
+      <p class="small">비밀 파일 차단, 감사 로그, 알림, 환경 변수 주입</p>
+      <p class="small"><strong>→ 플러그인</strong> (단순 허용/거부는 <code>permission</code>)</p>
+    </div>
+  </div>
+  <p class="small muted" style="margin-top:28px">실제로는 섞어 씁니다. 마지막 장에서 MCP(티켓 조회) + 스킬(분석 절차) + 플러그인(감사 로그)을 한 번에 엮은 예제를 봅니다.</p>
+  <aside class="notes">
+    <p>헷갈릴 때 이 세 질문만 기억하시면 됩니다. 단순히 "이 명령은 금지"라면 플러그인보다 permission 설정 한 줄이 더 간단합니다.</p>
+  </aside>
+</section>
+
+</div>
+<script src="assets/deck.js"></script>
+</body>
+</html>

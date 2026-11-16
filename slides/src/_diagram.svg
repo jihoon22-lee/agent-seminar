@@ -1,0 +1,52 @@
+<svg class="diagram wiring" viewBox="0 0 1600 760" role="img" aria-label="opencode에 스킬, MCP 서버, 플러그인이 연결되는 구조">
+  <g data-part="model">
+    <rect x="610" y="14" width="380" height="96" rx="14" fill="#ffffff" stroke="#17242e" stroke-width="4"/>
+    <text x="800" y="74" text-anchor="middle" font-size="36" font-weight="700">모델 (LLM)</text>
+    <path d="M790 110 V198 M810 198 V110" stroke="#17242e" stroke-width="5" fill="none"/>
+  </g>
+  <g data-part="core">
+    <rect x="500" y="200" width="600" height="390" rx="22" fill="#ffffff" stroke="#17242e" stroke-width="6"/>
+    <text x="534" y="258" font-size="42" font-weight="700">opencode</text>
+    <text x="534" y="302" font-size="25" class="t-muted">에이전트 루프: 모델이 고르고, 도구가 실행</text>
+    <g font-size="23" class="t-muted">
+      <rect x="534" y="328" width="96" height="44" rx="8" fill="#e6ebe8"/><text x="582" y="358" text-anchor="middle">read</text>
+      <rect x="642" y="328" width="96" height="44" rx="8" fill="#e6ebe8"/><text x="690" y="358" text-anchor="middle">edit</text>
+      <rect x="750" y="328" width="96" height="44" rx="8" fill="#e6ebe8"/><text x="798" y="358" text-anchor="middle">bash</text>
+      <rect x="858" y="328" width="96" height="44" rx="8" fill="#e6ebe8"/><text x="906" y="358" text-anchor="middle">grep</text>
+      <rect x="966" y="328" width="100" height="44" rx="8" fill="#e6ebe8"/><text x="1016" y="358" text-anchor="middle">skill</text>
+    </g>
+  </g>
+  <g data-part="plugin">
+    <path d="M600 432 v-14 M660 432 v-14 M720 432 v-14 M780 432 v-14 M840 432 v-14 M900 432 v-14 M960 432 v-14 M1020 432 v-14
+             M600 556 v14 M660 556 v14 M720 556 v14 M780 556 v14 M840 556 v14 M900 556 v14 M960 556 v14 M1020 556 v14"
+          class="w-plugin" stroke-width="5" fill="none"/>
+    <rect x="566" y="432" width="468" height="124" rx="10" fill="#f6edf2" class="w-plugin" stroke-width="5"/>
+    <text x="800" y="486" text-anchor="middle" font-size="34" font-weight="700" class="t-plugin">플러그인</text>
+    <text x="800" y="528" text-anchor="middle" font-size="24">opencode 안에서 도는 JS 훅</text>
+  </g>
+  <g data-part="skill">
+    <path class="wire w-skill" d="M330 352 C 410 352, 420 330, 500 330" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <path d="M70 232 H272 L330 290 V470 H70 Z" fill="#fbf3e6" class="w-skill" stroke-width="5"/>
+    <path d="M272 232 V290 H330" fill="none" class="w-skill" stroke-width="5"/>
+    <text x="96" y="318" font-size="38" font-weight="700" class="t-skill">스킬</text>
+    <text x="96" y="364" font-size="24">SKILL.md</text>
+    <text x="96" y="400" font-size="24">+ 문서, 스크립트</text>
+    <text x="96" y="446" font-size="22" class="t-muted">필요할 때 읽는 매뉴얼</text>
+  </g>
+  <g data-part="mcp">
+    <path class="wire w-mcp" d="M1100 300 C 1180 300, 1180 266, 1252 266" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <path class="wire w-mcp" d="M1100 470 C 1180 470, 1180 500, 1252 500" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <rect x="1252" y="196" width="312" height="140" rx="14" fill="#eaf1f9" class="w-mcp" stroke-width="5"/>
+    <text x="1280" y="250" font-size="32" font-weight="700" class="t-mcp">로컬 MCP 서버</text>
+    <text x="1280" y="292" font-size="23">내 PC 프로세스, stdio</text>
+    <rect x="1252" y="430" width="312" height="140" rx="14" fill="#eaf1f9" class="w-mcp" stroke-width="5" stroke-dasharray="14 8"/>
+    <text x="1280" y="484" font-size="32" font-weight="700" class="t-mcp">원격 MCP 서버</text>
+    <text x="1280" y="526" font-size="23">다른 곳에서 실행, HTTP</text>
+  </g>
+  <g data-part="config">
+    <path d="M800 590 V636" class="w-config" stroke-width="5" stroke-dasharray="8 6" fill="none"/>
+    <rect x="470" y="636" width="660" height="100" rx="14" fill="#e8f0f0" class="w-config" stroke-width="5"/>
+    <text x="800" y="682" text-anchor="middle" font-size="32" font-weight="700" class="t-config">opencode.json</text>
+    <text x="800" y="718" text-anchor="middle" font-size="23">무엇을 켤지, 어떻게 연결할지</text>
+  </g>
+</svg>

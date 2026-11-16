@@ -1,0 +1,161 @@
+<section class="slide title" data-chapter="intro" data-title="표지">
+  <div class="cols center" style="flex:1;grid-template-columns:780px 1fr;gap:40px">
+    <div>
+      <h1>AI 에이전트<br>확장하기</h1>
+      <p class="lead" style="margin-top:28px">스킬, MCP, 플러그인으로<br>opencode를 우리 팀에 맞추는 법</p>
+      <p class="small muted" style="margin-top:40px;white-space:nowrap">github.com/jihoon22-lee/agent-seminar</p>
+    </div>
+    <x-diagram></x-diagram>
+  </div>
+  <aside class="notes">
+    <p>인사. 오늘은 opencode라는 코딩 에이전트에 "우리 팀의 지식, 시스템, 규칙"을 붙이는 세 가지 방법을 봅니다.</p>
+    <p>오른쪽 그림이 오늘 전체 지도입니다. 가운데가 opencode, 위가 모델, 왼쪽 주황 선이 스킬, 오른쪽 파란 선이 MCP, 안쪽 자주색 칩이 플러그인, 아래가 이걸 켜고 끄는 opencode.json입니다. 이 색은 발표 내내 그대로 씁니다.</p>
+  </aside>
+</section>
+
+<section class="slide" data-chapter="intro" data-title="오늘의 순서">
+  <h2>오늘의 순서 (60분)</h2>
+  <div class="cols c64">
+    <ol class="steps">
+      <li><strong>들어가며</strong> <span class="muted">에이전트가 모르는 것들, 3분</span></li>
+      <li><strong>개념</strong> <span class="muted">스킬, MCP, 플러그인은 각각 무엇인가, 8분</span></li>
+      <li><strong>opencode.json</strong> <span class="muted">설정 위치, 병합, 환경 변수, 7분</span></li>
+      <li><strong>스킬</strong> <span class="muted">파일 하나부터 스크립트까지, 12분</span></li>
+      <li><strong>MCP</strong> <span class="muted">로컬 서버부터 원격 서버까지, 12분</span></li>
+      <li><strong>플러그인</strong> <span class="muted">막고, 기록하고, 주입하기, 8분</span></li>
+      <li><strong>종합과 마무리</strong> <span class="muted">셋을 함께 쓰기, 개발 체크리스트, 10분</span></li>
+    </ol>
+    <div class="callout">
+      <p><strong>예제 38개</strong>가 모두 레포에 있습니다.</p>
+      <p class="small">발표에서는 몇 개만 시연하고, 나머지는 각 예제의 README를 따라 직접 해 볼 수 있게 만들었습니다.</p>
+      <p class="small">슬라이드 오른쪽 아래의 <code>examples/…</code> 경로가 해당 예제입니다.</p>
+    </div>
+  </div>
+  <aside class="notes">
+    <p>시간 배분 안내. 각 장 끝에 데모가 있습니다. 데모 화면은 어두운 배경으로 바뀌니, 그때 터미널로 넘어간다고 보시면 됩니다.</p>
+  </aside>
+</section>
+
+<section class="slide" data-chapter="intro" data-title="준비물">
+  <h2>따라 해 보려면</h2>
+  <div class="cols c46">
+    <div>
+      <h3>필요한 것</h3>
+      <ul>
+        <li><strong>opencode 1.19.5</strong> <span class="small muted">이 버전으로 모든 예제를 검증</span></li>
+        <li><strong>Python 3.10 이상</strong> <span class="small muted">예제 스크립트와 MCP 서버는 표준 라이브러리만 사용</span></li>
+        <li><strong>git</strong></li>
+        <li class="small">모델: 평소 쓰는 모델 그대로. 설정된 모델이 없으면 무료 모델 <code>opencode/big-pickle</code></li>
+      </ul>
+      <p class="small muted">인터넷 없이 돌아가도록 만들었습니다. 다만 플러그인 예제는 opencode가 npm 패키지 하나를 자동 설치하므로 npm 레지스트리나 미러가 필요합니다.</p>
+    </div>
+    <div>
+      <script type="text/x-code" data-lang="powershell" class="term" data-title="PowerShell">
+      PS C:\work> git clone https://github.com/jihoon22-lee/agent-seminar
+      PS C:\work> cd agent-seminar\examples\01-skills\s1a-commit-message
+      PS C:\work> opencode --version
+      1.19.5
+      PS C:\work> opencode
+      </script>
+      <script type="text/x-code" data-lang="bash" class="term" data-title="Linux">
+      $ git clone https://github.com/jihoon22-lee/agent-seminar
+      $ cd agent-seminar/examples/01-skills/s1a-commit-message
+      $ opencode
+      </script>
+    </div>
+  </div>
+  <div class="ref">README.md</div>
+  <aside class="notes">
+    <p>예제 폴더 하나하나가 그 자체로 opencode 프로젝트입니다. 해당 폴더로 들어가서 opencode를 실행하면 그 예제의 설정만 적용됩니다.</p>
+    <p>Linux에서 python 명령이 없으면 예제 설정의 python을 python3로 바꾸면 됩니다. README마다 적어 두었습니다.</p>
+  </aside>
+</section>
+
+<section class="slide statement" data-chapter="intro" data-title="문제 제기">
+  <div class="big">에이전트는 코드를 잘 짭니다.<br>그런데 우리 팀은 모릅니다.</div>
+  <p>커밋 규칙, 리뷰 기준, 장애 티켓이 쌓인 시스템, 절대 하면 안 되는 명령.</p>
+  <aside class="notes">
+    <p>모델은 인터넷 전체로 학습했지만, 우리 팀이 어제 정한 규칙이나 팀 안에만 있는 시스템은 알 수 없습니다.</p>
+  </aside>
+</section>
+
+<section class="slide" data-chapter="intro" data-title="매번 설명하면 생기는 일">
+  <h2>매번 프롬프트로 설명하면</h2>
+  <div class="cols">
+    <div>
+      <h3>이런 일이 반복됩니다</h3>
+      <ul>
+        <li>"커밋 메시지는 <code>type(scope): 요약</code> 형식이고…"를 <strong>매번</strong> 붙여 넣는다</li>
+        <li>사람마다 설명이 달라서 <strong>결과가 들쭉날쭉</strong>하다</li>
+        <li>티켓 시스템 내용은 <strong>복사해서 붙여 넣어야</strong> 한다</li>
+        <li>".env는 읽지 마"는 <strong>부탁일 뿐</strong>, 지켜진다는 보장이 없다</li>
+      </ul>
+    </div>
+    <div>
+      <h3>한 번 정리해서 붙여 두면</h3>
+      <table class="compact">
+        <tr><th>반복되는 것</th><th>붙이는 방법</th></tr>
+        <tr><td>팀의 절차와 지식</td><td><span class="tag skill">스킬</span></td></tr>
+        <tr><td>내부 시스템과 데이터</td><td><span class="tag mcp">MCP</span></td></tr>
+        <tr><td>반드시 지킬 규칙, 자동화</td><td><span class="tag plugin">플러그인</span></td></tr>
+        <tr><td>무엇을 켤지</td><td><span class="tag config">opencode.json</span></td></tr>
+      </table>
+    </div>
+  </div>
+  <aside class="notes">
+    <p>핵심 메시지: 반복되는 설명을 "확장"으로 바꾸면 매번 쓰는 비용이 사라지고, 팀원 모두가 같은 결과를 얻습니다.</p>
+    <p>특히 마지막 줄. 프롬프트로 하는 금지는 부탁입니다. 플러그인이나 권한 설정은 강제입니다. 이 차이를 오늘 여러 번 봅니다.</p>
+  </aside>
+</section>
+
+<section class="slide" data-chapter="intro" data-title="opencode 30초 소개">
+  <h2>opencode를 처음 보는 분을 위해</h2>
+  <div class="cols c46">
+    <div>
+      <ul>
+        <li>터미널에서 쓰는 오픈소스 <strong>코딩 에이전트</strong></li>
+        <li>모델을 고를 수 있다 <span class="small muted">유료 API, 직접 띄운 모델, 무료 모델</span></li>
+        <li>파일 읽기, 수정, 명령 실행 같은 <strong>기본 도구</strong>를 갖고 있다</li>
+        <li>설정은 <code>opencode.json</code> 하나로 한다</li>
+      </ul>
+    </div>
+    <div>
+      <script type="text/x-code" data-lang="bash" class="term" data-title="두 가지 실행 방법">
+      # 대화형 화면 (TUI)
+      $ opencode
+
+      # 한 번만 묻고 끝내기 (스크립트, 테스트용)
+      $ opencode run "README를 요약해줘"
+
+      # 모델 지정 (설정된 모델이 없을 때 무료 모델)
+      $ opencode run -m opencode/big-pickle "안녕"
+      </script>
+    </div>
+  </div>
+  <aside class="notes">
+    <p>오늘 데모는 대부분 opencode run으로 보여 드립니다. 결과가 바로 터미널에 찍혀서 보기 편하기 때문입니다. 실제로 쓸 때는 TUI가 편합니다.</p>
+  </aside>
+</section>
+
+<section class="slide" data-chapter="intro" data-title="에이전트 루프">
+  <h2>에이전트는 이렇게 일합니다</h2>
+  <div class="flow" style="margin-top:20px">
+    <div class="node"><b>1. 요청</b>"payment 장애 티켓 요약해줘"</div>
+    <div class="arrow">›</div>
+    <div class="node"><b>2. 모델이 판단</b>어떤 도구를 어떤 인자로 부를지 고른다</div>
+    <div class="arrow">›</div>
+    <div class="node"><b>3. 도구 실행</b>opencode가 실제로 실행한다</div>
+    <div class="arrow">›</div>
+    <div class="node"><b>4. 결과 전달</b>결과를 모델에게 돌려준다. 2로 돌아가 반복</div>
+  </div>
+  <div class="gap"></div>
+  <table class="compact">
+    <tr><th>확장</th><th>루프의 어디에 끼어드나</th></tr>
+    <tr><td><span class="tag skill">스킬</span></td><td>2단계에서 모델이 <strong>읽는 지식</strong>이 늘어난다. 모델이 필요하다고 판단할 때 불러온다</td></tr>
+    <tr><td><span class="tag mcp">MCP</span></td><td>2, 3단계에서 고를 수 있는 <strong>도구</strong>가 늘어난다. 도구는 opencode 바깥 프로세스에서 실행된다</td></tr>
+    <tr><td><span class="tag plugin">플러그인</span></td><td>3단계 <strong>앞뒤에 코드가 끼어든다</strong>. 모델의 판단과 상관없이 항상 실행된다</td></tr>
+  </table>
+  <aside class="notes">
+    <p>이 표가 오늘 내용의 요약입니다. 스킬은 지식, MCP는 능력, 플러그인은 강제. 나중에 비교표에서 다시 봅니다.</p>
+  </aside>
+</section>
