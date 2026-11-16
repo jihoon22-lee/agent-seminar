@@ -101,7 +101,7 @@
 | 플러그인이 아무 일도 안 한다. 오류도 없다 | 함수가 아닌 값(상수, 보조 함수)을 export해서 **파일 전체가 조용히 건너뛰어졌다** | export는 플러그인 함수만. 테스트는 훅을 직접 호출 |
 | 플러그인이 로드됐는지 모르겠다 | 로드 실패(import/문법 오류)는 로그에도 안 남는다 | 플러그인 첫 줄에서 마커 파일에 쓴다. `opencode debug config`도 플러그인을 로드하므로 모델 없이 확인 가능. 초기화 예외는 `--print-logs`의 `failed to load plugin` |
 | 플러그인에서 `@opencode-ai/plugin`을 import하는데 도구가 사라진다 | 설치가 실패했다 (레지스트리에 못 닿음). 오류 메시지 없이 사라진다 | `opencode --print-logs`에서 `background dependency install failed` 확인. 패키지 미러 지정 |
-| 첫 실행에서 약 70초 멈춘다 | `.opencode/`가 있으면 `@opencode-ai/plugin`을 npm에서 설치하려 하는데 레지스트리가 응답하지 않는다 | `~/.npmrc`의 `registry=` 또는 `npm_config_registry`. 프로젝트 루트 `.npmrc`는 적용되지 않는다 |
+| 시작할 때마다 약 70초 멈춘다 | `.opencode/`가 있으면 `@opencode-ai/plugin`을 npm에서 설치하려 하는데 레지스트리가 응답하지 않는다 | `~/.npmrc`의 `registry=` 또는 `npm_config_registry`. 프로젝트 루트 `.npmrc`는 적용되지 않는다 |
 | 미러를 지정했는데도 `.opencode/` 설치가 안 된다 | 미러에 패키지나 의존 패키지가 없다 | 설치된 곳의 `.opencode/node_modules`를 복사. 단 전역 폴더 설치 지연(약 71초)은 남는다 |
 | 플러그인을 고쳤는데 반영이 안 된다 | 시작할 때만 읽는다 | opencode를 다시 시작 |
 | 같은 가드가 두 번 돈다. 로그가 두 줄이다 | 같은 플러그인이 전역과 프로젝트 두 곳에 있다 (파일 위치가 다르면 별개) | 한 곳에만 둔다 |

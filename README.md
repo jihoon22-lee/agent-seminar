@@ -26,12 +26,18 @@
 - **opencode 1.19.5** (`opencode --version`으로 확인)
 - **Python 3.10 이상**: 예제 스크립트와 MCP 서버는 표준 라이브러리만 씁니다. M2 예제만 `mcp` 패키지를 설치합니다.
 - **git**
-- **Node** (선택): 플러그인 예제의 단위 테스트를 돌릴 때 씁니다.
+- **Node/npm** (선택): 플러그인 예제의 단위 테스트와 패키지 미러 지정(`npm config`)에 씁니다. npm이 없으면 `%USERPROFILE%\.npmrc`(Linux `~/.npmrc`) 파일에 `registry=<미러 주소>` 한 줄을 직접 써도 됩니다.
 - **모델**: 평소 쓰는 모델을 그대로 쓰면 됩니다. 설정된 모델이 없다면 무료 모델 `opencode/big-pickle`을 `-m`으로 지정할 수 있습니다.
 
 예제는 실행 중에 인터넷에 접속하지 않습니다.
-`.opencode/` 폴더가 있는 예제는 처음 실행할 때 opencode가 npm 패키지 `@opencode-ai/plugin`을 설치하려고 합니다.
-npm 레지스트리나 미러에 닿지 않으면 첫 시작이 1분쯤 멈췄다가 그대로 진행됩니다.
+다만 `.opencode/` 폴더가 있는 예제는 시작할 때 opencode가 npm 패키지 `@opencode-ai/plugin`을 설치하려고 합니다.
+**인터넷이 막힌 환경이라면 먼저 npm 패키지 미러를 지정하세요.** 레지스트리에 닿지 않으면 시작할 때마다 약 70초씩 멈추고, 이 패키지를 쓰는 플러그인 도구(P6, X1-c)는 조용히 사라집니다.
+
+```powershell
+npm config set registry https://<패키지 미러 주소>/     # %USERPROFILE%\.npmrc 에 저장됩니다
+```
+
+미러에 닿으면 첫 시작이 10초 안팎, 그다음부터는 1초 안팎입니다. 자세한 내용은 [P6 README](examples/03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있습니다.
 
 ## 시작하기
 

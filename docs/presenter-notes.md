@@ -10,7 +10,7 @@
    ```powershell
    python tools\run_checks.py examples
    ```
-3. **데모 폴더 예열**: `.opencode/` 폴더가 있는 예제는 첫 실행 때 opencode가 npm 패키지를 설치합니다. 레지스트리에 닿지 않으면 1분쯤 멈춥니다.
+3. **npm 미러와 데모 폴더 예열**: `.opencode/` 폴더가 있는 예제는 시작할 때 opencode가 npm 패키지를 설치하려 합니다. 레지스트리에 닿지 않으면 **시작할 때마다** 약 70초 멈추므로, 먼저 `npm config set registry <미러 주소>`로 미러를 지정하세요(`~/.npmrc` 에 저장되고 opencode가 그대로 씁니다).
    데모할 폴더마다 미리 한 번씩 `opencode debug skill` 을 실행해 두세요. 설치가 끝나면 다음부터는 1초 안에 뜹니다.
    - `examples\01-skills\s1a-commit-message`
    - `examples\01-skills\s3a-log-analysis` (먼저 `python prepare.py`)

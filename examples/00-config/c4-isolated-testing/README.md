@@ -147,7 +147,7 @@ DISABLE_PROJECT_CONFIG + CONFIG     c4-test-user      hidden         visible    
 ## 주의할 점 / 문제 해결
 
 - **모델 로그인이 샌드박스에 없습니다.** 평소 쓰는 모델(내 계정, API 키)은 `auth.json` 이나 전역 설정에 있으므로 격리하면 사라집니다. 모델이 필요하면 `-m opencode/big-pickle` 같은 무료 모델을 쓰거나, 필요한 설정을 `--global-config` 로 넘기세요. API 키를 파일에 적었다면 그 파일을 커밋하지 마세요.
-- **`.opencode/` 폴더가 있으면 opencode 가 `@opencode-ai/plugin` 을 npm 에서 자동 설치하려 합니다.** (`package.json`, `node_modules` 생성) 인터넷도 미러도 없으면 첫 실행이 약 70초 멈춥니다. 샌드박스는 캐시도 매번 새로 만들므로 이 지연을 매번 겪을 수 있습니다. 설치된 파일은 `.gitignore` 대상입니다.
+- **`.opencode/` 폴더가 있으면 opencode 가 `@opencode-ai/plugin` 을 npm 에서 자동 설치하려 합니다.** (`package.json`, `node_modules` 생성) 인터넷도 미러도 없으면 첫 실행이 약 70초 멈춥니다. 샌드박스는 캐시도 매번 새로 만들므로 이 지연을 매번 겪을 수 있습니다. 설치된 파일은 `.gitignore` 대상입니다. 레지스트리에 닿지 않으면 첫 실행만이 아니라 **시작할 때마다** 이렇게 멈춥니다. 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있습니다.
 - `isolated.py` 는 HOME(USERPROFILE)을 바꾸지 않습니다. 홈 아래의 `~/.claude/skills`, `~/.agents/skills` 는 읽기만 하며 기본으로 숨깁니다. 다른 도구가 홈 아래에 쓰는 것은 막지 못합니다.
 - 격리 실행은 `OPENCODE_DISABLE_PROJECT_CONFIG` 를 켜지 않는 한 **현재 폴더의 프로젝트 설정을 그대로 읽습니다.** 프로젝트 폴더에서 실행하면 그 폴더의 `opencode.json` 은 적용됩니다.
 - Linux에서 `python` 명령이 없으면 `python3`로 바꾸세요. (`isolated.py` 는 샌드박스 `PATH` 에 `python` 심볼릭 링크를 넣어서, MCP 설정의 `"python"` 도 동작하게 합니다.)

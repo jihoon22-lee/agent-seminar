@@ -35,7 +35,7 @@ s5b-manual-and-permission/
   check.py                               자동 검증
 ```
 
-> 이 폴더에는 `.opencode/` 가 있으므로 처음 실행할 때 opencode 가 `@opencode-ai/plugin` 을 npm 에서 `.opencode/` 안에 자동 설치합니다 (`package.json`, `node_modules/` 생성, 모두 git 에서 제외됨). 레지스트리에 접근할 수 없는 환경에서는 첫 실행이 약 70초 멈췄다가 계속됩니다.
+> 이 폴더에는 `.opencode/` 가 있으므로 처음 실행할 때 opencode 가 `@opencode-ai/plugin` 을 npm 에서 `.opencode/` 안에 자동 설치합니다 (`package.json`, `node_modules/` 생성, 모두 git 에서 제외됨). 레지스트리에 접근할 수 없는 환경에서는 첫 실행이 약 70초 멈췄다가 계속됩니다. 레지스트리에 닿지 않으면 첫 실행만이 아니라 **시작할 때마다** 이렇게 멈춥니다. 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있습니다.
 
 ## 따라 하기
 

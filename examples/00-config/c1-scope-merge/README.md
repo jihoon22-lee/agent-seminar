@@ -150,7 +150,7 @@ c1-scope-merge/
 
 ## 주의할 점 / 문제 해결
 
-- **`.opencode/` 가 있으면 opencode 가 `@opencode-ai/plugin` 을 npm 에서 자동 설치하려 합니다.** (`package.json`, `node_modules`, 자체 `.gitignore` 생성) 인터넷이 막혀 있고 패키지 미러도 없으면 첫 실행이 약 70초 멈췄다가 계속됩니다. 이 예제의 `debug config` 는 설치를 일으키지 않았지만, `opencode`(TUI), `mcp list`, `debug skill` 등은 일으킬 수 있습니다.
+- **`.opencode/` 가 있으면 opencode 가 `@opencode-ai/plugin` 을 npm 에서 자동 설치하려 합니다.** (`package.json`, `node_modules`, 자체 `.gitignore` 생성) 인터넷이 막혀 있고 패키지 미러도 없으면 첫 실행이 약 70초 멈췄다가 계속됩니다. 이 예제의 `debug config` 는 설치를 일으키지 않았지만, `opencode`(TUI), `mcp list`, `debug skill` 등은 일으킬 수 있습니다. 레지스트리에 닿지 않으면 첫 실행만이 아니라 **시작할 때마다** 이렇게 멈춥니다. 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있습니다.
 - `OPENCODE_CONFIG` 로 지정해도 **전역 설정은 사라지지 않습니다.** 전역 위에 얹힐 뿐이며, 프로젝트 설정보다 낮은 우선순위입니다. 전역을 완전히 빼고 실험하려면 C4(`isolated.py`)를 쓰세요.
 - git 저장소가 아닌 폴더(예: 압축을 푼 예제 폴더)에서 실행하면 **상위 폴더에 우연히 있는 `opencode.json`** 까지 병합됩니다. 예상 밖의 값이 보이면 `git init` 으로 경계를 만들거나 `OPENCODE_DISABLE_PROJECT_CONFIG=1` 을 써 보세요. (C4 참고)
 - 설정 파일이 올바른 JSON(주석 허용, 끝 쉼표 허용)이 아니면 `Config file at ... is not valid JSON(C)` 오류가 나며 어느 줄이 문제인지 알려 줍니다.

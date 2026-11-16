@@ -267,6 +267,46 @@
   <aside class="notes"><p>토큰을 틀리게 바꿔서 401이 나는 모습까지 보여 주면 원격 서버의 인증 흐름이 바로 이해됩니다. 정확한 실행 방법은 README를 따릅니다.</p></aside>
 </section>
 
+<section class="slide" data-optional data-chapter="mcp" data-title="M5 팀 공용 서버">
+  <h2><span class="tag mcp">M5</span>한 곳에 띄우고 팀이 함께 쓰는 서버</h2>
+  <div class="cols c46">
+    <div>
+      <script type="text/x-code" data-lang="json" class="sm" data-title="opencode.json (팀원 모두 같은 파일)" data-mark="3,5">
+      { "mcp": { "team-shared": {
+          "type": "remote",
+          "url": "{env:TEAM_MCP_URL}",
+          "headers": {
+            "Authorization": "Bearer {env:TEAM_MCP_TOKEN}" },
+          "oauth": false } } }
+      </script>
+      <ul class="small">
+        <li>팀원마다 다른 것은 <strong>환경 변수 두 개</strong>뿐</li>
+        <li>토큰 = 사용자. 서버 로그에 누가 어떤 도구를 불렀는지 남는다</li>
+        <li>도구를 고치면 서버만 다시 띄운다. 각자 PC에 배포할 것이 없다</li>
+      </ul>
+    </div>
+    <div>
+      <script type="text/x-code" data-lang="text" class="term sm" data-title="opencode mcp list (실제)">
+      ✓ team-shared connected                    # 토큰이 맞을 때
+      ✗ team-shared failed
+          SSE error: Non-200 status code (401)   # 토큰이 틀릴 때
+      ✗ team-shared failed
+          Invalid MCP URL for "team-shared"      # TEAM_MCP_URL이 비었을 때
+      </script>
+      <script type="text/x-code" data-lang="text" class="term sm" data-title="서버 감사 로그 (실제)">
+      user=- auth POST from=127.0.0.1 -> denied(401)
+      user=alice tool=oncall_lookup {"team": "platform", …} -> ok
+      user=bob tool=team_status {} -> ok
+      </script>
+    </div>
+  </div>
+  <div class="ref">examples/02-mcp/m5-team-shared-server</div>
+  <aside class="notes">
+    <p>기본은 127.0.0.1에만 열립니다. 팀원이 접속하려면 --host 0.0.0.0으로 여는데, 이 예제는 HTTP라 토큰이 평문으로 갑니다. 사무실이나 VPN 안이 아니라면 앞에 HTTPS 리버스 프록시를 두고, 방화벽으로 팀 대역만 허용하세요.</p>
+    <p>tokens.json은 요청마다 다시 읽어서 재시작 없이 토큰을 교체할 수 있습니다. 대신 서버가 죽으면 모두가 못 씁니다.</p>
+  </aside>
+</section>
+
 <section class="slide" data-chapter="mcp" data-title="M6 실제 시스템처럼">
   <h2><span class="tag mcp">M6</span>내부 시스템을 붙인다면: 장애 티켓 DB</h2>
   <div class="cols c46">

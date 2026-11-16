@@ -6,7 +6,7 @@
 - **난이도**는 각 README의 머리말 줄에서 그대로 옮겼습니다.
 - **모델 필요 여부**: `불필요`는 모델 없이 끝까지 해 볼 수 있다는 뜻입니다. `선택`은 핵심은 모델 없이 확인되고 모델을 붙이면 실제 대화까지 볼 수 있다는 뜻입니다. `필요`는 스킬이나 도구가 쓰이는 모습을 보려면 모델이 있어야 한다는 뜻입니다. 모델 설정이 없다면 무료 모델 `-m opencode/big-pickle`을 지정하세요.
 - 모든 예제의 `check.py`는 모델 없이(가짜 모델 서버로) 동작을 검증합니다. 실행 방법은 `python check.py` (Linux는 `python3 check.py`)입니다.
-- 처음 열었을 때 `.opencode/` 폴더가 있는 예제는 `@opencode-ai/plugin` 자동 설치를 시도합니다. 인터넷이 막혀 있으면 첫 시작이 약 70초 멈출 수 있습니다. ([플러그인 가이드](../docs/guide/04-plugins.md)의 첫 실행 절)
+- 처음 열었을 때 `.opencode/` 폴더가 있는 예제는 `@opencode-ai/plugin` 자동 설치를 시도합니다. 레지스트리에 닿지 않으면 시작할 때마다 약 70초 멈추고, 이 패키지를 쓰는 플러그인 도구(P6, X1-c)는 조용히 사라집니다. 인터넷이 막혀 있다면 `npm config set registry <미러 주소>`로 패키지 미러를 먼저 지정하세요. ([플러그인 가이드](../docs/guide/04-plugins.md)의 첫 실행 절)
 
 가이드: [0. 개념](../docs/guide/00-concepts.md) · [1. 설정](../docs/guide/01-config.md) · [2. 스킬](../docs/guide/02-skills.md) · [3. MCP](../docs/guide/03-mcp.md) · [4. 플러그인](../docs/guide/04-plugins.md) · [5. 문제 해결](../docs/guide/05-troubleshooting.md)
 

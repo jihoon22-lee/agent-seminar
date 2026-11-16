@@ -174,4 +174,4 @@ s3b-release-notes/
 - **Windows 에서는 `python`, Linux 에서는 `python3`**: SKILL.md 는 `python` 으로 안내하고 "없으면 `python3`" 를 덧붙였다. Windows 에서 opencode 의 `bash` 도구는 Git Bash 가 아니라 **Windows PowerShell 5.1** 에서 명령을 실행한다. 그래서 SKILL.md 는 `&&`, `export`, `$변수`, `| head` 같은 bash 전용 문법 없이 `python <스킬 폴더>/scripts/… 인자` **한 줄**만 시킨다. 스킬 폴더 경로는 Windows 에서 `C:\...\.opencode\skills\<이름>` 처럼 역슬래시로 오지만, 파이썬에는 `/` 로 바꿔 넘겨도 동작한다(`check.py` 가 가짜 모델로 검증).
 - **`sandbox/` 에서 실행해야 한다.** 예제 폴더에서 실행하면 상위 저장소의 로그를 읽거나 `v1.0.0` 태그가 없다는 오류(종료 코드 2)가 난다.
 - `prepare.py` 는 전역 git 설정을 읽지 않고(`GIT_CONFIG_GLOBAL` 비움) 작성자를 `dev-alpha/beta/gamma` 로 고정해 같은 이력을 만든다. 해시는 실행 환경에 따라 달라질 수 있다.
-- 첫 실행 지연(`.opencode/` 의 `@opencode-ai/plugin` 자동 설치 시도, 인터넷이 막히면 약 70초)은 S3a 와 같다.
+- 첫 실행 지연(`.opencode/` 의 `@opencode-ai/plugin` 자동 설치 시도, 인터넷이 막히면 약 70초)은 S3a 와 같다. 레지스트리에 닿지 않으면 첫 실행만이 아니라 **시작할 때마다** 이렇게 멈춘다. 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있다.

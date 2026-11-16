@@ -136,7 +136,7 @@ bce49a9 initial pricing module
 ## 주의할 점 / 문제 해결
 
 - **`sandbox/`에서 실행해야 한다.** 이 저장소의 폴더에서 바로 `opencode`를 실행하면 상위의 세미나 저장소(git 루트)가 프로젝트로 잡히고, 스테이징된 변경도 없다. 모델이 "스테이징된 변경이 없습니다"라고 답한다면 위치를 의심하자.
-- **`.opencode/`가 있는 폴더에서 처음 실행하면** opencode가 `.opencode/` 안에 `package.json`, `node_modules/`, `.gitignore`를 자동으로 만든다(`@opencode-ai/plugin` 설치). 패키지 미러나 인터넷에 접근할 수 없으면 첫 시작이 약 70초 멈춘 것처럼 보일 수 있고, 설치가 끝나면 이후에는 빠르다.
+- **`.opencode/`가 있는 폴더에서 처음 실행하면** opencode가 `.opencode/` 안에 `package.json`, `node_modules/`, `.gitignore`를 자동으로 만든다(`@opencode-ai/plugin` 설치). 패키지 미러나 인터넷에 접근할 수 없으면 첫 시작이 약 70초 멈춘 것처럼 보일 수 있고, 설치에 성공하면 그다음부터는 빠르다. 레지스트리에 닿지 않으면 첫 실행만이 아니라 **시작할 때마다** 이렇게 멈춘다. 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있다.
 - **`prepare.py`는 몇 번이든 다시 실행해도 된다.** `sandbox/`를 지우고 처음부터 만든다. Windows에서 `sandbox/`를 손으로 지울 때 `.git` 안의 파일이 읽기 전용이라 거부되면 `Remove-Item -Recurse -Force sandbox`를 쓴다.
 - **Linux에서 `python` 명령이 없으면 `python3`로 바꾸세요.** (`check.py`는 어느 쪽이든 동작한다.)
 - **모델이 형식을 어길 때**: 요약이 50자를 넘거나 본문이 빠졌다면, 어긴 출력을 보여 주며 "SKILL.md의 규칙을 다시 읽고 고쳐줘"라고 하면 대개 고친다. 근본적인 해결은 규칙 문장을 더 구체적으로(예시와 함께) 쓰는 것이다.

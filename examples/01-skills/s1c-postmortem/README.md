@@ -147,5 +147,5 @@ Wrote file successfully.
 
 - **`postmortems/`는 git에 올라가지 않는다.** 이 예제의 `.gitignore`가 제외한다. 결과 파일이 `git status`에 보이지 않는 것은 정상이다.
 - **같은 날짜·같은 slug를 다시 만들면** 스킬 규칙에 따라 덮어쓰지 않고 `-2`를 붙인 파일이 생긴다. 다시 실행해 결과를 비교하려면 `postmortems/`를 지우고 실행하자.
-- **`.opencode/`가 있는 폴더에서 처음 실행하면** opencode가 `.opencode/` 안에 `package.json`, `node_modules/`, `.gitignore`를 자동으로 만든다(`@opencode-ai/plugin` 설치). 인터넷이나 패키지 미러에 접근할 수 없으면 첫 시작이 약 70초 멈춘 것처럼 보일 수 있다.
+- **`.opencode/`가 있는 폴더에서 처음 실행하면** opencode가 `.opencode/` 안에 `package.json`, `node_modules/`, `.gitignore`를 자동으로 만든다(`@opencode-ai/plugin` 설치). 인터넷이나 패키지 미러에 접근할 수 없으면 첫 시작이 약 70초 멈춘 것처럼 보일 수 있다. 레지스트리에 닿지 않으면 첫 실행만이 아니라 **시작할 때마다** 이렇게 멈춘다. 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있다.
 - **메모는 가상이다.** 사건, 수치, 역할 모두 연습용으로 만든 것이며 실제 장애와 무관하다.

@@ -158,5 +158,5 @@ sandbox/
 - **`sandbox/`에서 실행해야 한다.** 그래야 `git diff`에 샘플 변경이 보인다. 이 폴더(`s2a-workthrough/`)에서 바로 실행하면 상위 세미나 저장소의 변경을 기록하려 한다.
 - **모델이 보조 파일을 읽지 않을 수도 있다.** 모델 출력은 확률적이다. TEMPLATE.md를 읽지 않고 쓰는 일도 있다. 그럴 때는 "TEMPLATE.md를 읽고 그 양식으로 써줘"라고 하면 된다. 스킬 본문이 파일 이름과 읽을 조건을 분명히 적을수록 읽는 빈도가 올라간다.
 - **같은 이름의 스킬이 이미 있다면**: 다른 곳(전역 폴더 등)에 `workthrough` 스킬이 있으면 이름이 겹친다. `opencode debug skill`의 `location`으로 어느 쪽이 쓰였는지 확인하자.
-- **`.opencode/`가 있는 폴더에서 처음 실행하면** opencode가 `.opencode/` 안에 `package.json`, `node_modules/`, `.gitignore`를 자동으로 만든다(`@opencode-ai/plugin` 설치). 인터넷이나 패키지 미러에 접근할 수 없으면 첫 시작이 약 70초 멈춘 것처럼 보일 수 있다.
+- **`.opencode/`가 있는 폴더에서 처음 실행하면** opencode가 `.opencode/` 안에 `package.json`, `node_modules/`, `.gitignore`를 자동으로 만든다(`@opencode-ai/plugin` 설치). 인터넷이나 패키지 미러에 접근할 수 없으면 첫 시작이 약 70초 멈춘 것처럼 보일 수 있다. 레지스트리에 닿지 않으면 첫 실행만이 아니라 **시작할 때마다** 이렇게 멈춘다. 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있다.
 - **Linux에서 `python` 명령이 없으면 `python3`로 바꾸세요.** 모델이 테스트를 돌릴 때 `python`이 없으면 스스로 `python3`로 바꿔 실행하는 경우가 많다.

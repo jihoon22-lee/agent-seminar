@@ -31,7 +31,7 @@ s5a-description-good-bad/
 
 **git 저장소를 따로 만들지 않습니다.** opencode 는 프로젝트 스킬을 "실행한 폴더에서 git 루트까지 **위로** 올라가며" 찾습니다. 옆 폴더는 보지 않으므로 형제 폴더끼리는 저절로 분리되고, 변형 폴더마다 `git init` 할 필요가 없습니다(저장소 안에 중첩 저장소를 만들면 오히려 서브모듈처럼 취급되어 곤란합니다). 대신 **상위 폴더에 `.opencode/skills/` 를 두면 두 변형이 모두 그 스킬을 물려받아** 비교가 오염됩니다. 그래서 `examples/` 아래 상위 폴더는 비워 둡니다. check.py 가 이 분리를 검사합니다.
 
-> `.opencode/` 가 있는 폴더에서 처음 opencode 를 실행하면 `@opencode-ai/plugin` 이 npm 에서 `.opencode/` 안에 자동 설치됩니다(`package.json`, `node_modules/` 생성, git 제외). 레지스트리에 접근할 수 없으면 첫 실행이 약 70초 멈췄다가 계속됩니다.
+> `.opencode/` 가 있는 폴더에서 처음 opencode 를 실행하면 `@opencode-ai/plugin` 이 npm 에서 `.opencode/` 안에 자동 설치됩니다(`package.json`, `node_modules/` 생성, git 제외). 레지스트리에 접근할 수 없으면 첫 실행이 약 70초 멈췄다가 계속됩니다. 레지스트리에 닿지 않으면 첫 실행만이 아니라 **시작할 때마다** 이렇게 멈춥니다. 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있습니다.
 
 ## 따라 하기
 
