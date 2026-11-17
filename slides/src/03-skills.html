@@ -7,7 +7,7 @@
     </div>
     <x-diagram focus="skill"></x-diagram>
   </div>
-  <aside class="notes"><p>10분. 단계별로 하나씩 키워 갑니다. 데모는 S1a(커밋 메시지). 시간이 남으면 S3a(로그 분석, 심화) 데모도 합니다.</p></aside>
+  <aside class="notes"><p>10분. 단계별로 하나씩 키워 갑니다. 데모는 S1a(커밋 메시지). 장 끝에서 스킬과 헷갈리기 쉬운 커스텀 명령(C6)을 비교합니다. 시간이 남으면 S3a(로그 분석, 심화) 데모도 합니다.</p></aside>
 </section>
 
 <section class="slide" data-chapter="skill" data-title="스킬의 네 단계">
@@ -143,6 +143,39 @@
   </div>
   <div class="ref">examples/01-skills/s1c-postmortem</div>
   <aside class="notes"><p>파일 이름의 날짜가 오늘이 아니라 메모에 적힌 장애 날짜입니다. 스킬에 "장애 발생일 기준"이라고 써 둔 규칙을 따른 결과입니다.</p></aside>
+</section>
+
+<section class="slide" data-optional data-chapter="skill" data-title="S1d CLI만 쓰는 스킬">
+  <h2><span class="tag skill">S1d</span>스크립트가 필요 없는 경우: 있는 명령만 쓰는 스킬</h2>
+  <div class="cols">
+    <script type="text/x-code" data-lang="md" class="sm" data-title="branch-cleanup/SKILL.md (요약)">
+    ## 규칙
+    1. 삭제 후보는 `git branch --merged main` 이 보여 주는
+       브랜치뿐이다.
+    2. `main` 과 지금 체크아웃한 브랜치는 절대 지우지 않는다.
+    3. 삭제는 `git branch -d` 로만 한다. `-d` 가 거절하면
+       강제로 지우지 말고 "보존"으로 보고한다.
+
+    ## 순서
+    git branch --show-current
+    git branch --merged main
+    git branch --no-merged main
+    git branch -d <이름>
+    </script>
+    <div>
+      <ul class="small">
+        <li>명령은 <strong>한 줄에 하나</strong>. <code>&amp;&amp;</code>, 파이프, <code>$( )</code>가 없어서 bash와 PowerShell 5.1에서 똑같이 돈다</li>
+        <li>안전장치는 git이 한다. 병합 안 된 브랜치는 <code>-d</code>가 <code>not fully merged</code>로 거절한다</li>
+        <li>가짜 모델로 실행한 결과: 병합된 3개만 지워지고 <code>main</code>, 현재 브랜치, 병합 안 된 브랜치는 남았다 (Windows에서도 같음)</li>
+      </ul>
+      <div class="callout small"><p><strong>스크립트를 붙일 때</strong>는 출력이 길어서 요약이 필요하거나(S3a), 판정 규칙이 복잡할 때입니다. CLI가 이미 짧은 결과를 주고 <strong>절차가 곧 가치</strong>라면 SKILL.md 한 장으로 충분합니다.</p></div>
+    </div>
+  </div>
+  <div class="ref">examples/01-skills/s1d-cli-only</div>
+  <aside class="notes">
+    <p>"main으로 돌아가서 끝난 브랜치 정리해 줘"처럼 매번 같은 절차를 말로 시키던 일이 이런 스킬이 됩니다.</p>
+    <p>가짜 모델 검사가 확인하는 것은 SKILL.md에 적힌 명령이 실제 git에서 맞게 동작하는지입니다. 실제 모델이 규칙을 지키는지는 확인하지 못했습니다.</p>
+  </aside>
 </section>
 
 <section class="slide demo" data-chapter="skill" data-title="데모: S1a">

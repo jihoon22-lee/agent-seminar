@@ -1,0 +1,10 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "command": {
+    "status": {
+      "description": "지금 저장소 상태를 세 줄로 요약",
+      "agent": "plan",
+      "template": "git status 와 git log -5 --oneline 을 읽고, 지금 어떤 상태인지 세 줄로 요약해 줘. 파일은 고치지 않는다."
+    }
+  }
+}

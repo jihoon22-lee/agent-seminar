@@ -1,0 +1,21 @@
+[build-system]
+# uv/pip 가 패키지를 만들 때 이 백엔드를 인덱스(PyPI 또는 미러)에서 내려받는다 -> 처음 빌드에는 인덱스가 필요하다.
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "team-glossary-mcp"
+dynamic = ["version"]          # 버전은 __init__.py 의 __version__ 한 곳에서만 관리한다
+description = "팀 용어집 MCP 서버 (표준 라이브러리만 사용, stdio)"
+requires-python = ">=3.10"
+dependencies = []              # 표준 라이브러리만 쓰므로 의존성이 없다
+
+[project.scripts]
+# 설치하면 PATH 에 `team-glossary-mcp` 명령이 생긴다 (uvx --from . team-glossary-mcp 가 이것을 실행한다)
+team-glossary-mcp = "team_glossary_mcp.server:main"
+
+[tool.hatch.version]
+path = "src/team_glossary_mcp/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/team_glossary_mcp"]   # glossary.json 은 이 폴더 안에 있어서 함께 들어간다

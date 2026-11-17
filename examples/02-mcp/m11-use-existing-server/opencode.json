@@ -1,0 +1,25 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "files": {
+      "type": "local",
+      "command": ["npx", "-y", "@modelcontextprotocol/server-filesystem@2.3.0", "--confine-roots", "sandbox"],
+      "enabled": true,
+      "timeout": 60000
+    },
+    "clock": {
+      "type": "local",
+      "command": ["uvx", "mcp-server-time==2026.11.11"],
+      "enabled": true,
+      "timeout": 60000
+    }
+  },
+  "permission": {
+    "files_write_file": "deny",
+    "files_edit_file": "deny",
+    "files_append_file": "deny",
+    "files_create_directory": "deny",
+    "files_move_file": "deny",
+    "files_copy_file": "deny"
+  }
+}

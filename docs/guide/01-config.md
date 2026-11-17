@@ -1,9 +1,9 @@
 # 1. opencode.json: 위치, 병합, 변수, 권한
 
-이 문서는 세미나 3장 "설정"을 글로 옮긴 것입니다. 설정 파일을 어디에 두는지, 여러 파일이 어떻게 합쳐지는지, 비밀값을 어떻게 다루는지, 권한을 어떻게 선언하는지 다룹니다.
+이 문서는 세미나 3장 "설정"을 글로 옮긴 것입니다. 설정 파일을 어디에 두는지, 여러 파일이 어떻게 합쳐지는지, 비밀값을 어떻게 다루는지, 권한을 어떻게 선언하는지, 그리고 커스텀 명령, 모델 제공자 연결, 에이전트 정의를 다룹니다.
 모든 내용은 **opencode 1.19.5** 기준입니다.
 
-관련 예제: [C1 범위와 병합](../../examples/00-config/c1-scope-merge/) · [C2 변수와 마스킹](../../examples/00-config/c2-variables/) · [C3 실행할 때만 얹기](../../examples/00-config/c3-config-content-overlay/) · [C4 격리 실험](../../examples/00-config/c4-isolated-testing/) · [C5 권한](../../examples/00-config/c5-permissions/)
+관련 예제: [C1 범위와 병합](../../examples/00-config/c1-scope-merge/) · [C2 변수와 마스킹](../../examples/00-config/c2-variables/) · [C3 실행할 때만 얹기](../../examples/00-config/c3-config-content-overlay/) · [C4 격리 실험](../../examples/00-config/c4-isolated-testing/) · [C5 권한](../../examples/00-config/c5-permissions/) · [C6 커스텀 명령](../../examples/00-config/c6-custom-commands/) · [C7 모델 제공자](../../examples/00-config/c7-provider-openai-compatible/) · [C8 에이전트](../../examples/00-config/c8-agents/)
 
 ## 설정 파일은 세 곳에 둘 수 있습니다
 
@@ -109,6 +109,9 @@ opencode 1.19.5의 검사는 반쪽만 엄격합니다.
 | `mcp` | 붙일 MCP 서버. 서버 이름이 도구 이름 앞에 붙는다 ([3장](03-mcp.md)) |
 | `plugin` | 폴더 밖 플러그인. `.opencode/plugins/`는 적지 않아도 로드된다 ([4장](04-plugins.md)) |
 | `permission` | 도구별 허용, 확인, 거부 |
+| `command` | 커스텀 명령 정의 (아래 "커스텀 명령") |
+| `provider`, `model` | 모델이 있는 주소와 기본 모델 (아래 "모델 제공자 연결") |
+| `agent` | 역할별 프롬프트와 권한 (아래 "에이전트 정의") |
 
 ## 변수 치환: 비밀값은 설정 파일에 쓰지 않습니다
 
@@ -340,6 +343,206 @@ opencode debug agent build --tool bash --params "{ command: 'rm victim.txt', des
 
 기본 안전선은 선언형으로 두고, 패턴으로 표현할 수 없는 조건만 플러그인으로 보강합니다. 둘은 함께 쓸 수 있습니다. ([4장](04-plugins.md)의 "permission과 플러그인")
 
+## 커스텀 명령: 내가 부르는 지시문
+
+"계획대로 끝까지 진행해 줘. PR 단위로, 검사 통과 후 병합, ..." 같은 문단을 매번 붙여 넣는 대신 `/finish` 한 단어로 부르게 저장해 두는 기능입니다. [C6](../../examples/00-config/c6-custom-commands/)가 같은 지시문을 명령(`/finish`)과 스킬(`finish-plan`)로 한 프로젝트에 두고, 가짜 모델이 받은 요청을 글자 수까지 비교합니다.
+
+### 정의하는 두 가지 방법
+
+결과는 같습니다.
+
+- `.opencode/command/이름.md`: frontmatter(`description` 등) + 본문. **본문이 `template`** 이 됩니다. `.opencode/commands/`(복수형) 폴더도 읽힙니다.
+- `opencode.json`의 `command` 키
+
+```json
+{
+  "command": {
+    "status": {
+      "description": "지금 저장소 상태를 세 줄로 요약",
+      "agent": "plan",
+      "template": "git status 와 git log -5 --oneline 을 읽고, 지금 어떤 상태인지 세 줄로 요약해 줘. 파일은 고치지 않는다."
+    }
+  }
+}
+```
+
+- 같은 이름을 `.md`와 `command` 키에 모두 정의하면 **`.md`가 이깁니다.**
+- 모델 없이 읽혔는지 확인: `opencode debug config`의 `command` 항목.
+- 실행: `opencode run --command finish`, `opencode run --command review "src/app.py"`. TUI에서 `/finish`로 부르는 것은 이 예제에서 확인하지 못했습니다(미검증).
+
+### 인자: `$ARGUMENTS`와 `$1`, `$2`
+
+본문이 `ALL=[$ARGUMENTS] ONE=[$1] TWO=[$2] THREE=[$3]`일 때 모델이 받은 사용자 메시지입니다.
+
+| 넘긴 인자 | 모델이 받은 메시지 |
+|---|---|
+| `x` | `ALL=[x] ONE=[x] TWO=[] THREE=[]` |
+| `"a b"` `c` (두 인자) | `ALL=["a b" c] ONE=[a b] TWO=[c] THREE=[]` |
+| `a` `b` `c` `d` | `ALL=[a b c d] ONE=[a] TWO=[b] THREE=[c d]` |
+
+- 공백이 있는 인자는 `$ARGUMENTS`에 **따옴표가 붙어** 들어가고, `$1`은 따옴표를 뗀 값입니다.
+- 없는 위치는 빈 문자열입니다.
+- 인자가 자리표시자보다 많으면 **가장 큰 번호의 자리표시자가 나머지를 모두** 받습니다.
+- 인자 안의 큰따옴표는 모양이 깨집니다. 따옴표가 필요한 값은 파일 경로로 넘기고 본문에서 읽게 하세요.
+- 본문에 `$ARGUMENTS`가 **없는데** 인자를 주면 본문 뒤에 빈 줄을 두고 인자가 덧붙습니다.
+
+### 확인한 frontmatter 키
+
+| 키 | 확인한 동작 |
+|---|---|
+| `description` | `debug config`에 보인다. 모델 요청에는 들어가지 않는다. TUI의 `/` 목록에 보이는지는 미검증 |
+| `agent` | `agent: plan`이면 실행 헤더가 `> plan · ...`이 되고 사용자 메시지 끝에 plan 모드 안내가 붙는다 |
+| `model` | `-m`으로 준 모델보다 우선한다. 가리키는 모델이 설정에 없으면 모델 호출 없이 실패(종료 코드 비0) |
+| `subtask` | `subtask: true`면 하위 에이전트 작업으로 실행된다 |
+
+이 네 개 밖의 키는 시험하지 않았습니다.
+
+### 없는 명령 이름은 원인을 말해 주지 않습니다
+
+`opencode run --command nosuch hi`는 종료 코드 1, 모델 호출 없이 `UnknownError ... Unexpected server error. Check server logs for details.`만 나옵니다. 이름이 틀렸다는 말이 없고 `--print-logs --log-level ERROR`로 봐도 이름은 안 나옵니다. 오타가 의심되면 `opencode debug config`로 이름을 확인하세요.
+
+### 명령은 글일 뿐입니다
+
+명령은 모델에게 보내는 **글**이라 모델이 어길 수 있습니다. 반드시 지켜야 하는 제약은 `permission`이나 에이전트 권한으로 거세요.
+
+## 모델 제공자 연결: OpenAI 호환 주소
+
+처음 opencode를 쓸 때 가장 먼저 하는 일은 모델이 있는 주소를 알려 주는 것입니다. [C7](../../examples/00-config/c7-provider-openai-compatible/)이 모의 서버(`model_server.py`, 진짜 모델이 아닙니다)로 연결과 실패 증상을 재현합니다.
+
+```json
+{
+  "provider": {
+    "demo-endpoint": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "데모 엔드포인트",
+      "options": {
+        "baseURL": "{env:LLM_BASE_URL}",
+        "apiKey": "{env:LLM_API_KEY}"
+      },
+      "models": {
+        "demo-chat": { "name": "Demo Chat", "limit": { "context": 32768, "output": 4096 } }
+      }
+    }
+  },
+  "model": "demo-endpoint/demo-chat"
+}
+```
+
+| 키 | 의미 |
+|---|---|
+| `provider.<이름>` | 모델은 `이름/모델id`로 부른다 |
+| `npm` | OpenAI 호환 API를 말하는 어댑터 |
+| `options.baseURL` | `/chat/completions` 바로 앞까지의 주소 (보통 `.../v1`) |
+| `options.apiKey` | `Authorization: Bearer <값>`으로 보내진다 |
+| `models.<id>` | `id`가 서버로 가는 `model` 값. `limit`을 따른 동작은 시험하지 않았다(미검증) |
+| `model` | `-m`이 없을 때 쓰는 기본 모델 |
+
+저장소에 커밋하는 파일에는 `{env:...}`만 적고 주소와 키는 각자의 셸 환경에서 줍니다. 키를 `opencode.json`에 직접 적지 마세요.
+
+**어댑터는 내려받지 않습니다.** `@ai-sdk/openai-compatible`은 opencode 1.19.5에 들어 있습니다. 레지스트리 주소를 닫은 환경과 네트워크 없는 네임스페이스에서도 첫 `run`이 성공했고 실행 뒤 `@ai-sdk` 패키지가 생기지 않았습니다. 다른 어댑터는 확인하지 않았습니다(미검증).
+
+### 주소나 키가 틀렸을 때
+
+| 상황 | 사용자 화면 | 서버 쪽 |
+|---|---|---|
+| 키가 틀림 | `Error: Incorrect API key provided` (서버가 준 메시지) | 키 불일치 |
+| `LLM_API_KEY` 없음 | 위와 **똑같은** 메시지 | `Authorization` 헤더 자체가 없음 |
+| `LLM_BASE_URL` 없음 | `Error: Invalid URL`. 서버에는 요청이 오지 않음 | 없음 |
+| 서버가 꺼져 있음 | `Error: Cannot connect to API: ECONNREFUSED: ...` | 없음 |
+| `baseURL`에서 `/v1`을 뺌 | 모의 서버는 받아 주지만 | 경로가 `/chat/completions` |
+
+- `{env:}`가 미설정이면 오류 없이 빈 문자열이고, 키가 비면 `Authorization` 헤더를 아예 보내지 않습니다. 화면만으로는 "키 없음"과 "키 틀림"이 구분되지 않아 서버 로그가 필요합니다.
+- 서버가 꺼져 있으면 오류가 나오기까지 **약 68초**가 걸렸습니다(원인은 확인하지 않았습니다). 멈춘 것처럼 보여도 기다리면 메시지가 나옵니다.
+- `opencode models`는 설정에 적힌 모델을 보여 줄 뿐 서버에 접속하지 않습니다. 환경 변수가 없어도 목록에 나오므로 **연결은 실제로 한 번 질문해 봐야 압니다.**
+- `opencode debug config`에서 `baseURL`은 가려지지 않아 환경 변수가 없으면 `""`로 보입니다. `apiKey`는 값이 있든 없든 `***`라서 키가 설정됐는지는 알 수 없습니다.
+
+### `--print-logs`로 원인 찾기
+
+연결이 안 될 때 순서입니다. ① `opencode debug config`에서 `baseURL`이 비어 있지 않은지, ② `opencode run --print-logs --log-level ERROR "안녕"`으로 어느 단계에서 났는지, ③ 서버 쪽 기록에 요청이 왔는지와 `Authorization`이 있는지.
+
+```
+level=ERROR ... message="stream error" providerID=demo-endpoint modelID=demo-chat ... error.error="TypeError: Invalid URL"
+```
+
+②에서는 어느 provider와 모델에서 났는지까지 나옵니다. 키가 틀린 경우에는 `error.error="AI_APICallError: Incorrect API key provided"`입니다.
+
+## 에이전트 정의: 역할마다 다른 권한
+
+에이전트는 **프롬프트 + 권한 + (선택) 모델**을 한 묶음으로 이름 붙인 것입니다. `opencode run --agent reviewer`처럼 고르면 그 역할로 시작합니다. [C8](../../examples/00-config/c8-agents/)이 세 에이전트(읽기 전용 `reviewer`, `docs/**`만 고치는 `docs`, 조사원 `researcher`)를 가짜 모델로 확인합니다.
+
+정의하는 방법은 두 가지이고 결과는 같습니다.
+
+- `.opencode/agent/이름.md`: frontmatter(`description`, `mode`, `permission`) + **본문이 시스템 프롬프트**
+- `opencode.json`의 `agent` 키: `{"이름": {"description", "mode", "prompt", "permission"}}`
+
+```markdown
+---
+description: 읽기 전용 코드 리뷰어. 파일을 고치지 않고 명령도 실행하지 않는다
+mode: primary
+permission:
+  edit: deny
+  bash: deny
+  task: deny
+---
+당신은 코드 리뷰어입니다. 파일을 읽기만 하고 절대 고치지 않습니다.
+```
+
+모델 없이 해석 결과를 보는 명령은 `opencode debug agent 이름`입니다.
+
+### 막은 도구는 모델의 도구 목록에서 사라집니다
+
+`permission`에서 통째로 deny한 도구는 모델에게 보내는 도구 목록에서 아예 빠집니다. 모델은 거절당하는 것이 아니라 그런 도구가 있는지도 모릅니다. 모델이 받은 도구 목록입니다.
+
+| 에이전트 | 도구 목록 |
+|---|---|
+| 기본 `build` | bash, edit, glob, grep, read, skill, task, todowrite, webfetch, write |
+| `reviewer` | glob, grep, read, skill, todowrite, webfetch |
+| `docs` | edit, glob, grep, read, skill, todowrite, webfetch, write |
+
+- 그래도 모델이 목록에 없는 도구를 부르면 도구는 실행되지 않고 `Model tried to call unavailable tool 'edit'. Available tools: ...`가 도구 결과로 돌아갑니다. 종료 코드는 0이고 대화는 이어집니다.
+- `bash`를 `"*": deny` 뒤에 `"git diff*": allow` 같은 패턴 규칙으로 두면 마지막 규칙이 deny가 아니라서 목록에 **남습니다.** `docs`의 `edit`도 `* deny` 다음에 `docs/** allow`가 와서 목록에 남고, 경로는 실행 직전에 검사합니다.
+
+### 경로별 edit 규칙은 git 루트 기준입니다
+
+`docs`가 `docs/**`만 고칠 수 있게 하는 규칙은 **git 저장소 루트를 기준으로 한 상대 경로**와 비교됩니다.
+
+| 시도 | 결과 |
+|---|---|
+| `docs/guide.md` 수정, `docs/sub/x.md` 쓰기 | 실행됨 (묻지 않음) |
+| `src/calc.py` 수정 | 거부 |
+| 같은 폴더인데 `.git`이 없음 | `docs/guide.md` 수정도 **거부** |
+
+루트 아래 하위 폴더의 `sub/docs/g.md`도 `docs/**`에 걸리지 않아 거부됩니다. 그래서 예제는 `prepare.py`로 자체 git 저장소인 `sandbox/`를 만듭니다. 이 저장소의 예제 폴더에서 바로 실행하면 같은 이유로 맞지 않을 것입니다(추정, 직접 시험하지 않음).
+
+### `mode`: primary와 subagent
+
+| | `mode: primary` | `mode: subagent` |
+|---|---|---|
+| `--agent 이름`으로 시작 | 됨 | 안 됨. 경고 후 `build`로 실행 |
+| 다른 에이전트의 `task` 도구 설명 | 나오지 않음 | 나옴 (내장 `explore`, `general`과 함께) |
+| 쓰는 방식 | 사용자가 고른 대화의 주인공 | 주인공이 `task`로 넘기는 하위 작업. 자기 프롬프트와 권한으로 돈다 |
+
+`--agent`에 subagent나 없는 이름을 주면 `agent "nosuch" not found. Falling back to default agent` 같은 경고 한 줄과 함께 `build`로 실행합니다. **종료 코드가 0이라 오타가 조용히 넘어갑니다.** 권한을 믿고 돌리기 전에 실행 헤더(`> reviewer`)를 확인하세요.
+
+### 함정: `task`가 열려 있으면 읽기 전용이 우회됩니다
+
+`task: deny`만 지운 사본으로 확인했습니다. `edit`이 목록에 없는 `reviewer`가 `task`로 내장 `general` 하위 에이전트를 부르자, `general`은 **자기 권한으로** `src/calc.py`를 실제로 고쳤습니다. 하위 작업은 부른 쪽의 제한을 물려받지 않습니다. 읽기 전용 에이전트를 만들 때는 `edit`, `bash`만큼 `task`도 막으세요. 실제 모델의 응답은 확인하지 못했습니다(미검증, 위 결과는 가짜 모델).
+
+## 셋의 차이: 스킬, 명령, 에이전트
+
+모델에게 글이나 권한을 주는 세 가지가 헷갈리기 쉽습니다. 모두 C6, C8에서 모델이 받은 요청을 읽어 확인한 값입니다.
+
+| | 스킬 ([2장](02-skills.md)) | 명령 ([C6](../../examples/00-config/c6-custom-commands/)) | 에이전트 ([C8](../../examples/00-config/c8-agents/)) |
+|---|---|---|---|
+| 정의하는 것 | 절차와 지식 | 지시문 한 덩어리 | 역할: 프롬프트 + 권한 (+ 모델) |
+| 누가 시작하나 | 모델 (description을 보고) | 사용자 (`/이름`, `--command`) | 사용자(`--agent`) 또는 모델(`task`) |
+| 부르기 전 모델 요청에 있는 것 | 이름 + description (103자, 경로를 포함하면 308자) | **아무것도 없음** | 고른 에이전트 외에는 거의 없음. 단 subagent의 description은 모든 요청의 `task` 도구 설명에 들어간다 |
+| 본문이 들어오는 때와 곳 | 모델이 `skill` 도구를 부를 때, **도구 결과**로 | 사용자가 부를 때, **사용자 메시지**로 | 고르면 시스템 프롬프트와 도구 목록이 바뀜 |
+| 인자 | 없음 (대화에서 읽음) | `$ARGUMENTS`, `$1` `$2` | 없음 |
+| 권한을 바꾸나 | 아니오 | `agent:` 키로 에이전트를 고르면 간접적으로 | **예** (도구가 목록에서 빠짐) |
+
+같은 280자 지시문을 명령과 스킬로 두었을 때 스킬의 목록 항목(103자)이 본문과 같은 자릿수였습니다. 이렇게 짧은 글은 스킬로 둬도 이득이 크지 않습니다. 스킬은 본문이 길고 **가끔만** 필요할 때, 명령은 **내가 정확히 그 순간에 부르고 싶을 때** 맞습니다. 비교를 위해 두 개를 같이 둔 것은 예제뿐이고, 실제 프로젝트에서는 둘 중 하나만 두세요. 둘 다 있으면 모델이 스킬을 불러 같은 지시를 두 번 받을 수 있습니다.
+
 ## 이 장에서 기억할 것
 
 - 우선순위: 전역 < `OPENCODE_CONFIG` < 프로젝트 `opencode.json` < `.opencode/opencode.json` < `OPENCODE_CONFIG_CONTENT`
@@ -348,6 +551,9 @@ opencode debug agent build --tool bash --params "{ command: 'rm victim.txt', des
 - `{env:}` 미설정은 빈 문자열, `${}`는 치환 안 됨, `{file:}` 없는 파일은 시작 거부.
 - 마스킹은 이름 기반입니다. `***`를 믿고 출력을 공유하지 마세요.
 - permission은 마지막으로 맞는 규칙이 이깁니다.
+- 명령은 사용자가 부를 때만 글이 들어가고, 스킬은 이름과 description이 항상 들어갑니다. 없는 명령 이름은 이유 없이 `Unexpected server error`입니다.
+- 모델 연결 문제는 `debug config`의 `baseURL`, `--print-logs`, 서버 기록 순으로 가릅니다. 키 없음과 키 틀림은 화면이 같습니다.
+- 에이전트의 deny는 도구를 목록에서 지웁니다. 읽기 전용이라면 `task`도 막고, `--agent` 오타는 조용히 `build`로 넘어갑니다.
 
 막힐 때는 [5. 문제 해결](05-troubleshooting.md)의 표를 먼저 보세요.
 

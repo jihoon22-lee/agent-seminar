@@ -19,6 +19,9 @@
 | C3 | [c3-config-content-overlay](00-config/c3-config-content-overlay/) | `OPENCODE_CONFIG_CONTENT`로 이번 실행에만 MCP와 설정 얹기 | ★★☆ | 선택 | [1. 설정](../docs/guide/01-config.md) |
 | C4 | [c4-isolated-testing](00-config/c4-isolated-testing/) | 일회용 샌드박스에서 설정을 안전하게 실험하고 격리 스위치 비교 | ★★☆ | 불필요 | [1. 설정](../docs/guide/01-config.md) |
 | C5 | [c5-permissions](00-config/c5-permissions/) | `permission`의 allow/ask/deny와 "마지막 일치가 이긴다" 규칙 | ★★☆ | 선택 | [1. 설정](../docs/guide/01-config.md) |
+| C6 | [c6-custom-commands](00-config/c6-custom-commands/) | 커스텀 명령(`/이름`)과 스킬의 차이: 누가 부르고 언제 컨텍스트에 실리나 | ★☆☆ | 불필요 | [1. 설정](../docs/guide/01-config.md) |
+| C7 | [c7-provider-openai-compatible](00-config/c7-provider-openai-compatible/) | OpenAI 호환 주소를 `provider`로 연결하고, 주소·키가 틀렸을 때의 증상 구분 | ★☆☆ | 불필요 | [1. 설정](../docs/guide/01-config.md) |
+| C8 | [c8-agents](00-config/c8-agents/) | 역할마다 권한이 다른 에이전트 정의와 `task`로 새는 구멍 | ★★☆ | 선택 | [1. 설정](../docs/guide/01-config.md) |
 
 ## 스킬 (01-skills)
 
@@ -27,6 +30,7 @@
 | S1a | [s1a-commit-message](01-skills/s1a-commit-message/) | `SKILL.md` 한 장으로 팀 커밋 메시지 규칙 적용 | ★☆☆ | 필요 | [2. 스킬](../docs/guide/02-skills.md) |
 | S1b | [s1b-code-review](01-skills/s1b-code-review/) | 리뷰 체크리스트와 출력 형식을 스킬로 고정 | ★☆☆ | 필요 | [2. 스킬](../docs/guide/02-skills.md) |
 | S1c | [s1c-postmortem](01-skills/s1c-postmortem/) | 한 스킬이 대화형과 문서(메모 기반) 두 모드로 동작 | ★★☆ | 필요 | [2. 스킬](../docs/guide/02-skills.md) |
+| S1d | [s1d-cli-only](01-skills/s1d-cli-only/) | 스크립트 없이 `git` 명령만으로 병합된 브랜치 정리 | ★☆☆ | 필요 | [2. 스킬](../docs/guide/02-skills.md) |
 | S2a | [s2a-workthrough](01-skills/s2a-workthrough/) | 템플릿과 예시를 필요할 때만 읽는 점진적 공개 | ★★☆ | 필요 | [2. 스킬](../docs/guide/02-skills.md) |
 | S2b | [s2b-api-design](01-skills/s2b-api-design/) | `SKILL.md`를 목차로 두고 `references/`를 요청별로 읽게 하기 | ★★☆ | 필요 | [2. 스킬](../docs/guide/02-skills.md) |
 | S2c | [s2c-adr](01-skills/s2c-adr/) | 템플릿(구조)과 예시(수준)를 곁들인 ADR 스킬 | ★★☆ | 필요 | [2. 스킬](../docs/guide/02-skills.md) |
@@ -52,6 +56,12 @@
 | M7 | [m7-resources-prompts](02-mcp/m7-resources-prompts/) | MCP의 resources(`@`)와 prompts(`/서버:프롬프트`) 노출 방식 | ★★☆ | 선택 | [3. MCP](../docs/guide/03-mcp.md) |
 | M8 | [m8-enable-disable-deny](02-mcp/m8-enable-disable-deny/) | 서버 끄기, 도구 deny, 에이전트별 설정과 토큰 비용 측정 | ★★☆ | 불필요 | [3. MCP](../docs/guide/03-mcp.md) |
 | M9 | [m9-pitfalls](02-mcp/m9-pitfalls/) | 일부러 고장 낸 서버 네 가지와 진단 순서 | ★★☆ | 불필요 | [3. MCP](../docs/guide/03-mcp.md) |
+| M10 | [m10-node-sdk-npx](02-mcp/m10-node-sdk-npx/) | 공식 TypeScript SDK 서버와 `npx` 실행, 첫 실행 설치 시간 | ★★☆ | 선택 | [3. MCP](../docs/guide/03-mcp.md) |
+| M11 | [m11-use-existing-server](02-mcp/m11-use-existing-server/) | 남이 만든 서버를 `npx`·`uvx`로 가져다 쓰기: 살펴보고, 고정하고, 제한하기 | ★★☆ | 선택 | [3. MCP](../docs/guide/03-mcp.md) |
+| M12 | [m12-package-uvx](02-mcp/m12-package-uvx/) | `server.py`를 설치 가능한 패키지로 만들어 `uvx`로 배포 | ★★☆ | 선택 | [3. MCP](../docs/guide/03-mcp.md) |
+| M13 | [m13-wrap-cli](02-mcp/m13-wrap-cli/) | 이미 있는 CLI(`git`)를 읽기 전용 도구로 감싸기와 인자 검증 | ★★☆ | 선택 | [3. MCP](../docs/guide/03-mcp.md) |
+| M14 | [m14-single-binary](02-mcp/m14-single-binary/) | 런타임 없이 실행 파일 하나로 된 서버 (Rust) | ★★★ | 선택 | [3. MCP](../docs/guide/03-mcp.md) |
+| M15 | [m15-client-features](02-mcp/m15-client-features/) | 진행률, 구조화된 결과, 도구 목록 변경을 opencode가 어디까지 받아 주나 | ★★★ | 불필요 | [3. MCP](../docs/guide/03-mcp.md) |
 
 ## 플러그인 (03-plugins)
 
@@ -65,6 +75,10 @@
 | P6 | [p6-custom-tool](03-plugins/p6-custom-tool/) | `tool` 훅으로 모델이 부르는 커스텀 도구 등록, 패키지 미러 | ★★☆ | 필요 | [4. 플러그인](../docs/guide/04-plugins.md) |
 | P7 | [p7-compaction-context](03-plugins/p7-compaction-context/) | 실험적 훅으로 세션 압축 때 고정 사실을 요약에 포함 | ★★★ | 필요 | [4. 플러그인](../docs/guide/04-plugins.md) |
 | P8 | [p8-load-methods](03-plugins/p8-load-methods/) | 플러그인을 불러오는 네 가지 방법과 중복 로드, `--pure` | ★★☆ | 불필요 | [4. 플러그인](../docs/guide/04-plugins.md) |
+| P9 | [p9-format-on-save](03-plugins/p9-format-on-save/) | 내장 `formatter`와, 검사 결과를 모델에게 돌려주는 `tool.execute.after` 플러그인 | ★★☆ | 선택 | [4. 플러그인](../docs/guide/04-plugins.md) |
+| P10 | [p10-branch-guard](03-plugins/p10-branch-guard/) | 저장소 상태를 보고 막는 가드: main에서의 커밋, draft PR | ★★★ | 선택 | [4. 플러그인](../docs/guide/04-plugins.md) |
+| P11 | [p11-output-filter](03-plugins/p11-output-filter/) | 도구 결과의 비밀값을 가리고 긴 출력을 줄이기, 그리고 가려지지 않는 곳 | ★★★ | 선택 | [4. 플러그인](../docs/guide/04-plugins.md) |
+| P12 | [p12-context-injection](03-plugins/p12-context-injection/) | 매 요청에 현재 브랜치·날짜를 넣는 시스템 프롬프트 주입 (실험 단계 훅) | ★★☆ | 선택 | [4. 플러그인](../docs/guide/04-plugins.md) |
 
 ## 종합 (04-combined)
 

@@ -89,3 +89,57 @@
     <p>특히 인코딩 문제는 "성공한 것처럼 보이는데 내용이 깨져 있다"는 점에서 가장 위험합니다. 한국어 Windows에서 데모를 하는 우리에게 가장 현실적인 함정입니다.</p>
   </aside>
 </section>
+
+<section class="slide" data-optional data-chapter="mcp" data-title="M14 실행 파일 하나">
+  <h2><span class="tag mcp">M14</span>런타임 없이 실행 파일 하나로 된 서버</h2>
+  <div class="cols">
+    <div>
+      <table class="compact">
+        <tr><th></th><th class="mcp">M1 Python</th><th class="mcp">M14 Rust</th></tr>
+        <tr><td>받는 쪽에 필요한 것</td><td>Python 3.10 이상</td><td><strong>없음</strong></td></tr>
+        <tr><td>배포물</td><td><code>server.py</code> + 데이터 파일</td><td>파일 하나, 355 KiB</td></tr>
+        <tr><td>시작 시간 <span class="tiny muted">(15회 중앙값)</span></td><td>27.9ms</td><td><strong>1.3ms</strong></td></tr>
+        <tr><td>만드는 쪽에 필요한 것</td><td>없음</td><td>Rust 도구, OS마다 빌드</td></tr>
+        <tr><td>코드</td><td>124줄</td><td>176줄 (<code>serde_json</code>만 사용)</td></tr>
+      </table>
+      <script type="text/x-code" data-lang="json" class="sm" data-title="opencode.json (Linux와 Windows 공용)">
+      {"mcp": {"glossary": {
+        "type": "local",
+        "command": ["./bin/glossary-mcp"] }}}
+      </script>
+    </div>
+    <div>
+      <ul class="small">
+        <li>빌드한 파일 하나를 빈 폴더에 복사해도 M1과 <strong>글자 하나 다르지 않은 답</strong>을 낸다</li>
+        <li>Windows의 opencode는 같은 설정으로 <code>bin\glossary-mcp.exe</code>를 찾아 연결했다. 설정 파일을 OS별로 나눌 필요가 없다</li>
+        <li>상대 경로는 <strong>opencode를 실행한 폴더</strong> 기준이다. 하위 폴더에서 실행하면 <code>failed</code></li>
+        <li>기본 빌드는 glibc 2.34의 기능까지 쓴다. 그보다 오래된 배포판에서는 안 돌 가능성이 높다 <span class="muted">(실행해 보지는 않음)</span>. 그런 곳에 나눠 주려면 정적 빌드(musl, 449 KiB)를 쓴다 <span class="muted">(빌드까지만 확인)</span></li>
+      </ul>
+      <p class="tiny muted">Go로 만들어도 같은 용도입니다(이 예제에서는 시험하지 않았습니다).</p>
+    </div>
+  </div>
+  <div class="ref">examples/02-mcp/m14-single-binary</div>
+  <aside class="notes">
+    <p>공유 폴더에 파일 하나만 두면 되는 형태입니다. 받는 사람의 PC에 Python이나 Node 버전이 무엇인지 신경 쓸 필요가 없습니다.</p>
+    <p>대가는 빌드입니다. cargo가 없으면 이 예제의 검사는 경고를 내고 건너뜁니다. Windows에서 직접 빌드하는 과정은 확인하지 못했고, Linux에서 교차 빌드한 exe로 연결만 확인했습니다.</p>
+  </aside>
+</section>
+
+<section class="slide" data-optional data-chapter="mcp" data-title="M15 클라이언트 지원 범위">
+  <h2><span class="tag mcp">M15</span>MCP의 새 기능을 opencode가 어디까지 받아 주나</h2>
+  <table class="compact">
+    <tr><th class="mcp">서버가 쓰는 기능</th><th class="mcp">opencode 1.19.5가 한 일</th><th class="mcp">그래서 서버는</th></tr>
+    <tr><td>진행률 알림<br><code>notifications/progress</code></td><td>화면에도 로그에도 <strong>나오지 않는다</strong>. 대신 도구 호출의 제한 시간을 늘려 준다</td><td>오래 걸리는 도구가 "살아 있다"는 신호로만 쓴다</td></tr>
+    <tr><td><code>structuredContent</code></td><td>text가 같이 있으면 모델은 <strong>text만</strong> 받는다. text가 없을 때만 JSON 문자열을 받는다</td><td>중요한 결과는 text에 넣는다</td></tr>
+    <tr><td><code>outputSchema</code></td><td>모델에게 가지 않는다 (이름, 설명, 입력 스키마만 간다)</td><td>출력 모양은 설명에 글로 쓴다</td></tr>
+    <tr><td>도구 목록 변경 알림<br><code>tools/list_changed</code></td><td>목록을 다시 요청하고, <strong>바로 다음 모델 요청부터</strong> 새 도구가 보인다</td><td>동적으로 도구를 늘려도 된다</td></tr>
+    <tr><td>서버가 클라이언트에 묻기<br><span class="tiny">sampling, elicitation</span></td><td>즉시 <code>-32601</code>로 거절한다. 선언한 기능은 <code>roots</code>뿐</td><td>물어야 하면 도구 결과로 질문을 돌려준다</td></tr>
+    <tr><td>서버의 stderr 로그</td><td>어디에도 나오지 않는다</td><td>진단은 파일에 남긴다</td></tr>
+  </table>
+  <p class="small" style="margin-top:18px">이 표의 행마다 <code>check.py</code>에 검사가 있습니다. opencode 버전이 올라가 동작이 바뀌면 그 검사가 실패해서 알려 줍니다.</p>
+  <div class="ref">examples/02-mcp/m15-client-features</div>
+  <aside class="notes">
+    <p>MCP 명세에 있는 기능이라고 모든 클라이언트가 받아 주는 것은 아닙니다. 서버를 만들 때는 대상 클라이언트가 실제로 무엇을 하는지 확인해야 합니다.</p>
+    <p>진행률이 제한 시간을 늘린다는 것은 이렇게 확인했습니다: timeout 3000에서 5초짜리 도구가, 진행률을 보내면 끝까지 가고 안 보내면 Request timed out으로 실패합니다. 얼마나 길게 늘릴 수 있는지는 확인하지 않았습니다.</p>
+  </aside>
+</section>

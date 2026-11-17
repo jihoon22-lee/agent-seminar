@@ -1,9 +1,9 @@
 # 4. 플러그인: 모델이 무엇을 하든 항상 실행되는 코드
 
-이 문서는 세미나 6장 "플러그인"을 글로 옮긴 것입니다. 플러그인의 생김새, 파일을 통째로 건너뛰게 만드는 export 함정, 훅이 불리는 순서와 도구별 `args` 키, 이벤트, 예제 P1~P8, `permission`과의 선택 기준, 실험적 압축 훅, 불러오는 방법을 다룹니다.
+이 문서는 세미나 6장 "플러그인"을 글로 옮긴 것입니다. 플러그인의 생김새, 파일을 통째로 건너뛰게 만드는 export 함정, 훅이 불리는 순서와 도구별 `args` 키, 1.19.5에서 불리는 훅 목록, 이벤트, 예제 P1~P12(결과 가공, 상태를 보는 가드, 출력 가리기, 요청에 맥락 넣기 포함), `permission`과의 선택 기준, 실험적 훅, 불러오는 방법을 다룹니다.
 모든 내용은 **opencode 1.19.5** 기준입니다.
 
-관련 예제: [P1 .env 보호](../../examples/03-plugins/p1-env-guard/) · [P2 위험한 명령 차단](../../examples/03-plugins/p2-dangerous-command-guard/) · [P3 감사 로그](../../examples/03-plugins/p3-audit-log/) · [P4 알림](../../examples/03-plugins/p4-notify-on-idle/) · [P5 셸 환경 변수](../../examples/03-plugins/p5-shell-env/) · [P6 커스텀 도구](../../examples/03-plugins/p6-custom-tool/) · [P7 압축 훅](../../examples/03-plugins/p7-compaction-context/) · [P8 불러오는 방법](../../examples/03-plugins/p8-load-methods/) · [X2 종합](../../examples/04-combined/x2-incident-analysis/)
+관련 예제: [P1 .env 보호](../../examples/03-plugins/p1-env-guard/) · [P2 위험한 명령 차단](../../examples/03-plugins/p2-dangerous-command-guard/) · [P3 감사 로그](../../examples/03-plugins/p3-audit-log/) · [P4 알림](../../examples/03-plugins/p4-notify-on-idle/) · [P5 셸 환경 변수](../../examples/03-plugins/p5-shell-env/) · [P6 커스텀 도구](../../examples/03-plugins/p6-custom-tool/) · [P7 압축 훅](../../examples/03-plugins/p7-compaction-context/) · [P8 불러오는 방법](../../examples/03-plugins/p8-load-methods/) · [P9 format-on-save](../../examples/03-plugins/p9-format-on-save/) · [P10 상태를 보는 가드](../../examples/03-plugins/p10-branch-guard/) · [P11 출력 가공](../../examples/03-plugins/p11-output-filter/) · [P12 맥락 주입](../../examples/03-plugins/p12-context-injection/) · [X2 종합](../../examples/04-combined/x2-incident-analysis/)
 
 ## 플러그인은 훅을 돌려주는 함수입니다
 
@@ -85,7 +85,7 @@ tool.execute.after     결과 기록, 후처리
 - **`before`가 권한 확인보다 먼저**입니다. 그래서 플러그인이 막으면 사용자에게 묻지도 않고 끝납니다. `before`에서 `throw`하면 **`--auto`로 실행해도 차단**되고, 던진 메시지가 모델에게 오류로 전달됩니다.
 - `shell.env`는 `bash` 도구가 호출될 때만 불립니다(`read`/`edit`에서는 안 불립니다).
 - `tool.execute.after`는 도구가 **성공적으로 끝난 뒤**에 불립니다. `before`에서 막힌 호출은 기록되지 않으므로 차단 기록은 `before`에서 직접 남겨야 합니다.
-- 훅은 내장 도구뿐 아니라 스킬(`skill` 도구)과 MCP 도구 호출에도 불립니다([X2](../../examples/04-combined/x2-incident-analysis/)에서 감사 로그에 `skill`, `tickets_*`, `read`, `write`가 모두 남는 것을 확인). 단 MCP 도구의 `after` 결과는 `output.output` 문자열이 아니라 MCP 원형(`output.content`)으로 올 수 있습니다.
+- 훅은 내장 도구뿐 아니라 스킬(`skill` 도구)과 MCP 도구 호출에도 불립니다([X2](../../examples/04-combined/x2-incident-analysis/)에서 감사 로그에 `skill`, `tickets_*`, `read`, `write`가 모두 남는 것을 확인). 단 MCP 도구의 `after` 결과는 `output.output` 문자열이 아니라 MCP 원형(`output.content`)으로 옵니다([P11](../../examples/03-plugins/p11-output-filter/)에서 확인).
 
 ### 오류 메시지는 행동 지침이어야 합니다
 
@@ -105,21 +105,26 @@ tool.execute.after     결과 기록, 후처리
 | `bash` | `command`, `description` |
 | `apply_patch` | `patchText` (모델에 따라 노출되는 도구) |
 
-`apply_patch`는 일부 모델에서만 제공됩니다. 이 도구가 쓰는 파일은 `patchText` 안의 `*** Update File: 경로` 같은 줄에서 읽어야 하는데, 이번 확인에 쓴 모델에서는 노출되지 않아 단위 테스트로만 검증했습니다. `tool.execute.after`의 `output`에는 `title`, `output`(본문 문자열), `metadata`가 있습니다.
+`apply_patch`는 일부 모델에서만 제공됩니다. 이 도구가 쓰는 파일은 `patchText` 안의 `*** Update File: 경로` 같은 줄에서 읽어야 하는데, 이번 확인에 쓴 모델에서는 노출되지 않아 단위 테스트로만 검증했습니다. `tool.execute.after`의 `output`에는 `title`, `output`(본문 문자열), `metadata`, `attachments`가 있습니다. MCP 도구는 예외입니다(아래 P11).
 
 ### 훅 목록
 
-| 훅 | 할 수 있는 일 |
-|---|---|
-| `tool.execute.before` | 도구 실행 전 검사, 인자 수정, 차단 |
-| `tool.execute.after` | 실행 결과 기록, 후처리 |
-| `shell.env` | `bash` 도구 명령에 환경 변수 주입 |
-| `event` | opencode 안의 모든 이벤트 수신 |
-| `tool` | 모델이 부를 새 도구 등록 |
-| `config`, `chat.*` | 설정 변경, 메시지 가공 (이 저장소 예제에서는 다루지 않음) |
-| `experimental.session.compacting` 등 | 실험적 훅 (아래 참고) |
+아래는 `@opencode-ai/plugin` 1.19.5 타입 정의에 있는 훅 가운데 **실제 호출을 확인한** 것입니다.
 
-`permission.ask` 훅이 훅 목록에 있지만, 1.19.5에서는 권한 요청이 발생해도 **한 번도 호출되지 않았습니다.** 권한 요청은 `event` 훅의 `permission.asked`로 받으세요.
+| 훅 | 할 수 있는 일 | 예제 |
+|---|---|---|
+| `tool.execute.before` | 도구 실행 전 검사, 인자 수정, 차단 | P1, P2, P10 |
+| `tool.execute.after` | 실행 결과 기록, 후처리. `output.output`을 바꾸면 **모델이 받는 도구 결과가 바뀐다** | P3, P9, P11 |
+| `shell.env` | `bash` 도구 명령에 환경 변수 주입 | P5 |
+| `event` | opencode 안의 모든 이벤트 수신 | P4 |
+| `tool` | 모델이 부를 새 도구 등록 | P6 |
+| `tool.definition` | 모델이 받는 도구 설명(`output.description`) 수정 | P12 |
+| `experimental.chat.system.transform` | `output.system.push("...")`로 시스템 프롬프트 끝에 글 추가 (실험) | P12 |
+| `experimental.session.compacting` | 압축 요약 프롬프트에 사실 덧붙이기 (실험) | P7 |
+| `command.execute.before` | 커스텀 명령을 실행할 때 호출 (`input.command`, `input.arguments`, `output.parts`) | 호출만 확인 |
+| `chat.message`, `chat.params`, `chat.headers`, `experimental.chat.messages.transform` | 호출되는 것만 확인 | 예제 없음 |
+
+`config` 훅(설정 변경)도 타입 정의에 있지만 이 저장소에서는 호출을 확인하지 않았습니다. `permission.ask` 훅은 타입 정의에 있지만, 1.19.5에서는 권한 요청이 발생해도 **한 번도 호출되지 않았습니다.** 권한 요청은 `event` 훅의 `permission.asked`로 받으세요.
 
 ## 이벤트
 
@@ -144,7 +149,7 @@ tool.execute.after     결과 기록, 후처리
 - **`opencode run`은 끝나자마자 자식 프로세스를 정리합니다.** 알림 프로세스도 같이 끊깁니다. 알림은 TUI나 `opencode serve`처럼 오래 떠 있는 프로세스에서만 울립니다. `run`으로 시험할 때는 로그 파일의 첫 줄(이벤트를 받았다는 기록)만 보세요. 그래서 P4는 외부 프로세스를 띄우기 **전에** 로그부터 동기 방식으로 씁니다.
 - Windows에서 PowerShell을 `detached`로 직접 띄우면 콘솔이 없어 아무 일도 하지 않았습니다. `cmd.exe /c start "" /b powershell.exe -EncodedCommand ...`로 띄워 해결했습니다. 소리와 토스트가 실제로 나오는지는 사람이 확인해야 하므로 `sound ok`/`toast ok` 기록까지만 확인했습니다.
 
-## 예제 P1~P8
+## 예제 P1~P12
 
 ### P1. 비밀 파일을 읽지 못하게: `tool.execute.before`
 
@@ -262,6 +267,107 @@ export const TeamTools = async ({ directory }) => {
 - **같은 파일**은 어떻게 가리키든(상대+절대, 같은 경로 두 번, 자동 탐색+설정에서 또 지정) **한 번만** 로드됩니다. 하지만 내용이 같아도 **파일 위치가 다르면 별개**입니다. 전역과 프로젝트에 같은 플러그인을 두면 2번 로드되어 같은 훅이 두 번 실행됩니다. 한 곳에만 두세요.
 - `--pure`(또는 `OPENCODE_PURE=1`)는 외부 플러그인(자동 탐색, 전역, `plugin` 설정, npm)을 **하나도 로드하지 않습니다.** `debug config`의 `plugin` 배열에는 남아 있지만 실행되지 않습니다. 스킬과 MCP는 그대로입니다.
 - (c)의 상대 경로는 `opencode.json`이 있는 폴더에서 실행했을 때 그 폴더 기준으로 풀렸습니다. 하위 폴더에서 실행했을 때의 기준은 확인하지 못했습니다.
+
+### P9. 파일을 고친 직후 포맷하고, 검사 결과를 모델에게 돌려주기
+
+에이전트가 `write`/`edit`로 파일을 고친 직후에 할 수 있는 일은 두 가지이고, 서로 하는 일이 다릅니다. [P9](../../examples/03-plugins/p9-format-on-save/)입니다.
+
+| | 내장 `formatter` (설정) | `tool.execute.after` 플러그인 |
+|---|---|---|
+| 하는 일 | 파일을 **자동으로 고쳐 씀** | 검사하고 결과를 **모델에게 전달** |
+| 모델이 아는가 | 모릅니다. 도구 결과에 표시가 없고 파일 내용만 모델이 쓴 것과 달라진다 | 압니다. 도구 결과 끝에 `[린트 결과]`가 붙는다 |
+| 사람이(모델이) 고쳐야 하는 문제 (쓰지 않는 import, 문법 오류) | 못 다룸 | 다룸 |
+| 작성 | JSON 몇 줄 | JS 플러그인 + 테스트 |
+| 실패했을 때 | 조용히 건너뜀 (깨진 JSON은 파일을 그대로 두고 종료 코드 1, 모델에게 알리지 않음) | 이 예제는 로그만 남기고 편집은 유지 |
+| 충분한 경우 | 들여쓰기·정렬·공백처럼 기계적으로 고칠 수 있는 규칙 | 린트·타입·보안 검사처럼 모델이 읽고 판단해야 하는 결과 |
+
+`formatter`는 `opencode.json`에 `{"이름": {"command": ["python", "fmt.py", "$FILE"], "extensions": [".json"]}}`처럼 적습니다. `write`와 `edit` **둘 다** 뒤에 실행됩니다. 둘은 함께 쓰는 것이 보통입니다. 내장 formatter가 먼저 끝나고 그다음에 after 훅이 불리므로 플러그인은 정리된 파일을 검사합니다.
+
+- 플러그인은 `output.output += "\n\n[린트 결과] ..."`처럼 도구 결과 뒤에 검사 결과를 붙입니다. `edit`는 화면에 diff만 보여 주지만 모델은 붙인 결과를 받습니다(화면과 모델이 보는 것이 다름).
+- **after 훅에서 절대 throw하지 않습니다.** throw하면 파일은 **이미 써지고 formatter까지 끝난 뒤**인데 모델은 도구가 실패한 것으로 받습니다(던진 메시지 하나만 받고 화면에는 `failed`). 모델은 쓰기가 실패한 줄 알고 같은 일을 다시 시도할 수 있습니다. 그래서 훅 전체를 `try/catch`로 감싸고 실패는 로그에만 남깁니다.
+- formatter가 파일을 바꾸면 모델이 쓴 내용과 디스크 내용이 달라지는데 모델은 모릅니다. 포맷 규칙이 크게 바꾸는 파일 형식에서는 다음 `edit`의 `oldString`이 맞지 않을 수 있습니다.
+- 이 플러그인은 `write`/`edit`만 봅니다. `bash`로 고친 파일은 검사하지 않습니다.
+- 모델이 받는 결과는 20건, 2000자에서 자릅니다. 결과가 길어 맥락을 채우는 것을 막기 위해서입니다.
+- ruff, clang-format 같은 실제 도구로 바꾸는 방법은 README에 있지만 이 환경에서 실행하지 않았습니다(미검증). 실제 모델도 돌려 보지 않았습니다.
+
+### P10. 상태를 보고 막는 가드
+
+[P2](../../examples/03-plugins/p2-dangerous-command-guard/)는 명령 문자열의 **모양**만 봅니다. 같은 `git commit -m x`도 어느 브랜치에서 실행되느냐에 따라 괜찮을 수도 아닐 수도 있어서, [P10](../../examples/03-plugins/p10-branch-guard/)은 명령이 실행될 폴더에서 **git에게 현재 브랜치를 직접 물어보고** 판단합니다(`tool.execute.before`).
+
+- 현재 브랜치가 `main`/`master`이면 `git commit`과 `git push`를 막습니다. `git push origin HEAD:main`처럼 목적지가 `main`인 push도 막습니다. 반대로 `main`에 있어도 `git push origin feat/x`처럼 다른 브랜치를 명시한 push는 허용합니다.
+- `gh pr create --draft`와 `gh pr ready --undo`는 브랜치와 무관하게 막습니다. "초안 PR은 만들지 않는다"는 **팀 규칙의 예**일 뿐 일반적인 권장이 아닙니다. 자기 팀 규칙으로 바꿔 쓰라고 넣은 것입니다.
+- **판단을 못 하면 허용하고 이유를 기록**합니다(git 저장소가 아님, detached HEAD, git 실패나 없음). 전부 막으면 에이전트가 멈추기 때문입니다.
+- 차단 메시지가 **대신 무엇을 하라**고 알려 줍니다(`git switch -c <type>/<name>`). 모델은 막힌 채 멈추지 않고 안내대로 새 브랜치를 만든 뒤 다시 커밋하면 통과했습니다(가짜 모델).
+- AGENTS.md의 "main에 직접 커밋하지 않는다"는 모델이 읽는 **부탁**이고 정적이라 "main일 때만 안 된다"는 조건을 표현할 수 없습니다. 둘은 함께 쓰는 것이 좋습니다. AGENTS.md로 평소 행동을 이끌고 가드는 마지막 안전장치로 둡니다. 실제 모델이 얼마나 자주 규칙을 어기는지는 측정하지 않았습니다.
+- 비용: 브랜치를 묻는 git 한 번이 작은 저장소에서 중앙값 2.3ms(최대 7.4ms)였습니다. 단위 테스트는 134건입니다.
+
+**이 가드는 실수 방지이지 보안 경계가 아닙니다.** 알려진 한계입니다.
+
+- `git merge`, `cherry-pick`, `revert`, `am`, `rebase`도 현재 브랜치에 커밋을 만들 수 있지만 막지 않습니다. 스크립트 안의 git 호출(`make release` 등)과 git 별칭도 못 잡습니다.
+- 셸 문법은 일부만 압니다. `cd "$DIR"`처럼 변수가 든 경로는 풀지 못해 허용하고, `xargs`나 `find -exec`로 실행되는 git은 분석하지 않습니다.
+- push의 목적지는 명령에 적힌 것만 봅니다. 인자 없는 `git push`가 설정에 따라 `main`으로 가도 현재 브랜치가 `main`이 아니면 허용합니다. 원격 쪽 branch protection은 그대로 필요합니다.
+- 새 저장소(`git init` 직후)의 첫 커밋도 `main`이면 막힙니다. 먼저 `git switch -c`로 브랜치를 만드세요.
+- 실제 모델은 미검증입니다.
+
+### P11. 도구 결과를 모델에게 가기 전에 가공하기
+
+`tool.execute.after`는 도구가 실행된 뒤, 결과가 모델에게 가기 전에 불립니다. 훅이 `output.output`을 바꾸면 모델은 바뀐 글자를 받습니다. [P11](../../examples/03-plugins/p11-output-filter/)은 이것으로 비밀처럼 보이는 값(`TOKEN`/`SECRET`/`PASSWORD`/`API_KEY` 이름의 `key=value`, `--token 값`, `Authorization: Bearer 값`)을 `***`로 가리고, 100줄을 넘는 `bash`와 MCP 출력을 앞 40줄 + 뒤 40줄로 줄입니다. 요점은 규칙이 아니라 **어느 도구의 결과를 바꿀 수 있고, 어디에 원본이 남는지**입니다.
+
+어느 도구의 결과를 바꿀 수 있나(가짜 모델, 1.19.5).
+
+| 도구 | 훅이 받는 `output` | 바꾸면 | 화면 | `metadata`의 다른 사본 |
+|---|---|---|---|---|
+| `bash` | `{title, output, metadata{output, exit, truncated}, attachments}` | `output.output`을 바꾸면 모델이 바뀐 글자를 받음 | 가려진 글자 | `metadata.output`에 원본 |
+| `read` | `{title, output, metadata{preview, ...}, attachments}` | 바뀜 | 파일 내용은 화면에 안 나옴 | `metadata.preview`에 원본 |
+| `grep` | `{title, output, metadata{matches, truncated}, attachments}` | 바뀜 | 개수만 | 개수라 비밀 없음 |
+| `edit` | `{title, output, metadata{diff, filediff, ...}, attachments}` | `output`은 `Edit applied successfully.`뿐 | **화면의 diff는 `metadata`에서 그려서 파일 내용이 나옴** | `metadata.diff`에 원본 |
+| **MCP 도구** | **`{content: [{type: "text", text}]}` 뿐.** `output`, `title`, `metadata`가 없음 | `output.content[].text`를 바꿔야 모델이 바뀐 글자를 받음 | `⚙ 도구이름`만 | 없음 |
+
+그래서 `output.output`만 바꾸는 플러그인은 MCP 결과를 **전혀 가리지 못합니다.** `glob`, `webfetch`, `task`, 이미지 결과(`attachments`)는 확인하지 못했습니다(미검증).
+
+**가려도 원본이 남는 곳.**
+
+| 어디 | 상태 |
+|---|---|
+| `metadata`의 사본(`bash`의 `metadata.output`, `read`의 `preview`, `edit`의 diff) | 훅에서 같이 가려야 한다. `metadata`를 안 가리면 화면의 edit diff와 저장된 `state.metadata`에 원본이 남는다 |
+| 세션 DB의 `event` 테이블 | 도구가 **실행 중일 때** 기록되는 `running` 상태(bash 출력 스트림, edit diff)에 원본이 남는다. 훅이 불리기 전에 이미 기록돼서 훅으로 가릴 수 없다 |
+| opencode 자체의 잘라내기 파일 | bash 출력이 2000줄/50KB를 넘으면 opencode가 **훅보다 먼저** 앞부분을 버리고 `Full output saved to: <경로>`를 붙인 결과를 훅에 넘긴다. 전체 원본은 `data/opencode/tool-output/tool_…` 파일에 **가려지지 않은 채** 저장된다. 모델이 그 파일을 `read`로 다시 읽으면 결과는 훅을 다시 통과해 가려진다 |
+
+보호하는 것은 **모델 맥락과 모델 공급자에게 가는 요청**(이후 모든 턴 포함)입니다. 명령은 이미 실행됐고 파일은 디스크에 그대로 있으며, 모델이 직접 쓴 명령 안의 비밀(`args`)은 이 훅으로 바꿀 수 없습니다. 비밀 파일을 아예 못 읽게 하려면 `tool.execute.before`로 막는 [P1](../../examples/03-plugins/p1-env-guard/)이 맞고 둘은 함께 쓸 수 있습니다.
+
+알아 둘 점입니다.
+
+- **마스킹이 줄이기보다 먼저**입니다. 비밀이 생략 구간 경계에 걸려 일부만 남는 것을 막기 위해서입니다.
+- 모델이 가려진 글자(`API_KEY=***`)를 `edit`의 `oldString`으로 쓰면 맞지 않아 실패합니다(다행인 경우). `write`로 파일 전체를 다시 쓰면 `***`가 실제 파일에 들어갈 수 있으니, 비밀이 든 파일은 통째로 다시 쓰지 않게 하세요.
+- 오탐이 있습니다(`max_tokens=1024` → `max_tokens=***`). 이름 없이 값만 출력된 토큰이나 줄바꿈으로 갈라진 값, base64로 인코딩된 값은 못 가립니다.
+- 필터 자체가 실패하면 결과를 그대로 두고 로그만 남기는 fail-open입니다. 비밀 필터 오류로 에이전트가 멈추는 쪽보다 낫다고 판단한 선택입니다.
+- 실제 모델은 미검증입니다.
+
+### P12. 매 요청에 현재 상황 넣어 주기: 실험적 훅
+
+"지금 브랜치", "작업 트리에 변경이 있는지", "오늘 날짜" 같은 시간에 따라 바뀌는 사실은 정적인 AGENTS.md에 적을 수 없습니다. [P12](../../examples/03-plugins/p12-context-injection/)는 두 훅으로 이것을 넣습니다.
+
+- **`experimental.chat.system.transform`**: `output.system`은 문자열 배열이고 `push`한 것이 시스템 프롬프트 끝에 붙습니다. 이 예제는 날짜, 브랜치, 작업 트리 상태, `.opencode/now.md`("지금 하는 일")를 모아 191자 블록으로 붙입니다(같은 폴더의 기본 시스템 프롬프트는 9591자, 약 2%). 블록은 도구가 붙은 **모든** 모델 요청에 하나씩 들어가고, 제목 생성 같은 **보조 요청(도구 없음)에도** 들어갑니다.
+- **`tool.definition`**: `input.toolID`가 `bash`일 때 `output.description` 뒤에 프로젝트 규칙 한 줄을 붙입니다. 도구 정의는 요청마다 새로 만들어지고 훅도 그때마다 불리지만 쌓이지 않고 한 번만 들어갑니다. `bash` 이외 도구의 설명은 바뀌지 않았습니다.
+
+**`system.transform`은 이름이 `experimental.`로 시작하고, `tool.definition`도 1.19.5 타입 정의에 있다는 것 외에 안정성을 보장받지 못했습니다.** 버전이 바뀌면 이름이나 동작이 바뀌거나 사라질 수 있으니 예제의 `check.py`가 현재 동작을 고정해 둡니다. opencode를 올린 뒤 깨지면 이 훅부터 의심하세요.
+
+고정 맥락을 넣는 세 곳을 비교하면 이렇습니다.
+
+| | AGENTS.md | 스킬 | 이 훅 (`system.transform`) |
+|---|---|---|---|
+| 내용이 바뀌는가 | 사람이 파일을 고칠 때만 | 사람이 파일을 고칠 때만 | **요청마다** 코드가 새로 계산 |
+| 언제 모델에게 가는가 | 항상 | **필요할 때만** (모델이 스킬을 불러야 본문이 들어옴) | 항상 |
+| 담기 좋은 것 | 변하지 않는 규칙, 빌드·테스트 명령, 코드 스타일 | 길고 가끔 쓰는 절차 | 브랜치, 날짜, 작업 트리 상태, "지금 하는 일" |
+| 비용 | 매 요청 그 글자 수만큼 (내용이 같아 캐시되기 쉬움) | 이름·설명만 항상, 본문은 부를 때만 | 매 요청 그 글자 수만큼 + 내용이 바뀌면 프롬프트 캐시에 불리할 수 있음 + 실행 비용 |
+| 쓰는 사람의 부담 | 마크다운 | 마크다운 | JS 플러그인, 실험 훅이라 버전 추적 |
+
+- 모든 작업에 해당하는 사실은 `system.transform`, 특정 도구를 쓸 때만 해당하는 규칙은 `tool.definition`입니다(지켜질 가능성이 얼마나 높아지는지는 측정하지 않았습니다).
+- **지키지 못하면 안 되는 규칙은 둘 다 부탁일 뿐**입니다. `tool.execute.before`로 막으세요([P10](../../examples/03-plugins/p10-branch-guard/)).
+- git 조회는 5초(기본)간 캐시하므로 그 안에서는 **오래된 값**을 모델이 사실로 믿을 수 있습니다. 정확해야 하는 판단은 실행 시점에 다시 확인하세요.
+- 시스템 프롬프트는 요청의 맨 앞이라 내용이 바뀌면 공급자의 프롬프트 캐시에 불리할 수 있습니다. 공급자 쪽 캐시 효과는 측정하지 못했고, 그래서 변경 개수 대신 있음/없음만 넣는 것이 기본값입니다.
+- `now.md`는 파일 내용이 그대로 시스템 프롬프트에 들어가므로 신뢰할 수 있는 입력이어야 합니다.
+- 실제 모델은 미검증입니다.
 
 ### 종합: X2
 

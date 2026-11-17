@@ -21,6 +21,7 @@
         <li>입출력 UTF-8 (Windows cp949 대비)</li>
         <li>토큰은 <code>{env:…}</code>로, 원격은 <code>127.0.0.1</code>부터</li>
         <li><code>opencode mcp list</code>가 <code>✓ connected</code>다</li>
+        <li>남이 만든 서버는 버전을 고정하고, 도구 목록과 허용 범위를 확인했다</li>
       </ul>
     </div>
     <div>
@@ -30,12 +31,12 @@
         <li>로드될 때 로그 한 줄을 남긴다</li>
         <li>차단 메시지에 이유와 대안이 있다</li>
         <li>판정 로직을 단위 테스트로 고정했다 (막을 것, 허용할 것)</li>
-        <li>훅 안의 예외가 다른 기능을 망치지 않게 감쌌다</li>
+        <li>훅 안의 예외가 다른 기능을 망치지 않게 감쌌다. after 훅에서는 throw하지 않는다</li>
         <li>단순 허용/거부라면 <code>permission</code>으로 충분한지 먼저 봤다</li>
       </ul>
     </div>
   </div>
-  <aside class="notes"><p>오늘 예제를 만들며 실제로 걸려 넘어진 것만 모았습니다. 각 항목 뒤에는 예제 하나씩이 있습니다. 예를 들어 "플러그인 함수만 export"는 P1을 만들다가, "UTF-8"은 M9에서 나왔습니다.</p></aside>
+  <aside class="notes"><p>오늘 예제를 만들며 실제로 걸려 넘어진 것만 모았습니다. 각 항목 뒤에는 예제 하나씩이 있습니다. 예를 들어 "플러그인 함수만 export"는 P1을 만들다가, "UTF-8"은 M9에서, "허용 범위 확인"은 M11에서 나왔습니다.</p></aside>
 </section>
 
 <section class="slide" data-chapter="wrap" data-title="이 레포로 직접 해 보기">
@@ -43,10 +44,10 @@
   <div class="cols c46">
     <div class="tree" style="font-size:22px">agent-seminar/
 ├── examples/
-│   ├── 00-config/     설정 C1–C5
+│   ├── 00-config/     설정 C1–C8
 │   ├── 01-skills/     스킬 S1a–S5c
-│   ├── 02-mcp/        MCP M1–M9
-│   ├── 03-plugins/    플러그인 P1–P8
+│   ├── 02-mcp/        MCP M1–M15
+│   ├── 03-plugins/    플러그인 P1–P12
 │   └── 04-combined/   종합 X1, X2
 ├── docs/guide/        글로 읽는 가이드 00–05
 ├── slides/            이 발표 자료

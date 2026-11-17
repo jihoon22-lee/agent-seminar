@@ -1,0 +1,13 @@
+[package]
+name = "glossary-mcp"
+version = "1.0.0"
+edition = "2021"
+
+[dependencies]
+serde_json = "1"
+
+# 실행 파일을 작게 만드는 설정: 크기 우선 최적화 + 링크 시 최적화 + 디버그 정보 제거
+[profile.release]
+opt-level = "s"
+lto = true
+strip = true

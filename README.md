@@ -3,7 +3,7 @@
 **AI 에이전트 확장하기: 스킬, MCP, 플러그인 (opencode 편)**
 
 코딩 에이전트 opencode에 팀의 지식과 시스템, 규칙을 붙이는 세 가지 방법을 다룬 60분 세미나 자료입니다.
-발표 슬라이드와 글로 읽는 가이드, 그리고 직접 실행해 볼 수 있는 예제 38개가 들어 있습니다.
+발표 슬라이드와 글로 읽는 가이드, 그리고 직접 실행해 볼 수 있는 예제 52개가 들어 있습니다.
 
 - **발표 자료**: https://jihoon22-lee.github.io/agent-seminar/ (브라우저에서 바로 열립니다. `?` 키로 단축키를 볼 수 있습니다)
 - **가이드**: [docs/guide](docs/guide/)
@@ -24,13 +24,15 @@
 ## 준비물
 
 - **opencode 1.19.5** (`opencode --version`으로 확인)
-- **Python 3.10 이상**: 예제 스크립트와 MCP 서버는 표준 라이브러리만 씁니다. M2 예제만 `mcp` 패키지를 설치합니다.
+- **Python 3.10 이상**: 예제 스크립트와 Python MCP 서버는 표준 라이브러리만 씁니다. M2 예제만 `mcp` 패키지를 설치합니다.
 - **git 2.28 이상**: 예제 준비 스크립트(`prepare.py`)가 `git init -b`를 씁니다.
-- **Node/npm** (선택): 플러그인 예제의 단위 테스트와 패키지 미러 지정(`npm config`)에 씁니다. npm이 없으면 `%USERPROFILE%\.npmrc`(Linux `~/.npmrc`) 파일에 `registry=<미러 주소>` 한 줄을 직접 써도 됩니다.
+- **Node/npm** (선택): 플러그인 예제의 단위 테스트와 패키지 미러 지정(`npm config`)에 씁니다. npm이 없으면 `%USERPROFILE%\.npmrc`(Linux `~/.npmrc`) 파일에 `registry=<미러 주소>` 한 줄을 직접 써도 됩니다. M10(Node 서버)과 M11(`npx`로 파일 서버)은 Node 18 이상이 필요합니다. 없으면 두 예제의 해당 부분은 건너뜁니다(`check.py`가 경고만 냅니다).
+- **uv** (선택): M11(`uvx`로 시간 서버)과 M12(`uvx` 배포 경로)에 씁니다. 없으면 `uvx`를 쓰는 부분만 건너뜁니다. M12의 `python -m` 기본 경로는 uv가 필요 없습니다.
+- **Rust(cargo)** (선택): M14(실행 파일 하나로 된 서버)를 직접 빌드할 때만 씁니다. 없으면 M14의 빌드와 검사를 건너뜁니다.
 - **모델**: 평소 쓰는 모델을 그대로 쓰면 됩니다. 설정된 모델이 없다면 무료 모델 `opencode/big-pickle`을 `-m`으로 지정할 수 있습니다.
 
-예제는 실행 중에 인터넷에 접속하지 않습니다.
-다만 `.opencode/` 폴더가 있는 예제는 시작할 때 opencode가 npm 패키지 `@opencode-ai/plugin`을 설치하려고 합니다.
+기본 경로의 예제는 인터넷 없이 돕니다. 다만 M10, M11, M12, M14의 설치 단계(`npm install`, `npx`, `uvx`, `cargo build`)는 패키지 레지스트리나 미러가 필요하고, 닿지 않으면 `check.py`는 그 검사를 경고와 함께 건너뜁니다.
+또한 `.opencode/` 폴더가 있는 예제는 시작할 때 opencode가 npm 패키지 `@opencode-ai/plugin`을 설치하려고 합니다.
 **인터넷이 막힌 환경이라면 먼저 npm 패키지 미러를 지정하세요.** 레지스트리에 닿지 않으면 플러그인이 있는 예제(`.opencode/plugins/`)는 시작할 때마다 약 70초(새 환경의 첫 시작은 약 130초) 멈추고, 이 패키지를 쓰는 플러그인 도구(P6, X1-c)는 조용히 사라집니다. 스킬만 있는 예제는 설치를 시도하지만 눈에 띄게 멈추지는 않았습니다.
 
 ```powershell
@@ -71,10 +73,10 @@ Linux에서 `python` 명령이 없으면 예제 설정과 명령의 `python`을 
 
 | 폴더 | 내용 | 예제 |
 |---|---|---|
-| [examples/00-config](examples/00-config/) | opencode.json의 위치와 병합, 환경 변수, 설정 덧씌우기, 격리, 권한 | C1–C5 |
-| [examples/01-skills](examples/01-skills/) | `SKILL.md` 하나짜리부터 참고 문서, 스크립트, 결과물 생성까지. description 작성법과 공유 방법 | S1a–S5c |
-| [examples/02-mcp](examples/02-mcp/) | 표준 라이브러리 서버, 공식 SDK, 환경 변수, 원격 HTTP, SQLite, 리소스와 프롬프트, 도구 관리, 함정 | M1–M9 |
-| [examples/03-plugins](examples/03-plugins/) | .env 차단, 위험 명령 차단, 감사 로그, 알림, 셸 환경, 커스텀 도구, 압축 훅, 불러오는 방법 | P1–P8 |
+| [examples/00-config](examples/00-config/) | opencode.json의 위치와 병합, 환경 변수, 설정 덧씌우기, 격리, 권한, 커스텀 명령, 모델 제공자 연결, 에이전트 정의 | C1–C8 |
+| [examples/01-skills](examples/01-skills/) | `SKILL.md` 하나짜리(스크립트 없이 CLI만 쓰는 S1d 포함)부터 참고 문서, 스크립트, 결과물 생성까지. description 작성법과 공유 방법 | S1a–S5c |
+| [examples/02-mcp](examples/02-mcp/) | 표준 라이브러리 서버, 공식 SDK, 환경 변수, 원격 HTTP, SQLite, 리소스와 프롬프트, 도구 관리, 함정, Node SDK와 `npx`, 남의 서버 쓰기, `uvx` 패키지, CLI 감싸기, 실행 파일 하나, 클라이언트 지원 범위 | M1–M15 |
+| [examples/03-plugins](examples/03-plugins/) | .env 차단, 위험 명령 차단, 감사 로그, 알림, 셸 환경, 커스텀 도구, 압축 훅, 불러오는 방법, 포맷과 검사 결과 전달, 상태를 보는 가드, 출력 가리기, 요청에 맥락 넣기 | P1–P12 |
 | [examples/04-combined](examples/04-combined/) | 같은 일을 셋으로 해 보기, 셋을 엮은 장애 분석 | X1, X2 |
 
 전체 목록과 난이도는 [examples/README.md](examples/README.md)에 있습니다.
@@ -84,9 +86,9 @@ Linux에서 `python` 명령이 없으면 예제 설정과 명령의 `python`을 
 | 문서 | 내용 |
 |---|---|
 | [0. 개념](docs/guide/00-concepts.md) | 스킬, MCP, 플러그인은 무엇이고 무엇이 다른가 |
-| [1. opencode.json](docs/guide/01-config.md) | 설정 위치와 범위, 병합, 변수 치환, 권한 |
+| [1. opencode.json](docs/guide/01-config.md) | 설정 위치와 범위, 병합, 변수 치환, 권한, 커스텀 명령, 모델 제공자, 에이전트 |
 | [2. 스킬](docs/guide/02-skills.md) | 스킬 만들기와 공유하기 |
-| [3. MCP](docs/guide/03-mcp.md) | MCP 서버 만들기, 로컬과 원격 |
+| [3. MCP](docs/guide/03-mcp.md) | MCP 서버 만들기와 실행하는 방법, 로컬과 원격, 클라이언트 지원 범위 |
 | [4. 플러그인](docs/guide/04-plugins.md) | 훅, 이벤트, 플러그인 만들기 |
 | [5. 문제 해결](docs/guide/05-troubleshooting.md) | 증상별 원인과 해결, Windows 주의점 |
 

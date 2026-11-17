@@ -7,7 +7,7 @@
     </div>
     <x-diagram focus="plugin"></x-diagram>
   </div>
-  <aside class="notes"><p>7분. 플러그인의 생김새, 훅이 불리는 순서를 보고 P1–P3을 봅니다(P4–P8은 심화). 데모는 P1(.env 차단).</p></aside>
+  <aside class="notes"><p>7분. 플러그인의 생김새, 훅이 불리는 순서를 보고 P1(막기), P2(막기), P9(검사 결과 돌려주기)를 봅니다. 나머지는 심화입니다. 데모는 P1(.env 차단).</p></aside>
 </section>
 
 <section class="slide" data-chapter="plugin" data-title="플러그인의 생김새">
@@ -154,7 +154,80 @@
   <aside class="notes"><p>"git push는 되지만 --force는 안 되고 --force-with-lease는 된다" 같은 규칙은 와일드카드로 표현하기 어렵습니다. 그때가 플러그인 차례입니다.</p></aside>
 </section>
 
-<section class="slide" data-chapter="plugin" data-title="P3 감사 로그">
+<section class="slide" data-optional data-chapter="plugin" data-title="P10 상태를 보는 가드">
+  <h2><span class="tag plugin">P10</span>저장소 상태를 보고 막는 가드</h2>
+  <div class="cols c64">
+    <script type="text/x-code" data-lang="text" class="term sm" data-title="opencode 1.19.5 실제 실행 (도구 호출은 가짜 모델이 지시, 줄임)">
+    ✗ echo hi > x.txt && git add x.txt && git commit -m 'add x' failed
+    Error: [branch-guard:protected-branch] 현재 브랜치가 'main' 입니다.
+           main/master 에는 직접 커밋하지 않습니다. 먼저 새 브랜치를
+           만드세요: git switch -c <type>/<name> …
+
+    $ git switch -c feat/x
+    Switched to a new branch 'feat/x'
+
+    $ echo hi > x.txt && git add x.txt && git commit -m 'add x'
+    [feat/x fdc7d4f] add x
+
+    ✗ gh pr create --draft --title x --body y failed
+    Error: [branch-guard:draft-pr] 초안(draft) PR 은 만들지 않는 규칙입니다. …
+    </script>
+    <div>
+      <ul class="small">
+        <li>P2는 <strong>명령 문자열</strong>만 본다. P10은 <code>git</code>에게 <strong>지금 브랜치</strong>를 물어보고 판단한다</li>
+        <li>막힌 명령은 통째로 실행되지 않는다. <code>x.txt</code>도 그때는 생기지 않았다</li>
+        <li>판단할 수 없으면 <strong>통과</strong>시킨다: git 저장소가 아닐 때, HEAD가 분리됐을 때, git이 실패할 때</li>
+        <li>draft PR 차단은 <strong>팀 규칙의 예</strong>다. 자기 팀 규칙으로 바꿔 쓴다</li>
+      </ul>
+      <p class="tiny muted">단위 테스트 134가지. 브랜치를 묻는 데 걸린 시간은 중앙값 2.3ms.</p>
+    </div>
+  </div>
+  <div class="ref">examples/03-plugins/p10-branch-guard</div>
+  <aside class="notes">
+    <p>"main에서 바로 작업하지 마"는 AGENTS.md에 써 두어도 모델이 어길 수 있는 규칙입니다. 어겨서는 안 되는 규칙은 글이 아니라 코드로 막습니다.</p>
+    <p>새 저장소의 main에서 하는 첫 커밋도 막힙니다. 의도한 동작이고, git switch -c로 브랜치를 먼저 만들면 됩니다. 사람이 자기 터미널에서 하는 커밋은 가드와 무관합니다.</p>
+  </aside>
+</section>
+
+<section class="slide" data-chapter="plugin" data-title="P9 고친 직후 검사">
+  <h2><span class="tag plugin">P9</span>고친 직후 검사하고, 결과를 모델에게 돌려주기</h2>
+  <div class="cols">
+    <div>
+      <script type="text/x-code" data-lang="json" class="sm" data-title="opencode.json: 내장 formatter">
+      {"formatter": {"json-sorted": {
+        "command": ["python", "scripts/fmt_json.py", "$FILE"],
+        "extensions": [".json"] }}}
+      </script>
+      <script type="text/x-code" data-lang="text" class="term sm" data-title="플러그인이 덧붙인 결과 (실제 실행, 도구 호출은 가짜 모델)">
+      ← Write lint.py
+      Wrote file successfully.
+
+      [린트 결과] lint.py: 문제 발견. 다음 단계에서 고쳐 주세요.
+      1행: 쓰지 않는 import: os
+      </script>
+    </div>
+    <div>
+      <table class="compact">
+        <tr><th></th><th class="config">내장 <code>formatter</code></th><th class="plugin">플러그인 <span class="tiny">(<code>tool.execute.after</code>)</span></th></tr>
+        <tr><td>하는 일</td><td>파일을 다시 써서 모양을 맞춘다</td><td>검사 결과를 도구 결과 뒤에 붙인다</td></tr>
+        <tr><td>모델이 아는가</td><td>모른다</td><td><strong>읽고 다음 단계에서 고친다</strong></td></tr>
+        <tr><td>문제가 있으면</td><td>깨진 파일은 조용히 건너뛴다</td><td>무엇이 문제인지 알려 준다</td></tr>
+      </table>
+      <ul class="small">
+        <li>순서: <code>write</code>/<code>edit</code> → 내장 formatter → after 훅</li>
+        <li>모양만 맞추면 되면 설정 세 줄로 끝난다. 모델이 고쳐야 할 것이 있으면 플러그인이 필요하다</li>
+      </ul>
+      <div class="callout warn small"><p>after 훅에서는 <code>throw</code>하지 마세요. 파일은 이미 써졌는데 모델은 "실패"로 받습니다.</p></div>
+    </div>
+  </div>
+  <div class="ref">examples/03-plugins/p9-format-on-save</div>
+  <aside class="notes">
+    <p>플러그인이 가장 많이 쓰이는 자리입니다. 사람이 "린트 돌려 봐"라고 다시 말할 필요가 없어집니다. 예제의 포매터와 검사기는 표준 라이브러리로 만든 것이고, ruff나 clang-format으로 바꾸는 방법은 README에 있습니다(그 부분은 실행하지 않았습니다).</p>
+    <p>edit 도구는 화면에 diff만 보여 주고 덧붙인 린트 결과는 보여 주지 않습니다. 하지만 모델은 받습니다. 가짜 모델 서버가 받은 요청으로 확인했습니다.</p>
+  </aside>
+</section>
+
+<section class="slide" data-optional data-chapter="plugin" data-title="P3 감사 로그">
   <h2><span class="tag plugin">P3</span>에이전트가 한 일을 모두 남기기</h2>
   <div class="cols c64">
     <script type="text/x-code" data-lang="json" class="sm" data-title="logs/audit.jsonl (실제 기록, 원래는 기록 하나가 한 줄)">
@@ -179,6 +252,40 @@
   </div>
   <div class="ref">examples/03-plugins/p3-audit-log</div>
   <aside class="notes"><p>"에이전트가 어젯밤에 뭘 했지?"에 답할 수 있어야 팀에서 안심하고 맡깁니다. 감사 로그는 모델과 상관없이 항상 남아야 하므로 플러그인의 일입니다.</p></aside>
+</section>
+
+<section class="slide" data-optional data-chapter="plugin" data-title="P11 도구 결과 가리기">
+  <h2><span class="tag plugin">P11</span>도구 결과를 모델에게 가기 전에 가리고 줄이기</h2>
+  <div class="cols c46">
+    <script type="text/x-code" data-lang="text" class="term sm" data-title="실제 실행, 줄임 (도구 호출은 가짜 모델)">
+    $ cat sample/app.env
+    APP_NAME=demo-app
+    DB_PASSWORD=***
+    API_KEY=***
+    other=1
+
+    $ python -c "for i in range(1,501): print('line', i)"
+    line 1
+    …
+    ... (420줄 생략) ...
+    …
+    line 500
+    </script>
+    <table class="compact">
+      <tr><th class="plugin">어디에</th><th class="plugin">가려지나</th></tr>
+      <tr><td>모델이 받는 도구 결과 <span class="tiny muted">(bash, read, grep)</span></td><td class="yes">가려진다</td></tr>
+      <tr><td>MCP 도구의 결과</td><td><code>content[].text</code>를 고쳐야 가려진다. <code>output.output</code>만 고치면 그대로 나간다</td></tr>
+      <tr><td>화면의 <code>edit</code> diff <span class="tiny muted">(metadata)</span></td><td><code>metadata</code>도 같이 고쳐야 가려진다 <span class="tiny muted">(예제 기본값)</span></td></tr>
+      <tr><td>세션 저장소의 실행 중 기록</td><td class="no">원본이 남는다. 훅보다 먼저 기록된다</td></tr>
+      <tr><td>2,000줄 넘는 출력의 원본 파일</td><td class="no">원본이 남는다. opencode가 먼저 잘라 저장한다</td></tr>
+    </table>
+  </div>
+  <p class="small" style="margin-top:10px">지키는 것은 <strong>모델에게(모델 서비스로) 가는 내용</strong>입니다. 명령은 이미 실행됐고 파일은 디스크에 그대로 있습니다. 가려진 <code>***</code>로 <code>edit</code>하면 원문과 달라서 실패합니다.</p>
+  <div class="ref">examples/03-plugins/p11-output-filter</div>
+  <aside class="notes">
+    <p>P1은 비밀 파일을 아예 못 읽게 막고, P11은 읽힌 결과에서 비밀값만 가립니다. 둘은 같이 씁니다.</p>
+    <p>MCP 도구는 훅이 받는 output의 모양이 다릅니다. bash용으로 만든 가리개를 그대로 믿으면 MCP 결과는 그대로 나갑니다. 예제의 check.py가 이 차이를 검사합니다.</p>
+  </aside>
 </section>
 
 <section class="slide" data-optional data-chapter="plugin" data-title="P4 알림">
@@ -327,4 +434,42 @@
   </div>
   <div class="ref">examples/03-plugins/p7-compaction-context</div>
   <aside class="notes"><p>"이 프로젝트는 pnpm을 쓴다" 같은 사실이 압축 후에 사라져서 모델이 npm을 다시 쓰는 일이 있습니다. 그걸 막는 훅입니다. 요약 모델에게 사실이 전달되는 것까지는 확인했지만, 요약 결과에 실제로 남는지는 무료 모델 한도로 확인하지 못했습니다.</p></aside>
+</section>
+
+<section class="slide" data-optional data-chapter="plugin" data-title="P12 지금 상황 주입">
+  <h2><span class="tag plugin">P12</span>매 요청에 "지금 상황"을 넣어 주기</h2>
+  <div class="cols">
+    <div>
+      <script type="text/x-code" data-lang="md" class="term sm" data-title="플러그인이 시스템 프롬프트 끝에 붙인 블록 (실제, 191자)">
+      ## 지금 상황 (플러그인이 요청마다 갱신)
+      - 오늘: 2026-11-17 (화)
+      - git 브랜치: feat/beta
+      - 작업 트리: 깨끗함
+      - 지금 하는 일 (.opencode/now.md):
+        - 로그인 화면의 오류 메시지를 한국어로 바꾸는 중
+        - 끝나면 PR 을 열 것. 다른 폴더는 건드리지 않기
+      </script>
+      <ul class="small">
+        <li><code>experimental.chat.system.transform</code>: 제목 생성까지 포함해 <strong>모든</strong> 모델 요청에 불린다</li>
+        <li><code>tool.definition</code>: 특정 도구의 설명에 규칙 한 줄을 덧붙인다</li>
+      </ul>
+    </div>
+    <div>
+      <table class="compact">
+        <tr><th>어디에 두나</th><th>언제 들어가나</th><th>알맞은 내용</th></tr>
+        <tr><td><code>AGENTS.md</code></td><td>항상, 같은 내용</td><td>바뀌지 않는 규칙</td></tr>
+        <tr><td><span class="tag skill">스킬</span></td><td>모델이 고를 때</td><td>가끔 필요한 긴 절차</td></tr>
+        <tr><td><span class="tag plugin">이 훅</span></td><td>항상, <strong>그때의 값</strong></td><td>브랜치, 날짜처럼 바뀌는 사실</td></tr>
+      </table>
+      <div class="callout warn small">
+        <p>이름이 <code>experimental.</code>로 시작합니다. 버전이 바뀌면 달라질 수 있어서 <code>check.py</code>로 동작을 고정해 두었습니다.</p>
+        <p>시스템 프롬프트가 자주 바뀌면 모델 서비스의 프롬프트 캐시가 깨질 수 있습니다. 그래서 변경 개수가 아니라 "있음/없음"만 넣습니다 <span class="muted">(캐시 효과는 측정하지 않음)</span>.</p>
+      </div>
+    </div>
+  </div>
+  <div class="ref">examples/03-plugins/p12-context-injection</div>
+  <aside class="notes">
+    <p>"오늘이 며칠인지", "지금 어느 브랜치인지"를 모델이 추측하거나 매번 명령으로 확인하게 두지 않고, 요청마다 넣어 줍니다.</p>
+    <p>git 조회는 5초 동안 캐시합니다. 그 안에서는 방금 바뀐 상태가 반영되지 않습니다. 조회 비용은 작은 저장소에서 3.6ms였습니다.</p>
+  </aside>
 </section>

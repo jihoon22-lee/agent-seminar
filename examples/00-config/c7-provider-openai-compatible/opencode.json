@@ -1,0 +1,24 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "demo-endpoint": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "데모 엔드포인트",
+      "options": {
+        "baseURL": "{env:LLM_BASE_URL}",
+        "apiKey": "{env:LLM_API_KEY}"
+      },
+      "models": {
+        "demo-chat": {
+          "name": "Demo Chat",
+          "limit": { "context": 32768, "output": 4096 }
+        },
+        "demo-small": {
+          "name": "Demo Small",
+          "limit": { "context": 8192, "output": 2048 }
+        }
+      }
+    }
+  },
+  "model": "demo-endpoint/demo-chat"
+}

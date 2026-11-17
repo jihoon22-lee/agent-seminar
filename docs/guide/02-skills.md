@@ -3,7 +3,7 @@
 이 문서는 세미나 4장 "스킬"을 글로 옮긴 것입니다. 스킬이 무엇이고 어디에 두는지, 모델이 무엇을 보는지, 잘 불리는 description을 어떻게 쓰는지, `SKILL.md` 한 장에서 스크립트와 산출물까지 키워 가는 4단계, 수동 전용으로 만드는 법, 팀에 나눠 주는 법을 다룹니다.
 모든 내용은 **opencode 1.19.5** 기준입니다.
 
-관련 예제: [S1a~S1c](../../examples/01-skills/) (1단계) · [S2a~S2c](../../examples/01-skills/) (2단계) · [S3a~S3c](../../examples/01-skills/) (3단계) · [S4a~S4b](../../examples/01-skills/) (4단계) · [S5a description](../../examples/01-skills/s5a-description-good-bad/) · [S5b 수동 전용](../../examples/01-skills/s5b-manual-and-permission/) · [S5c 범위와 배포](../../examples/01-skills/s5c-scope-global-project/)
+관련 예제: [S1a~S1d](../../examples/01-skills/) (1단계) · [S2a~S2c](../../examples/01-skills/) (2단계) · [S3a~S3c](../../examples/01-skills/) (3단계) · [S4a~S4b](../../examples/01-skills/) (4단계) · [S5a description](../../examples/01-skills/s5a-description-good-bad/) · [S5b 수동 전용](../../examples/01-skills/s5b-manual-and-permission/) · [S5c 범위와 배포](../../examples/01-skills/s5c-scope-global-project/)
 
 ## 스킬이란
 
@@ -22,6 +22,8 @@ description: 애플리케이션 로그 파일(*.log)을 분석해 에러 급증 
 (위 예는 [S3a](../../examples/01-skills/s3a-log-analysis/)의 머리말을 줄인 것입니다.)
 
 스킬은 **저절로 실행되지 않습니다.** 모델이 description을 보고 "이 스킬을 열어 볼까?"를 판단하거나, 사용자가 직접 부릅니다. "세션이 끝나면 자동 실행된다"는 식의 기대는 스킬이 아니라 플러그인의 일입니다. ([4장](04-plugins.md))
+
+사람이 정확히 그 순간에 부르고 싶은 지시문이라면 스킬이 아니라 **커스텀 명령**입니다. 명령은 부르기 전에는 모델 요청에 아무것도 없고, 스킬은 이름과 description이 항상 들어갑니다. 비교표는 [1장](01-config.md)의 "셋의 차이"에 있습니다.
 
 ## 스킬을 두는 곳
 
@@ -95,7 +97,7 @@ YAML 함정도 있습니다. description에 `: `(콜론과 공백)이나 ` #`이
 
 | 단계 | 구성 | 예제 | 언제 |
 |---|---|---|---|
-| 1 | `SKILL.md` 하나 | [S1a 커밋 메시지](../../examples/01-skills/s1a-commit-message/) · [S1b 코드 리뷰](../../examples/01-skills/s1b-code-review/) · [S1c 포스트모템](../../examples/01-skills/s1c-postmortem/) | 규칙과 절차를 글로 설명하면 충분할 때 |
+| 1 | `SKILL.md` 하나 | [S1a 커밋 메시지](../../examples/01-skills/s1a-commit-message/) · [S1b 코드 리뷰](../../examples/01-skills/s1b-code-review/) · [S1c 포스트모템](../../examples/01-skills/s1c-postmortem/) · [S1d 스크립트 없이 CLI만](../../examples/01-skills/s1d-cli-only/) | 규칙과 절차를 글로 설명하면 충분할 때 |
 | 2 | + 참고 문서, 템플릿 | [S2a 작업 기록](../../examples/01-skills/s2a-workthrough/) · [S2b API 설계](../../examples/01-skills/s2b-api-design/) · [S2c ADR](../../examples/01-skills/s2c-adr/) | 내용이 길어서 필요한 부분만 읽히고 싶을 때 |
 | 3 | + 스크립트 | [S3a 로그 분석](../../examples/01-skills/s3a-log-analysis/) · [S3b 릴리스 노트](../../examples/01-skills/s3b-release-notes/) · [S3c 비밀값 검사](../../examples/01-skills/s3c-secret-scan/) | 계산, 집계, 파싱처럼 매번 같아야 하는 일 |
 | 4 | + 결과물 생성 | [S4a HTML 리포트](../../examples/01-skills/s4a-html-report/) · [S4b 구조 다이어그램](../../examples/01-skills/s4b-mermaid-diagram/) | 사람이 볼 파일을 만들어야 할 때 |
@@ -107,6 +109,28 @@ YAML 함정도 있습니다. description에 `: `(콜론과 공백)이나 ` #`이
 S1b처럼 출력 형식(심각도 표 + 요약)까지 정해 두면 누가 시켜도 같은 모양의 결과가 나옵니다. S1c는 한 스킬이 대화형 모드와 문서 모드를 모두 지원하는 예입니다. 모드를 고르는 규칙도 `SKILL.md`에 적습니다.
 
 규칙을 지키지 않는 출력이 나오면 어긴 출력을 보여 주며 "SKILL.md의 규칙을 다시 읽고 고쳐 줘"라고 하면 대개 고칩니다. 근본 해결은 규칙 문장을 예시와 함께 더 구체적으로 쓰는 것입니다.
+
+### 스크립트가 필요 없는 스킬: S1d
+
+스킬에 스크립트가 꼭 필요한 것은 아닙니다. [S1d](../../examples/01-skills/s1d-cli-only/)의 `branch-cleanup`은 `git`이 이미 출력해 주는 짧은 결과를 그대로 읽고, 사람이 하던 **절차**(무엇을 지우고 무엇을 남기나)만 `SKILL.md`에 적습니다.
+
+- `main`에 병합된 로컬 브랜치만 지운다 (`git branch --merged main`)
+- `main`과 지금 브랜치는 절대 지우지 않는다
+- 삭제는 `git branch -d`로만 한다. 병합 안 된 브랜치는 `git`이 스스로 거절한다
+- 무엇을 남겼고 왜 남겼는지 표로 보고한다
+
+`--merged main` 출력에는 지울 3개 외에 `main`과 현재 브랜치(`*`)도 나옵니다. 그래서 "main과 현재 브랜치는 지우지 않는다"는 규칙 문장이 필요합니다. 명령은 한 줄에 하나씩, `&&`, 파이프, `$(...)`, `xargs` 없이 적어 같은 `SKILL.md`가 bash와 Windows PowerShell 5.1에서 똑같이 동작합니다. 가짜 모델 검사가 확인한 것은 모델이 규칙을 지키는지가 아니라 `SKILL.md`에 적힌 명령이 실제 저장소에서 의도대로 동작하는지입니다. 실제 모델은 미검증입니다.
+
+스크립트를 넣을지 판단하는 기준입니다.
+
+| | 스크립트 없이 CLI만 (S1d) | 스크립트를 넣는 스킬 (S3a) |
+|---|---|---|
+| 도구의 출력 | 이미 짧고 읽기 쉽다 (브랜치 몇 줄) | 길고 지저분하다 (수천 줄 로그) |
+| 스킬의 가치 | **절차와 규칙** | 결정적인 계산·가공 (집계, 파싱, 변환) |
+| 실행 환경 | `git`만 있으면 됨 | Python 등 런타임 필요 |
+| 스크립트로 옮길 신호 | 같은 명령 조합이 길어지거나, 출력 가공이 필요해지거나, 매번 같은 결과를 보장해야 할 때 | |
+
+한 줄로: CLI가 이미 **작고 정확한 출력**을 주고 가치가 **절차**에 있으면 `SKILL.md`만으로 충분하고, 출력이 크거나 가공이 필요하면 3단계로 올라가 스크립트를 붙입니다. 안전장치는 문장과 `git` 자체의 보호가 겹쳐 있지만, 모델이 `git`의 힌트를 보고 강제 삭제 옵션을 스스로 쓰는 것까지는 막지 못합니다. 막으려면 `permission`의 `bash`로 해당 패턴을 deny하세요([C5](../../examples/00-config/c5-permissions/)).
 
 ### 2단계: 참고 문서와 템플릿 (점진적 공개)
 

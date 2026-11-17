@@ -1,0 +1,3 @@
+# 빌드 결과물. 레포 루트 .gitignore 에는 target/ 과 bin/ 이 없어서 여기서 막는다.
+target/
+bin/

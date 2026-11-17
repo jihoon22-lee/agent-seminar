@@ -35,7 +35,7 @@
   <aside class="notes"><p>실제 모델로 비율을 재는 compare.py가 있습니다. 결과는 모델과 날마다 달라집니다. 숫자보다 "description만 보고 고른다"는 구조를 기억해 주세요.</p></aside>
 </section>
 
-<section class="slide" data-chapter="skill" data-title="S5b 수동 전용 스킬">
+<section class="slide" data-optional data-chapter="skill" data-title="S5b 수동 전용 스킬">
   <h2><span class="tag skill">S5b</span>함부로 쓰이면 안 되는 스킬 (배포 체크리스트)</h2>
   <div class="cols c46">
     <div>
@@ -64,6 +64,39 @@
   <div class="ref">examples/01-skills/s5b-manual-and-permission</div>
   <aside class="notes">
     <p>다른 에이전트 문서에서 보던 disable-model-invocation은 opencode 1.19.5에서 아무 효과가 없었습니다. 수동 전용 스킬의 정답은 "permission으로 deny + 사람이 --command나 /skills로 부르기"입니다.</p>
+  </aside>
+</section>
+
+<section class="slide" data-chapter="skill" data-title="C6 커스텀 명령">
+  <h2><span class="tag config">C6</span>스킬과 헷갈리는 것: 내가 부르는 커스텀 명령</h2>
+  <div class="cols">
+    <div>
+      <script type="text/x-code" data-lang="md" class="sm" data-title=".opencode/command/finish.md (줄임)">
+      ---
+      description: 계획대로 끝까지 진행
+      ---
+      계획대로 끝까지 진행해 줘. 중간에 멈추고 묻지 말고,
+      아래 규칙을 지켜 줘.
+      1. 작업은 PR 단위로 나눠서 진행한다.
+      2. 검사가 모두 통과한 뒤에만 병합한다.
+      3. 문서는 후속 커밋으로 올린다.
+      4. 끝나면 실행한 명령과 결과를 표로 보고한다.
+      </script>
+      <p class="small">TUI에서는 <code>/finish</code>, 명령줄에서는 <code>opencode run --command finish</code>. 인자는 본문의 <code>$ARGUMENTS</code>, <code>$1</code> 자리에 들어간다.</p>
+    </div>
+    <table class="compact">
+      <tr><th></th><th class="skill">스킬</th><th class="config">커스텀 명령</th></tr>
+      <tr><td>누가 부르나</td><td>모델이 설명을 보고 고른다</td><td><strong>사용자</strong>가 <code>/이름</code>으로</td></tr>
+      <tr><td>부르기 전</td><td>이름과 설명이 매 요청에 실린다 <span class="tiny muted">(예제: 103자)</span></td><td>모델 요청에 <strong>아무것도 없다</strong></td></tr>
+      <tr><td>부르면</td><td>본문이 도구 결과로 들어온다</td><td>본문이 내 메시지가 된다</td></tr>
+      <tr><td>알맞은 내용</td><td>모델이 알아서 꺼내 써야 할 절차와 지식</td><td>내가 매번 입력하던 지시문</td></tr>
+    </table>
+  </div>
+  <div class="ref">examples/00-config/c6-custom-commands</div>
+  <aside class="notes">
+    <p>같은 문장을 세 번째 입력하고 있다면 명령으로 만들 때입니다. "끝까지 진행해, 검사 통과하면 병합해, 문서도 고쳐" 같은 지시가 대표적입니다.</p>
+    <p>표의 내용은 가짜 모델이 받은 요청을 읽어서 확인했습니다. opencode.json의 command 키로도 정의할 수 있고, 같은 이름이면 md 파일이 이깁니다. 없는 명령 이름을 주면 Unexpected server error만 나오고 이름이 틀렸다는 말은 없습니다.</p>
+    <p>TUI에서 /finish로 부르는 동작은 이 자료를 만들 때 직접 확인하지 못했습니다. 발표 전에 한 번 해 보세요.</p>
   </aside>
 </section>
 

@@ -34,6 +34,15 @@
 | `opencode run`에서 `ask` 명령이 `auto-rejecting`으로 거절된다 | 비대화형이라 승인할 사람이 없다 | `--auto` (단 `deny`는 `--auto`로도 막힌다). 신뢰할 수 없는 프롬프트에는 `ask`가 아니라 `deny` |
 | 격리 실행에서 모델 로그인이 없다 | 샌드박스는 `auth.json`과 전역 설정이 없다 | `-m opencode/big-pickle` 같은 무료 모델, 또는 필요한 설정을 `--global-config`로 |
 | `OPENCODE_CONFIG_CONTENT`가 적용되지 않는다 | 프로세스 단위라 이미 떠 있는 opencode에는 안 먹는다. JSON이 깨졌거나 셸 따옴표 문제일 수 있다 | 새 프로세스로 실행. PowerShell은 바깥 작은따옴표, 안쪽 큰따옴표 |
+| `--command 이름`이 `UnknownError ... Unexpected server error`로 끝나고 이름 얘기가 없다 (C6) | 없는 명령 이름이다. 종료 코드 1, 모델 호출 없음. `--print-logs`로 봐도 이름은 안 나온다 | `opencode debug config`의 `command`에서 이름 확인. 같은 이름이 `.md`와 `command` 키에 모두 있으면 `.md`가 이긴다 |
+| 명령 인자 안의 큰따옴표가 깨져서 들어간다 (C6) | 인자 안의 큰따옴표는 모양이 깨진다. 공백이 있는 인자는 `$ARGUMENTS`에 따옴표가 붙고 `$1`은 뗀 값이다 | 따옴표가 필요한 값은 파일 경로로 넘기고 본문에서 읽게 한다 |
+| `Error: Invalid URL` (C7) | `provider`의 `baseURL`로 쓴 `{env:}`가 미설정이라 오류 없이 빈 문자열이다. 서버에는 요청이 가지 않는다 | `opencode debug config`에서 `baseURL`이 비었는지 확인, 변수를 설정한 같은 터미널에서 실행. `--print-logs --log-level ERROR`로 어느 provider·모델인지 확인 |
+| `Error: Incorrect API key provided`인데 키를 넣었다고 생각한다 (C7) | 키가 틀렸거나 `{env:}` 미설정이다. 미설정이면 `Authorization` 헤더 자체를 안 보내는데 화면 메시지는 같다. `debug config`의 `apiKey`는 값이 있든 없든 `***` | 서버 쪽 기록에서 `Authorization`이 있는지 확인. 화면만으로는 둘을 가를 수 없다 |
+| 모델 서버가 꺼져 있는데 한참 멈췄다가 `Cannot connect to API: ECONNREFUSED` (C7) | 오류가 나오기까지 약 68초가 걸렸다(원인은 확인하지 못함) | 기다리면 메시지가 나온다. 서버 실행과 `baseURL` 확인 |
+| `opencode models`에는 내 모델이 나오는데 질문하면 연결이 안 된다 (C7) | `opencode models`는 설정에 적힌 모델을 보여 줄 뿐 서버에 접속하지 않는다 | 실제로 한 번 질문해 보고 `--print-logs`로 본다 |
+| `--agent 이름`으로 시작했는데 권한이 안 먹는다. 헤더가 `> build` (C8) | `--agent`에 `subagent`이거나 없는 이름을 주면 경고 한 줄과 함께 `build`로 실행한다. 종료 코드 0이라 조용히 넘어간다 | 실행 헤더 확인, `mode: primary`인지 확인, 이름의 오타 확인 |
+| 읽기 전용으로 만든 에이전트가 파일을 고쳤다 (C8) | `edit`·`bash`만 막고 `task`가 열려 있으면 `task`로 부른 내장 `general`이 자기 권한으로 수정한다. 하위 작업은 부른 쪽의 제한을 물려받지 않는다 | 에이전트의 `permission`에 `task: deny` |
+| `docs/**`만 허용한 에이전트가 `docs/` 파일도 거부된다 (C8) | 경로 규칙은 git 저장소 루트 기준 상대 경로다. `.git`이 없거나, 루트 아래 하위 폴더의 `sub/docs/...`는 `docs/**`에 걸리지 않는다 | 프로젝트 폴더를 git 저장소 루트로 둔다 |
 
 ## 스킬 ([2장](02-skills.md))
 
@@ -56,6 +65,7 @@
 | 스크립트 결과의 한글이 깨진다 (Windows) | 기본 출력 인코딩이 cp949 | 스크립트가 stdout을 UTF-8로 고정 (`sys.stdout.reconfigure(encoding="utf-8")`) |
 | 스킬 결과가 엉뚱한 저장소를 대상으로 한다 | 예제 폴더에서 바로 실행하면 상위 세미나 저장소(git 루트)가 프로젝트가 된다 | 예제가 안내하는 `sandbox/`에서 실행 (S1a, S2a, S3b, S3c 등) |
 | `error: git not found`, 종료 코드 2 (S3b) | git이 PATH에 없다 | git 설치 |
+| `branch-cleanup` 스킬이 멈추고 알린다 (S1d) | 기본 브랜치가 `main`이 아닌 저장소다(`SKILL.md` 규칙) | `SKILL.md`의 `main`을 모두 바꾼다 |
 | 스크립트가 종료 코드 2와 `error: line N` (S4a) | CSV 형식이 틀렸다 (UTF-8, 헤더 `month,region,units,revenue`) | CSV를 고친다 |
 | 스크립트가 `error: cannot parse 파일:줄` (S4b) | 분석 대상에 문법 오류가 있는 파일이 있다 | 해당 파일을 고치거나 하위 패키지 폴더만 지정 |
 | 같은 날짜·slug로 다시 만들면 `-2` 파일이 생긴다 (S1c, S2c) | 스킬 규칙이 덮어쓰지 않도록 되어 있다 | 정상 동작. 다시 비교하려면 결과 폴더를 지우고 실행 |
@@ -89,6 +99,21 @@
 | `opencode run`에서 리소스를 첨부할 수 없다 | `-f`는 로컬 파일 경로만 받는다. 메시지 속 `/명령`도 펼쳐지지 않는다 | TUI에서 `@`, 프롬프트는 `opencode run --command 서버:프롬프트 인자` |
 | MCP 프롬프트가 사용자 입력을 검증하지 못한다 | 서버의 `prompts/get`에는 리터럴 `"$1"`이 온다. 치환은 opencode가 한다 | 인자를 본문에 그대로 끼우는 프롬프트만 쓴다 |
 | 도구를 deny했는데 컨텍스트가 줄지 않는다 | `ask`는 목록에서 빠지지 않는다. 패턴이 `<서버>_<도구>` 기준이 아니다 | `deny`로, 이름은 합친 형태로. 규칙 순서(마지막 일치) 확인 |
+| 파일 서버의 쓰기 도구를 deny했는데 모델이 프로젝트 파일을 고친다 (M11) | 막은 것은 MCP 도구뿐이다. 내장 `write`, `edit`, `bash`는 따로 있다 | 쓰기를 정말 막으려면 내장 도구도 deny(에이전트 권한) |
+| `npx` 서버가 처음엔 `failed (Operation timed out after 30000ms)`인데 터미널에서 직접 실행하면 된다 (M10) | 첫 실행의 설치 시간이 시작 제한 30초를 넘었다(35초 지연 서버로 확인: 기본은 `failed`, `timeout: 60000`이면 `connected`) | 서버 항목에 `"timeout": 60000`. 미러 설정 확인 |
+| `npx -y .`가 `ERR_MODULE_NOT_FOUND` (M10) | 로컬 폴더를 `npx`로 실행하면 `bin`만 연결하고 의존성을 설치하지 않는다 | 먼저 `npm install`, 또는 `npm pack`한 `.tgz`를 실행 |
+| `npx -y /절대/경로/x.tgz`가 `Permission denied` (M10) | 절대 경로를 파일 실행 명령으로 해석한다 | `./x.tgz`, `--package=/절대/경로/x.tgz 패키지명`, `file:/절대/경로/x.tgz` |
+| 파일 서버가 `sandbox`만 허용했는데 프로젝트 전체를 읽는다 (M11) | opencode가 `roots`로 프로젝트 폴더를 알려 주고, `--confine-roots` 없이는 서버가 명령줄 허용 폴더를 버리고 roots로 바꾼다 | `--confine-roots`를 붙이고 `list_allowed_directories`로 허용 범위를 직접 확인 |
+| `uvx mcp-server-time==옛버전`이 `ImportError: cannot import name 'McpError'`로 죽는다 (M11) | 최상위만 고정해서 하위 의존성 `mcp`가 2.x로 설치됐다 | 호환되는 버전(`2026.11.11`)으로 올린다. 엄격하게 하려면 `uvx --exclude-newer <날짜>`나 잠금 파일(미시험) |
+| `uvx --from .`로 띄운 서버가 고친 코드를 반영하지 않는다 (M12) | uv가 캐시된 빌드를 다시 쓴다. `__version__`을 올려도 마찬가지고 `--refresh-package`, `--reinstall-package`는 효과가 없었다 | `uvx --no-cache --from . ...` 또는 `pyproject.toml` 수정. 개발 중에는 `python -m` 경로 |
+| 빈 캐시에서 `uvx --from .`가 `No solution found when resolving: hatchling>=1.27`로 실패한다 (M12) | 서버에 의존성이 없어도 빌드 백엔드를 인덱스에서 받아야 한다 | 인덱스나 미러 지정(`UV_DEFAULT_INDEX`). 의존성 없는 서버는 wheel 파일 배포로 피할 수 있다 |
+| M10 서버에서 인자를 빼 호출했더니 `error.code -32602`가 아니라 `isError` 결과가 온다 | 공식 SDK는 인자 누락과 모르는 도구도 `isError: true` 결과로 돌려준다(본문에 `MCP error -32602: ...`) | 정상 동작. M1처럼 `error.code`로 가르던 코드는 SDK 위에서 쓸 수 없다 |
+| 읽기 전용으로 감싼 CLI 도구가 파일을 만들었다 (M13) | 셸을 안 써도 값이 `-`로 시작하면 CLI가 옵션으로 읽는다. `git diff --stat`에 `--output=파일`을 넘기면 실제로 써진다 | `-`로 시작하는 값 거부, 경로 앞에 `--`. 한글 경로가 8진수로 나오면 `-c core.quotepath=false` |
+| `["./bin/glossary-mcp"]`가 하위 폴더에서 실행하면 `failed` (M14) | 상대 경로는 설정 파일 위치가 아니라 opencode를 실행한 폴더 기준이다 | 프로젝트 폴더에서 실행하거나 절대 경로. `bin/glossary-mcp`가 있는지(빌드했는지) 확인 |
+| 만든 실행 파일이 다른 Linux에서 안 돈다 (M14) | 기본 빌드는 동적 링크이고 필요한 glibc 심볼이 최대 `GLIBC_2.34`였다. 그보다 오래된 배포판에서는 실행되지 않을 가능성이 높다(실제로 돌려 보지는 않음). OS·CPU마다 따로 빌드해야 한다 | 정적 링크 `x86_64-unknown-linux-musl` 빌드(빌드와 `ldd`만 확인). `python build.py`가 종료 코드 2면 `cargo` 없음, 3이면 crates를 받을 수 없음 |
+| 서버가 보낸 진행 알림이 화면에 안 보인다 (M15) | `notifications/progress`는 화면, 로그, `--format json` 어디에도 안 나온다. 대신 도구 호출 제한 시간을 늘려 준다 | 사용자에게 보여 줄 정보는 결과 text에 넣는다 |
+| `structuredContent`로 준 값을 모델이 못 본다 / JSON 문자열로 본다 (M15) | `content`에 text가 있으면 모델은 text만 받는다. `content`가 비어 있으면 `structuredContent`를 JSON 문자열로 받는다. `outputSchema`는 모델에게 가지 않는다 | 중요한 결과는 `content`의 text에 넣고 출력 모양은 `description`에 글로 쓴다 |
+| 서버가 `sampling`이나 `elicitation`을 요청하면 `-32601 Method not found` (M15) | opencode 1.19.5는 capabilities로 `{"roots": {}}`만 선언하고 그 둘을 거절한다 | 사용자에게 물어야 하면 도구 결과로 질문을 돌려주고 모델이 대신 묻게 한다 |
 | 서버를 붙였더니 요청마다 토큰이 늘었다 | 도구 정의가 매 요청마다 전송된다. 12개짜리 서버 하나가 약 1,600 토큰 | 안 쓰는 서버는 `"enabled": false`, 안 쓰는 도구는 `permission` deny |
 | `티켓 DB를 읽지 못했습니다` (M6) | `prepare.py`를 먼저 안 돌렸다 | `python prepare.py`. 날짜 결과가 비면 다시 실행해 기준일 갱신 |
 | '지난주' 결과가 모델마다 다르다 | 모델이 지난 7일/지난 월~일 한 주로 다르게 해석한다 | `⚙` 줄의 `since`/`until` 확인, 근거 기간을 같이 말해 달라고 요청 |
@@ -119,11 +144,19 @@
 | `shell.env`가 안 먹는다 | `bash` 도구가 호출될 때만 불린다. Windows 셸에서 `$APP_ENV`로 읽었다 | `$env:APP_ENV`로 읽거나 `python -c`로 확인. 내 터미널에는 적용되지 않는 것이 정상 |
 | 압축 훅에서 압축이 실패한다 | `experimental.session.compacting` 안의 예외는 압축을 통째로 실패시킨다 | `try/catch`로 감싸 로그만 남긴다 |
 | 압축 훅이 업데이트 뒤 아무 일도 안 한다 | 실험적 훅이라 이름/모양이 바뀔 수 있다 | `logs/compaction.log`가 늘어나는지 확인, `check.py` 재실행 |
+| 시스템 프롬프트 주입 블록이 업데이트 뒤 사라졌거나 값이 오래됐다 (P12) | `experimental.chat.system.transform`은 이름이나 동작이 바뀔 수 있다. 값은 git 조회 캐시(기본 5초) 때문에 최대 그 시간 동안 실제와 다를 수 있다 | 예제의 `check.py` 재실행, `logs/context-injection.log` 확인. 정확해야 하는 판단은 실행 시점에 다시 확인 |
 | `output.context`에 넣었는데 반영이 안 된다 | `output.prompt`를 설정하면 `context`는 무시된다 | 덧붙이기는 `context.push`만, 프롬프트 교체는 `prompt` |
 | 커스텀 도구가 내장 도구를 바꿔 버렸다 | 내장과 같은 이름으로 등록하면 덮어쓴다 | 겹치지 않는 이름 |
 | 플러그인 파일 옆에 둔 보조 파일/테스트가 로드되어 오류가 난다 | `.opencode/plugins/`의 모든 `.js`가 플러그인으로 로드된다 | 보조 모듈과 테스트는 그 폴더 밖(`tests/`) |
 | `node tests/...`가 안 돈다 | Node가 없다. `check.py`는 경고만 내고 건너뛴다 | opencode 실행에는 Node가 필요 없다. 단위 테스트에만 필요 |
 | X2: 가드가 `bash`의 쓰기를 못 막는다 | 가드는 `write`/`edit`/`apply_patch`만 검사한다 | `permission`을 함께 쓴다 |
+| after 훅에서 예외를 던졌더니 파일은 써졌는데 모델은 실패로 받고 같은 일을 다시 시도한다 (P9) | `tool.execute.after`는 파일이 이미 써지고 formatter까지 끝난 뒤에 불린다. throw하면 모델은 던진 메시지만 받는다 | after 훅 전체를 `try/catch`로 감싸고 로그만 남긴다 |
+| `formatter`가 파일을 고쳤는데 모델이 모른다. 다음 `edit`가 맞지 않는다 (P9) | 내장 formatter는 모델에게 알리지 않고, 깨진 JSON 같은 실패도 조용히 건너뛴다 | 모델이 읽어야 할 검사 결과는 `tool.execute.after`로 도구 결과에 붙인다 |
+| main 브랜치에서 `git commit`이 `[branch-guard:protected-branch]`로 막힌다 (P10) | 의도된 동작이다. `git init` 직후 첫 커밋도 브랜치가 `main`이면 막힌다 | `git switch -c <type>/<name>` 후 다시 커밋(변경한 파일은 따라옴) |
+| 브랜치 가드를 통과해 main에 커밋이 생겼다 (P10) | `git merge`, `cherry-pick`, `revert`, `am`, `rebase`, 스크립트 안의 git 호출, git 별칭은 보지 않는다. 가드는 실수 방지이지 보안 경계가 아니다 | 원격의 branch protection을 함께 쓴다 |
+| 마스킹했는데 비밀이 세션 저장소나 파일에 남아 있다 (P11) | 가려지는 것은 모델에게 가는 글자(와 훅에서 같이 가린 `metadata`)뿐이다. 세션 DB의 `event` 테이블 `running` 기록과 opencode의 `tool-output/` 전체 사본에는 원본이 남는다 | 보호 범위를 이해하고 쓴다. 비밀 파일을 못 읽게 하려면 `tool.execute.before`(P1) |
+| 마스킹 플러그인이 MCP 도구 결과를 가리지 못한다 (P11) | MCP 도구의 `output`은 `{content: [{type, text}]}`뿐이라 `output.output`만 바꾸면 반영되지 않는다 | `output.content[].text`도 처리한다 |
+| 가려진 글자(`***`)로 파일을 고치려다 `Could not find oldString`으로 실패한다 (P11) | 모델은 원문을 모른다. `write`로 통째로 다시 쓰면 `***`가 실제 파일에 들어갈 수 있다 | 비밀이 든 파일은 통째로 다시 쓰지 않게 한다 |
 
 ## Windows
 
@@ -170,6 +203,8 @@ Windows에서는 `python`, Linux에서는 `python3`가 일반적입니다. 예�
 | `file:` 주소 | `file:///C:/work/...` 형태 |
 | 로그에 찍히는 경로 | 역슬래시가 두 겹(`\\`)으로 나올 수 있음. 비교할 때 `/`로 정규화 |
 | `.git` 폴더 삭제 | 읽기 전용 파일 때문에 거부되면 `Remove-Item -Recurse -Force 폴더` |
+| 스크립트에서 `npx` 띄우기 (M11) | Windows의 `npx`는 `npx.cmd`라서 직접 쓴 스크립트(`subprocess` 등)에서 이름만으로는 실행되지 않는다. `shutil.which("npx")`로 전체 경로를 찾아 넘긴다. opencode가 띄울 때는 `["npx", ...]` 그대로 된다 |
+| 실행 파일 서버의 `command` (M14) | `.exe`를 붙이지 않아도 된다. 교차 빌드한 `bin\glossary-mcp.exe`를 `["./bin/glossary-mcp"]`로 찾아 `connected`였다. Windows에서 `cargo build`로 직접 빌드하는 과정은 확인하지 못했다 |
 | 열린 SQLite 연결 | 닫지 않으면 DB 파일을 못 지움 |
 | 방화벽 | `127.0.0.1` 바인딩에서는 보통 안 뜨고, `0.0.0.0`으로 열면 허용 여부를 묻는 창이 뜰 수 있음 |
 | 한글 글꼴 | HTML 리포트는 `Malgun Gothic` 순으로 사용 |

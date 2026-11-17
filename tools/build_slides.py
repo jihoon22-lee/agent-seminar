@@ -72,6 +72,12 @@ TOKEN_RULES: dict[str, list[tuple[str, str]]] = {
         (r"(?m:^\s*[\w.-]+(?=:))", "key"),
         (r'"(?:\\.|[^"\\])*"', "str"),
     ],
+    "toml": [
+        (r"#[^\n]*", "com"),
+        (r'"(?:\\.|[^"\\])*"', "str"),
+        (r"(?m:^\[[^\]\n]+\])", "kw"),
+        (r"(?m:^[\w.-]+(?=\s*=))", "key"),
+    ],
     "text": [],
 }
 TOKEN_RULES["jsonc"] = TOKEN_RULES["json"]
