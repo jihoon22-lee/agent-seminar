@@ -69,8 +69,9 @@ try:
     check("스크립트 파일이 없음 (SKILL.md 한 장)", [p.name for p in SKILL.parent.iterdir()] == ["SKILL.md"])
 
     # 2. prepare.py
-    proc = subprocess.run([sys.executable, str(HERE / "prepare.py")], capture_output=True, text=True, encoding="utf-8")
-    SANDBOX = HERE / "sandbox"
+    # 예제 폴더의 sandbox/ 는 README 를 따라 하는 사람이 쓰는 곳이라 건드리지 않는다. 임시 폴더에 같은 저장소를 만들어 검사한다.
+    SANDBOX = tmp_root / "sandbox"
+    proc = subprocess.run([sys.executable, str(HERE / "prepare.py"), str(SANDBOX)], capture_output=True, text=True, encoding="utf-8")
     check("prepare.py 실행", proc.returncode == 0, proc.stderr)
     check("sandbox 브랜치 6개, 현재 브랜치 feature/current",
           branches(SANDBOX) == sorted(EXPECT_DELETED + EXPECT_KEPT) and git(SANDBOX, "branch", "--show-current").stdout.strip() == "feature/current",
@@ -130,8 +131,7 @@ try:
             model_check("모델이 branch-cleanup 스킬을 불러옴", out, skill_loaded(out, "branch-cleanup"))
             model_check("병합된 3개만 지워지고 main·현재·wip/search 는 남음", out, branches(SANDBOX) == EXPECT_KEPT)
 finally:
-    shutil.rmtree(HERE / "sandbox", onerror=prepare._force_remove) if (HERE / "sandbox").exists() else None
-    shutil.rmtree(tmp_root, ignore_errors=True)
+    shutil.rmtree(tmp_root, onerror=prepare._force_remove) if tmp_root.exists() else None
     stray = HERE / ".opencode" / ".gitignore"
     if stray.exists() and not had_oc_gitignore:
         stray.unlink()

@@ -42,7 +42,7 @@ m8-enable-disable-deny/
   "permission": { "ops_noisy_*": "deny", "ops_restart": "ask" },
   "agent": {
     "reviewer": {
-      "description": "읽기 전용 검토 에이전트: 파일 수정과 운영 도구를 쓰지 못한다",
+      "description": "검토 에이전트: edit·write 와 ops_* 도구를 쓰지 못한다 (bash, task 는 열려 있다)",
       "mode": "primary",
       "tools": { "ops_*": false, "write": false, "edit": false }
     }
@@ -182,6 +182,7 @@ Error: The user rejected permission to use this specific tool call.
    - `allow` 는 기본값입니다. 규칙은 **나중에 쓴 것이 이깁니다**(마지막 일치 규칙). `{"ops_*": "deny", "ops_status": "allow"}` 는 `ops_status` 만 살리지만, 순서를 바꿔 `{"ops_status": "allow", "ops_*": "deny"}` 로 쓰면 전부 막힙니다. 둘 다 이 폴더에서 확인했습니다.
 4. **최상위 `"tools": {"ops_noisy_*": false}`** 도 같은 효과입니다. 1.19.5 는 이 옛 단축형을 `permission` 의 `deny` 규칙으로 번역합니다(`opencode debug agent build` 로 확인). 새로 쓸 때는 `permission` 을 권장합니다.
 5. **에이전트별 `tools`**: `agent.reviewer.tools` 는 그 에이전트에만 적용됩니다. `build` 는 그대로입니다. `write: false` 와 `edit: false` 는 둘 다 `edit` 권한의 `deny` 하나로 번역됩니다. 전역에서 `deny` 한 도구를 특정 에이전트에서만 되살리는 것도 됩니다. `"agent": {"debugger": {"mode": "primary", "tools": {"ops_noisy_*": true}}}` (또는 그 에이전트의 `permission` 에 `"ops_noisy_*": "allow"`)를 더하면 `--agent debugger` 일 때만 `ops_noisy_*` 4개가 다시 나타납니다. 에이전트 설정이 전역 설정을 덮어씁니다.
+   - **`reviewer` 가 막는 것과 막지 않는 것.** 막는 것: `ops_*` 전부(MCP 쓰기·운영 도구), `edit`, `write`. 모델이 받는 도구 10개(위 `show_model_tools.py` 출력)에는 **`bash` 와 `task` 가 그대로 남아 있습니다.** 그래서 이 에이전트는 MCP 도구와 파일 편집 도구만 막은 검토용 에이전트일 뿐 **읽기 전용이 아닙니다.** `bash` 로 명령을 실행할 수 있고, `task` 로 부른 하위 에이전트는 자기 권한으로 파일을 고칠 수 있습니다(후자는 C8에서 실제로 파일이 바뀌는 것을 확인했습니다. 이 예제에서 `bash`/`task` 를 실행해 보지는 않았고, 목록에 남아 있다는 것만 확인했습니다). 파일을 정말 못 고치는 에이전트가 필요하면 `edit`, `bash`, `task` 를 모두 `deny` 하는 [C8의 `reviewer`](../../00-config/c8-agents/README.md)를 참고하세요.
 6. **리소스가 없는 서버만 있으면** `list_mcp_resources`, `read_mcp_resource` 같은 보조 도구는 붙지 않습니다(m7 참고).
 7. **크기 어림**: `count_tool_tokens.py` 는 `tools/list` 의 이름·설명·입력 스키마(JSON) 글자 수를 4로 나눕니다. 한글은 글자당 토큰이 더 많아 실제로는 더 클 수 있고, 실제 요청에는 JSON 래퍼가 더 붙습니다. 절대값보다 **서버 간 비교**에 쓰세요.
 8. **`opencode debug agent build` 의 한계**: 권한 규칙과 내장 도구만 보여 주고 MCP 도구는 목록에 없습니다. 그래서 `show_model_tools.py` 는 가짜 LLM 이 받은 요청 본문을 읽습니다.

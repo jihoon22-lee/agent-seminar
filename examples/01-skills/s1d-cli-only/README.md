@@ -133,6 +133,7 @@ git branch -d wip/search:               error: the branch 'wip/search' is not fu
 
 - **Windows(PowerShell 5.1)에서도 같은 검사를 통과했습니다.** 가짜 모델이 SKILL.md 의 명령 줄을 그대로 실행했고, 지워진 브랜치와 남은 브랜치가 Linux 와 같았습니다. `check.py` 의 정적 검사는 두 셸에서 의미가 달라지는 문법이 명령에 없다는 것을 추가로 확인합니다. 실제 모델이 규칙을 지키는지는 확인하지 못했습니다(미검증).
 - `sandbox/` 에서 실행하세요. 세미나 저장소 폴더에서 실행하면 이 저장소의 실제 브랜치가 대상이 됩니다. 기본 `-d` 가 안전하더라도 의도치 않은 저장소에서 실행하지 않도록 하세요.
+- `check.py` 는 임시 폴더에 같은 저장소를 만들어 검사하고 끝나면 지웁니다. 따라 하기로 만든 `sandbox/` 는 건드리지 않습니다.
 - 스킬은 원격 브랜치를 건드리지 않습니다. 원격까지 정리하려면 명령과 규칙을 직접 추가해야 합니다.
 - 기본 브랜치가 `main` 이 아닌 저장소에서는 스킬이 멈추고 알립니다(규칙 5). 이름을 바꾸려면 SKILL.md 의 `main` 을 모두 바꾸세요.
 - `.opencode/` 가 있는 폴더에서는 opencode 가 `@opencode-ai/plugin` 을 설치하려고 시도하고 `.opencode/` 안에 `package.json`, `node_modules/` 등이 생길 수 있습니다(모두 git 에서 제외). 자세한 내용은 [S1a README](../s1a-commit-message/README.md#주의할-점--문제-해결) 를 보세요.

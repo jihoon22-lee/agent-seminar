@@ -35,7 +35,7 @@ m14-single-binary/
 
 ## 따라 하기
 
-> 이 단계는 **Rust 툴체인**(https://rustup.rs)과, 첫 빌드 때 `serde_json` 을 받을 **crates 레지스트리(또는 미러)**가 필요하다. 한 번 받아 두면 `python build.py --offline` 으로 인터넷 없이 다시 빌드할 수 있다.
+> 이 단계는 **Rust 툴체인**(https://rustup.rs)과, 첫 빌드 때 `serde_json` 을 받을 **crates 레지스트리(또는 미러)**가 필요하다. 한 번 받아 두면 인터넷 없이도 다시 빌드할 수 있다(`python build.py --offline` 으로 강제할 수도 있다).
 > Linux에서 `python` 명령이 없으면 `python3`로 바꾸세요.
 
 모든 명령은 이 예제 폴더(`examples/02-mcp/m14-single-binary`)에서 실행한다.
@@ -169,7 +169,9 @@ M9 에서 본 Windows 인코딩 함정(cp949)은 이 서버에는 해당 없다.
 
 - **`.gitignore`**: 레포 루트의 `.gitignore` 에는 `target/` 과 `bin/` 이 **없다**. 그래서 이 예제 폴더 안에 별도 `.gitignore`(`target/`, `bin/`)를 두었다. 이 폴더를 다른 곳에 복사해 쓸 때도 같이 가져가야 빌드 결과가 커밋되지 않는다.
 - **`cargo` 를 찾을 수 없음** — `build.py` 가 종료 코드 2 로 끝난다. https://rustup.rs 로 설치한다. `check.py` 는 이때 경고만 내고 건너뛴다.
-- **crates 를 받을 수 없음** — 인터넷이 없고 한 번도 받은 적이 없으면 `serde_json` 을 구할 수 없어 빌드가 안 된다(`build.py` 종료 코드 3, `check.py` 는 경고 후 건너뜀). 레지스트리 접속은 3초 안에 판정하고 안 되면 `--offline` 으로 시도한다. 패키지 미러를 쓴다면 `~/.cargo/config.toml` 에 `[source.crates-io] replace-with` 로 미러를 지정한다(이 설정은 이 PC 에서 시험하지 않았다).
+- **crates 를 받을 수 없음** — 인터넷이 없고 한 번도 받은 적이 없으면 `serde_json` 을 구할 수 없어 빌드가 안 된다(`build.py` 종료 코드 3, `check.py` 는 경고 후 건너뜀). `build.py` 는 crates.io 에 닿는지 미리 찔러 보고 `--offline` 을 강제하지 않는다. 먼저 그냥 `cargo build` 를 하므로 `~/.cargo/config.toml` 의 `[source.crates-io] replace-with` 미러와 받아 둔 캐시가 그대로 쓰인다. 받기 단계에서 실패했을 때만 `--offline` 으로 한 번 더 시도한다(받기 단계가 오래 멈추지 않게 `CARGO_NET_RETRY=1`, `CARGO_HTTP_TIMEOUT=15` 를 기본으로 주며, 환경 변수로 직접 정하면 그 값을 쓴다).
+  - **확인한 것** (Linux, `unshare -rn` 으로 만든 네트워크 없는 공간): ① 네트워크 있음 → 빌드 성공. ② 네트워크 없음 + crates 캐시 있음 → 빌드 성공(7초). ③ 네트워크 없음 + 빈 `CARGO_HOME` → 종료 코드 3, 2초 안에 끝남. ④ 네트워크 없음 + 빈 `CARGO_HOME` + `replace-with` 가 가리키는 **내가 만든 가짜 sparse 미러**(127.0.0.1 의 작은 HTTP 서버가 crates.io 의 인덱스와 `.crate` 파일을 그대로 내줌) → 빌드 성공. 같은 ④에서 이전 `build.py`(직접 연결 실패 시 `--offline` 강제)는 종료 코드 3 으로 건너뛰었다.
+  - **확인하지 못한 것**: 실제 패키지 미러(인증이 있는 것 포함)는 쓸 수 없어서 시험하지 못했다. 위 ④는 같은 동작 방식(sparse 레지스트리)을 흉내 낸 것일 뿐이다.
 - **`opencode mcp list` 가 failed** — `bin/glossary-mcp` 가 있는지(빌드했는지), opencode 를 이 예제 폴더에서 실행했는지부터 본다. 위 표처럼 하위 폴더에서 실행하면 실패한다.
 - **서버 코드를 고쳤는데 반영이 안 된다** — `python build.py` 를 다시 실행하고 opencode 를 재시작한다. `bin/` 의 파일이 실행 중이면 Windows 에서는 덮어쓸 수 없으니 opencode 를 먼저 끈다(미확인).
 - 실행 파일은 **만든 OS·CPU 용**이다. Linux 에서 만든 파일을 Windows 로 복사해도 실행되지 않는다. 교차 빌드는 가능하지만(위 Windows 항목) 별도 설정이 필요하다.

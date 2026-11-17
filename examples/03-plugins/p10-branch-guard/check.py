@@ -36,7 +36,7 @@ def make_repo(sb: Sandbox, name: str, branch: str) -> pathlib.Path:
     shutil.copytree(HERE, repo, ignore=IGNORE)
     git(repo, "init", "-q", "-b", branch)
     git(repo, "config", "user.name", "demo")
-    git(repo, "config", "user.email", "demo@example.invalid")
+    git(repo, "config", "user.email", "demo.invalid")
     git(repo, "config", "commit.gpgsign", "false")
     (repo / ".gitignore").write_text("logs/\n", encoding="utf-8")
     git(repo, "add", ".")
@@ -98,6 +98,38 @@ def main() -> None:
         check("main 브랜치에는 커밋이 늘지 않음", git(repo, "log", "--format=%s", "main").splitlines() == ["init"], git(repo, "log", "--all", "--oneline"))
         log = read(repo / "logs" / "branch-guard.log")
         check("차단 기록(BLOCKED)이 한 번만 남음", log.count("BLOCKED rule=protected-branch") == 1, log)
+
+        # --- && 로 이은 복합 형태 (Linux 만: PowerShell 5.1 은 && 를 문법 오류로 거부한다)
+        # 차단되면 명령 전체가 실행되지 않는다: echo 도 git add 도 돌지 않아 x.txt 가 없다.
+        if os.name == "nt":
+            print("[SKIP] && 복합 명령 실행 검사: Windows PowerShell 5.1 은 &&  를 받지 않아 건너뜀 (훅 판정은 단위 테스트가 확인)", flush=True)
+        else:
+            repo_c = make_repo(sb, "repo-compound", "main")
+            compound = "echo hi > x.txt && git add x.txt && git commit -m 'add x'"
+            out, results = scripted_run(sb, repo_c, [bash(compound), bash("git switch -c feat/x"), bash(compound), "끝"])
+            show("scripted run (compound)", out)
+            check("[복합] main 에서 && 로 이은 커밋 명령이 통째로 차단됨", len(results) >= 1 and "[branch-guard:protected-branch]" in results[0], "\n".join(results))
+            check("[복합] 이어서 브랜치를 만든 뒤 같은 명령이 통과해 feat/x 에 커밋됨",
+                  len(results) >= 3 and "branch-guard" not in results[2] and git(repo_c, "log", "--format=%s", "feat/x").splitlines() == ["add x", "init"], "\n".join(results) + git(repo_c, "log", "--all", "--oneline"))
+            check("[복합] main 에는 커밋이 늘지 않음", git(repo_c, "log", "--format=%s", "main").splitlines() == ["init"])
+            # 차단된 첫 시도에서는 x.txt 가 만들어지지 않았다: 첫 시도와 둘째 시도 사이에 파일이 없었음을 새 저장소에서 따로 확인
+            repo_n = make_repo(sb, "repo-compound2", "main")
+            out, results = scripted_run(sb, repo_n, [bash("echo hi > only.txt && git add only.txt && git commit -m 'add only'"), "끝"])
+            check("[복합] 차단된 명령에서는 앞의 echo > 파일 도 실행되지 않음 (only.txt 없음)",
+                  "[branch-guard:protected-branch]" in "".join(results) and not (repo_n / "only.txt").exists(), "\n".join(results))
+            # 같은 줄에서 브랜치를 바꾸는 명령: 차단 메시지가 권하는 절차를 한 줄로 쓰면 통과, 반대로 main 으로 전환하는 줄은 막힘
+            repo_s = make_repo(sb, "repo-switch", "main")
+            git(repo_s, "branch", "feat/start")
+            out, results = scripted_run(sb, repo_s, [bash("git switch -c feat/one && echo hi > one.txt && git add one.txt && git commit -m 'add one'"),
+                                                      bash("git switch main && echo hi > two.txt && git add two.txt && git commit -m 'add two'"), "끝"])
+            show("scripted run (switch in one line)", out)
+            check("[전환] main 에서 'git switch -c … && … git commit' 한 줄은 통과해 새 브랜치에 커밋됨",
+                  len(results) >= 1 and "branch-guard" not in results[0] and git(repo_s, "log", "--format=%s", "feat/one").splitlines() == ["add one", "init"], "\n".join(results))
+            check("[전환] feat/one 에서 'git switch main && … git commit' 한 줄은 차단되고 브랜치도 바뀌지 않음",
+                  len(results) >= 2 and "[branch-guard:protected-branch]" in results[1] and git(repo_s, "branch", "--show-current") == "feat/one" and not (repo_s / "two.txt").exists(), "\n".join(results) + git(repo_s, "branch", "--show-current"))
+            repo_w = make_repo(sb, "repo-wrapped", "main")
+            out, results = scripted_run(sb, repo_w, [bash('bash -lc "git commit --allow-empty -m wrapped"'), "끝"])
+            check("[껍데기] main 에서 bash -lc \"git commit …\" 도 차단됨", len(results) >= 1 and "[branch-guard:protected-branch]" in results[0] and git(repo_w, "log", "--format=%s", "main").splitlines() == ["init"], "\n".join(results))
 
         # --- main 에서 push 와 draft PR (gh 가 없어도 가드가 먼저 막으므로 결과 문구로 구분된다)
         repo2 = make_repo(sb, "repo-main2", "main")

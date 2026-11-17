@@ -202,3 +202,4 @@ The arguments provided to the tool are invalid: Model tried to call unavailable 
 - `permission` 은 도구 호출을 막을 뿐입니다. `bash` 를 일부 열어 두면(`git diff*` 등) 그 명령이 만드는 부작용은 패턴 설계에 달려 있습니다 ([C5](../c5-permissions/README.md) 참고).
 - 이 예제의 `.opencode/` 가 있는 폴더에서 opencode 를 시작하면 `@opencode-ai/plugin` 을 설치하려고 시도하고 `.opencode/` 안에 `package.json`, `node_modules/` 가 생길 수 있습니다(모두 git 에서 제외). 자세한 내용은 [S1a README](../../01-skills/s1a-commit-message/README.md#주의할-점--문제-해결) 를 보세요.
 - Linux 에서 `python` 명령이 없으면 `python3` 로 바꾸세요. 이 예제의 `opencode.json` 은 실행 명령을 쓰지 않아 그대로 둡니다.
+- **Windows**: Windows(PowerShell 5.1, opencode 1.19.5)에서 이 예제의 `check.py` 를 실행해 통과했습니다(실패 0). `--agent` 로 에이전트를 골라 손으로 따라 하는 과정과 실제 모델은 Windows 에서 확인하지 않았습니다.

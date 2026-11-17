@@ -213,7 +213,7 @@ opencode의 서버 시작 제한은 30초다(M9). 이 PC는 레지스트리가 �
 
 ### `glossary.json`은 어디서 찾나
 
-`new URL("../glossary.json", import.meta.url)` — 서버 파일 기준 위치다. 실행한 폴더와 상관없고, `package.json`의 `"files"`에 `glossary.json`을 넣었기 때문에 `.tgz` 안에도 들어간다. `check.py`가 `.tgz`의 파일이 `package.json`, `glossary.json`, `src/server.mjs` 셋뿐인지 확인한다 (크기 3.5 kB).
+`new URL("../glossary.json", import.meta.url)` — 서버 파일 기준 위치다. 실행한 폴더와 상관없고, `package.json`의 `"files"`에 `glossary.json`을 넣었기 때문에 `.tgz` 안에도 들어간다. `.tgz`에는 `package.json`, `glossary.json`, `src/server.mjs`가 들어간다. 여기에 `README.md`가 있으면 npm이 항상 같이 넣는다. 그래서 이 예제 폴더에서 `npm pack`을 하면 파일 4개, 8.7 kB(`README.md` 13.9 kB가 압축되어 들어감)이고, `check.py`는 `README.md`를 뺀 임시 복사본에서 팩하므로 파일 셋, 3.5 kB를 확인한다. 모두 `npm pack --dry-run`으로 직접 확인한 값이다. `package-lock.json`은 어느 쪽에도 들어가지 않는다 (아래 참고).
 
 ### npx가 더해 주는 것과 치르는 비용
 
@@ -224,7 +224,7 @@ opencode의 서버 시작 제한은 30초다(M9). 이 PC는 레지스트리가 �
 | 팀 전체가 같은 코드 | 시작 제한 30초 → 느린 미러에서는 `timeout`을 늘려야 한다 |
 | 의존성이 패키지에 적혀 있어 환경 준비가 자동 | 코드를 고쳤을 때 버전을 올리고 다시 게시해야 한다 |
 
-최상위 의존성을 정확한 버전(`1.32.2`, `4.6.7`)으로 고정했다. 그 아래 의존성(`hono`, `ajv` 등)은 `^` 범위라 시점에 따라 달라질 수 있다. 그래서 `package-lock.json`을 레포에 포함했다. `npm install` 대신 `npm ci`를 쓰면 잠금 파일 그대로 설치한다. 잠금 파일의 내려받기 주소는 `registry.npmjs.org`로 적혀 있지만, 미러를 지정해 두면 npm이 그 주소로 바꿔 받는다(npm 설정 `replace-registry-host`의 기본 동작이며, 이 예제에서 직접 시험하지는 않았다). `zod`를 4.6.7로 고정한 이유는 3.25.76에서 `npm audit`가 high 경고를 냈기 때문이다 (SDK 1.32.2는 `^3.25 || ^4.0`을 받는다).
+최상위 의존성을 정확한 버전(`1.32.2`, `4.6.7`)으로 고정했다. 그 아래 의존성(`hono`, `ajv` 등)은 `^` 범위라 시점에 따라 달라질 수 있다. 그래서 `package-lock.json`을 레포에 포함했다. 다만 **이 잠금 파일이 적용되는 곳은 레포를 받아 `npm install`/`npm ci`를 하는 경우뿐이다.** `npm pack`은 `package-lock.json`을 `.tgz`에 넣지 않으므로(`npm pack --dry-run`으로 확인), `npx -y ./….tgz`나 레지스트리에서 받는 `npx` 경로에서는 하위 의존성이 여전히 설치 시점의 최신 허용 버전으로 정해진다. 패키지와 함께 배포되는 잠금은 `npm-shrinkwrap.json`이다(`npm shrinkwrap`이 `package-lock.json`을 이 이름으로 바꿔 준다). 임시 복사본에서 시험한 결과, `package.json`에 `"files"` 허용 목록이 있으면 `"npm-shrinkwrap.json"`도 `files`에 적어 줘야 `.tgz`에 들어갔다(npm 11.16.0). `npx`가 이를 실제로 따라 설치하는지는 시험하지 않았다(미검증). 이 예제는 `npm-shrinkwrap.json`을 쓰지 않는다. 잠금 파일의 내려받기 주소는 `registry.npmjs.org`로 적혀 있지만, 미러를 지정해 두면 npm이 그 주소로 바꿔 받는다(npm 설정 `replace-registry-host`의 기본 동작이며, 이 예제에서 직접 시험하지는 않았다). `zod`를 4.6.7로 고정한 이유는 3.25.76에서 `npm audit`가 high 경고를 냈기 때문이다 (SDK 1.32.2는 `^3.25 || ^4.0`을 받는다).
 
 ## 직접 바꿔 보기
 
@@ -239,5 +239,6 @@ opencode의 서버 시작 제한은 30초다(M9). 이 PC는 레지스트리가 �
 - **`npx -y .`가 같은 이유로 실패**하면 위 표처럼 `npm install`이 필요하다. 의존성까지 자동 설치되는 것은 `.tgz`나 레지스트리의 패키지다.
 - **opencode를 이 폴더에서 실행해야 한다.** `src/server.mjs`는 opencode를 실행한 폴더 기준이다 (M1과 같다).
 - **미러 환경**: `npm config get registry`가 미러 주소인지 확인한다. `check.py`는 이 주소에 3초 안에 닿지 않고 `node_modules`도 없으면 WARN만 남기고 건너뛴다.
+- **레지스트리에 닿지 않으면** `check.py`는 `node_modules`가 없을 때 SDK 서버 검사를, 있어도 npx 배포 형태 검사를 경고로 건너뛴다(종료 코드 0). 주소 확인(3초)을 통과한 뒤 `npm install`이나 `npx`가 받는 도중 끊겨도 경고로 건너뛴다.
 - **`check.py`는 `node_modules`가 없고 레지스트리에 닿으면 이 폴더에서 `npm install`을 실행한다.** 배포 형태 검사는 임시 폴더와 임시 npm 캐시에서 하므로 예제 폴더에 `.tgz`를 남기지 않는다.
 - **Windows**: `check.py` 전체를 Windows(PowerShell 5.1, opencode 1.19.5)에서도 실행해 통과했다(`node` 실행, `npm pack` 후 `npx -y ./….tgz` 항목 포함). 위의 시작 시간 표는 Linux에서 잰 값이고 Windows에서는 재지 않았다.

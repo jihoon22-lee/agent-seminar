@@ -218,3 +218,4 @@ Error: Invalid URL
 - 모의 서버는 `/chat/completions` 의 일반 답변과 스트리밍만 흉내 냅니다. 도구 호출을 시키는 실습은 가짜 LLM 이 있는 다른 예제([C5](../c5-permissions/README.md))를 쓰세요.
 - 포트 8799 는 수동 실습용 기본값입니다. 이미 쓰고 있다면 `--port` 로 바꾸세요.
 - Linux 에서 `python` 명령이 없으면 `python3` 로 바꾸세요. 이 예제의 `opencode.json` 은 실행 명령을 쓰지 않아 그대로 둡니다.
+- **Windows**: Windows(PowerShell 5.1, opencode 1.19.5)에서 이 예제의 `check.py` 를 실행해 통과했습니다(실패 0). 손으로 서버를 띄워 `opencode run` 으로 따라 하는 과정과 실제 모델은 Windows 에서 확인하지 않았습니다. `model_server.py` 의 Ctrl+C 종료는 Windows 의 Python 3.12 에서 신호를 보내 확인했습니다(0.5초 간격으로 깨어나는 대기라 종료되고 포트가 닫힙니다). 시간 제한 없는 `Event().wait()` 는 같은 시험에서 종료되지 않았습니다.

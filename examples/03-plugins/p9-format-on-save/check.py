@@ -32,18 +32,40 @@ def make_work(sb: Sandbox, name: str) -> pathlib.Path:
     return work
 
 
-def scripted_run(sb, work, script, prompt="go", timeout=240):
+def path_without_python(sb: Sandbox) -> str:
+    """`python` 명령이 없는 Linux 를 흉내 낸 PATH. Sandbox 의 python 지름길을 빼고, 실제 `python` 이 든 폴더도 뺀다.
+    플러그인이 쓰는 python3 는 남겨 둔다 (없는 것은 `python` 뿐이라는 상황)."""
+    keep = sb.root / "nopy-bin"
+    keep.mkdir(exist_ok=True)
+    if not (keep / "python3").exists():
+        (keep / "python3").symlink_to(sys.executable)
+    parts = [str(keep)]
+    for d in sb.env["PATH"].split(os.pathsep):
+        if d and d != str(sb.root / "bin") and d != str(keep) and shutil.which("python", path=d) is None:
+            parts.append(d)
+    return os.pathsep.join(parts)
+
+
+def scripted_run(sb, work, script, prompt="go", timeout=240, extra_env=None, extra_args=()):
     """가짜 LLM 이 정해진 도구 호출을 하게 하고 opencode run 을 실행한다.
     반환: (stdout+stderr, 모델이 받은 도구 결과 문장들(순서대로, 중복 제거 없음))."""
     with FakeLLM(script=script) as llm:
         env = {"OPENCODE_CONFIG_CONTENT": json.dumps(llm.provider_config())}
-        proc = sb.opencode(["run", "-m", "fake/echo", "--auto", prompt], work, timeout=timeout, extra_env=env)
+        env.update(extra_env or {})
+        proc = sb.opencode(["run", *extra_args, "-m", "fake/echo", "--auto", prompt], work, timeout=timeout, extra_env=env)
         last = llm.main_requests()[-1] if llm.main_requests() else {}
         results = [FakeLLM.message_text(m) for m in last.get("messages", []) if m.get("role") == "tool"]
         return proc.stdout + "\n" + proc.stderr, results
 
 
 def main() -> None:
+    # 이 컴퓨터에 진짜 `python` 명령이 있는지. Sandbox 가 PATH 에 넣어 주는 python 지름길(Linux)은 세지 않는다.
+    # 없으면 opencode.json 의 formatter(["python", ...])는 이 컴퓨터에서 조용히 아무 일도 하지 않는다.
+    has_real_python = shutil.which("python", path=os.environ.get("PATH", "")) is not None
+    check("이 컴퓨터에 `python` 명령이 있다 (opencode.json 의 formatter 가 쓰는 이름)", has_real_python,
+          "`python` 이 PATH 에 없습니다. 이 상태로 opencode 를 쓰면 Part A(내장 formatter)가 조용히 아무 일도 하지 않습니다 "
+          "(파일은 그대로, 모델과 화면에 아무 표시 없음). opencode.json 의 formatter 명령 첫 단어 \"python\" 을 \"python3\" 로 바꾸세요. "
+          "check.py 는 Sandbox 의 python 지름길 덕분에 이것과 상관없이 통과합니다.", soft=True)
     node = shutil.which("node")
     check("node 가 있다 (훅 단위 테스트용)", node is not None, "node 가 없어 단위 테스트를 건너뜁니다", soft=True)
     if node:
@@ -98,7 +120,26 @@ def main() -> None:
         check("깨진 JSON: formatter 는 조용히 건너뛰고(파일 그대로) 플러그인이 모델에게 알림",
               read(broken) == '{"b": 1,}' and len(results) >= 5 and "JSON 문법 오류" in results[4], read(broken) + "\n" + "\n".join(results[4:]))
         log = read(work / "logs" / "format-check.log")
+        show("format-check.log", log)
         check("기록: FOUND 와 OK 가 남음", "FOUND lint.py: 1건" in log and "OK a.json" in log, log)
+
+        # --- `python` 이 없는 Linux: 내장 formatter 는 조용히 아무 일도 하지 않는다 (README 의 경고를 뒷받침)
+        if os.name == "nt":
+            print("[SKIP] python 없는 PATH 검사: Windows 에는 `python` 명령이 있는 것이 보통이라 건너뜀 (Linux 에서만 의미 있음)", flush=True)
+        else:
+            nopy = {"PATH": path_without_python(sb)}
+            work6 = make_work(sb, "work6")
+            raw = '{"b": 1, "a": 2}'
+            f6 = work6 / "nopy.json"
+            out, results = scripted_run(sb, work6, [("tool", "write", {"filePath": str(f6), "content": raw}), "끝"], extra_env=nopy)
+            show("no python on PATH (plain run)", out)
+            check("[python 없음] formatter 가 안 돌아 파일이 쓴 그대로 남음 (정렬 안 됨)", read(f6) == raw, read(f6))
+            check("[python 없음] 모델이 받은 도구 결과에도, 화면에도 formatter 실패 표시가 없음 (조용한 실패)",
+                  results == ["Wrote file successfully.\n\n[린트 결과] nopy.json: 문제 없음"] and "failed to format" not in out and "spawn" not in out, str(results) + out[-300:])
+            f7 = work6 / "nopy2.json"
+            out, _ = scripted_run(sb, work6, [("tool", "write", {"filePath": str(f7), "content": raw}), "끝"], extra_env=nopy, extra_args=("--print-logs",))
+            show("no python on PATH (--print-logs)", out)
+            check("[python 없음] 원인은 `opencode run --print-logs` 에서만 보임 (failed to format file ... spawn failed)", "failed to format file" in out and "spawn failed" in out and read(f7) == raw, out[-600:])
 
         # --- 검사기가 없으면 편집은 그대로 성립하고 모델 결과에는 아무것도 붙지 않는다
         work2 = make_work(sb, "work2")

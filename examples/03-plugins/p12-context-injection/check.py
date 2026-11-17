@@ -45,7 +45,7 @@ def make_repo(sb: Sandbox, name: str, branch: str, plugins: bool = True) -> path
         shutil.rmtree(repo / ".opencode" / "plugins")
     git(repo, "init", "-q", "-b", branch)
     git(repo, "config", "user.name", "demo")
-    git(repo, "config", "user.email", "demo@example.invalid")
+    git(repo, "config", "user.email", "demo.invalid")
     git(repo, "config", "commit.gpgsign", "false")
     (repo / ".gitignore").write_text("logs/\n", encoding="utf-8")
     git(repo, "add", ".")

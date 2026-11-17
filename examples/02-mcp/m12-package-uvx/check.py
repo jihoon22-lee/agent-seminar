@@ -38,10 +38,33 @@ def http_ok(url, timeout=3.0):
 
 
 def index_reachable():
+    """uv 가 실제로 쓰는 패키지 인덱스에 닿는지 uv 에게 직접 물어본다 (hatchling 의 버전 목록을 받아 보는 해석 한 번).
+
+    UV_DEFAULT_INDEX / UV_INDEX_URL / uv.toml 의 index 설정을 uv 가 알아서 적용한다.
+    pip 설정(PIP_INDEX_URL, pip.conf)은 uv 가 읽지 않으므로 보지 않는다. 8초 안에 끝나지 않으면 닿지 않는 것으로 본다.
+    """
     if not (UV and UVX):
         return False, "(uv/uvx 없음)"
-    url = os.environ.get("UV_DEFAULT_INDEX") or os.environ.get("UV_INDEX_URL") or os.environ.get("PIP_INDEX_URL") or "https://pypi.org/simple/"
-    return http_ok(url), url
+    label = os.environ.get("UV_DEFAULT_INDEX") or os.environ.get("UV_INDEX_URL") or "uv 기본값(uv.toml 이 없으면 https://pypi.org/simple)"
+    env = dict(os.environ, UV_HTTP_RETRIES="0", UV_HTTP_TIMEOUT="3")
+    try:
+        proc = subprocess.run([UV, "pip", "compile", "--no-cache", "-q", "-"], input=b"hatchling\n", capture_output=True, timeout=8, env=env, cwd=str(HERE))
+    except (OSError, subprocess.TimeoutExpired):
+        return False, label
+    return proc.returncode == 0, label
+
+
+NET_ERROR_WORDS = ("error sending request", "dns error", "failed to lookup", "tcp connect", "connection refused", "timed out", "client error (connect)", "failed to fetch")
+
+
+def network_failure(text):
+    """uv 의 오류 문구가 네트워크 문제로 보이는가 (인덱스를 확인한 뒤에도 중간에 끊길 수 있다)."""
+    low = (text or "").lower()
+    return any(w in low for w in NET_ERROR_WORDS)
+
+
+class NetSkip(Exception):
+    """인덱스 확인은 통과했지만 이어진 단계에서 네트워크가 끊겼다 — 남은 uvx 검사를 WARN 으로 건너뛴다."""
 
 
 def clean_env(**extra):
@@ -103,7 +126,11 @@ class StdioClient:
         return self.proc.returncode, err
 
 
+LAST_ERR = ""  # first_response_seconds 가 마지막으로 본 stderr (실패 원인이 네트워크인지 가려내는 데 쓴다)
+
+
 def first_response_seconds(cmd, cwd, env=None):
+    global LAST_ERR
     started = time.time()
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=str(cwd), env=env)
     try:
@@ -119,6 +146,7 @@ def first_response_seconds(cmd, cwd, env=None):
             proc.wait(timeout=30)
         except subprocess.TimeoutExpired:
             proc.kill()
+        LAST_ERR = proc.stderr.read().decode("utf-8", "replace")
         proc.stderr.close()
         proc.stdout.close()
 
@@ -206,7 +234,7 @@ with Sandbox("m12") as sb:
     # --- uvx 경로 (uv + 패키지 인덱스 필요) ----------------------------------------------------------------
     if not reachable:
         check("WARN: uv 가 없거나 패키지 인덱스(PyPI/미러)에 닿지 않아 uvx 검사를 건너뜁니다 "
-              "(처음 빌드할 때 빌드 백엔드 hatchling 을 인덱스에서 받으므로 미러가 필요합니다: UV_DEFAULT_INDEX 또는 uv.toml)", False, soft=True)
+              "(처음 빌드할 때 빌드 백엔드 hatchling 을 인덱스에서 받으므로 미러가 필요합니다: 환경 변수 UV_DEFAULT_INDEX=<미러 주소> 또는 uv.toml 의 index-url. pip.conf·PIP_INDEX_URL 은 uv 가 읽지 않습니다)", False, soft=True)
     else:
         tmp = pathlib.Path(tempfile.mkdtemp(prefix="m12-uvx-"))
         try:
@@ -215,6 +243,8 @@ with Sandbox("m12") as sb:
             env = clean_env(UV_CACHE_DIR=str(tmp / "uv-cache"))  # 빈 캐시: 처음 실행 비용을 잰다
             cmd = [UVX, "--from", ".", "team-glossary-mcp"]
             t1 = first_response_seconds(cmd, project, env)
+            if t1 is None and network_failure(LAST_ERR):
+                raise NetSkip(LAST_ERR)
             t2 = first_response_seconds(cmd, project, env)
             print(f"[info] uvx --from . team-glossary-mcp 시작 시간: 첫 실행(빈 캐시, 빌드+백엔드 내려받기) {t1 and round(t1, 2)}초, 두 번째 {t2 and round(t2, 2)}초, python -m {t_py and round(t_py, 2)}초")
             check("uvx --from . team-glossary-mcp: 첫 실행에서 패키지를 빌드해 서버가 응답한다", t1 is not None)
@@ -234,6 +264,8 @@ with Sandbox("m12") as sb:
             # 빌드한 wheel 은 인덱스 없이 실행된다 (빌드 백엔드가 필요한 것은 '빌드'뿐)
             dist = tmp / "dist"
             built = run_once([UV, "build", "--wheel", "-o", str(dist), "."], project, env)
+            if built.returncode != 0 and network_failure(built.stderr.decode("utf-8", "replace")):
+                raise NetSkip(built.stderr.decode("utf-8", "replace"))
             wheels = sorted(dist.glob("*.whl"))
             check("uv build --wheel: team_glossary_mcp-1.0.0-py3-none-any.whl 이 만들어진다", built.returncode == 0 and len(wheels) == 1 and wheels[0].name == "team_glossary_mcp-1.0.0-py3-none-any.whl", built.stderr.decode()[-300:])
             if wheels:
@@ -256,6 +288,9 @@ with Sandbox("m12") as sb:
             os.utime(project / "pyproject.toml")  # pyproject.toml 의 수정 시각이 바뀌면 uv 가 다시 빌드한다
             touched = run_once(cmd, project, env).stderr.decode("utf-8", "replace")
             check("pyproject.toml 을 건드리면(수정 시각 변경) 캐시된 빌드가 갱신된다", "(또 고침)" in touched, touched[-200:], soft=True)
+        except NetSkip as exc:
+            check("WARN: 인덱스 확인은 통과했지만 uvx/uv build 도중 네트워크가 끊겨 남은 uvx 검사를 건너뜁니다 "
+                  "(UV_DEFAULT_INDEX 로 쓸 수 있는 미러가 필요합니다)", False, str(exc).strip()[-300:], soft=True)
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
 

@@ -12,6 +12,8 @@
 //     `bash -c "git commit"`, PowerShell 의 `git.exe`, `Set-Location x; git commit` 을 잡고,
 //     따옴표 안 글자(`echo "git commit"`, `git commit -m "a; git push"`)와 heredoc 본문은 명령으로 보지 않습니다.
 //     `git commit --help/-h/--dry-run`, `git push --dry-run/-n` 은 아무것도 바꾸지 않으므로 허용합니다.
+//   - 한 명령 줄 안에서 브랜치가 바뀌는 경우도 따라갑니다: `git switch main && git commit`(막음), `git switch -c feat/y && git commit`(허용).
+//     `git switch`/`git checkout` 의 목적지를 알 수 없으면(`git switch -`, 경로인지 브랜치인지 모를 `git checkout x`) 처음 브랜치 기준으로 판단하고 로그에 `NOTE` 를 남깁니다.
 //
 // 환경변수(모두 선택): BRANCH_GUARD_PROTECTED 보호할 브랜치(쉼표로 구분, 기본 "main,master")
 //                      BRANCH_GUARD_GIT       git 실행 파일 이름(테스트용)
@@ -27,7 +29,8 @@ import { join, resolve } from "node:path";
 const KEYWORDS = new Set(["then", "do", "else", "elif", "if", "while", "until", "!", "{", "}"]);
 const WRAPPERS = new Set(["sudo", "doas", "command", "builtin", "exec", "nohup", "nice", "time", "env"]);
 const WRAPPER_ARG_FLAGS = new Set(["-u", "-g", "-U", "-C"]); // sudo -u 사용자 처럼 값을 하나 받는 옵션
-const SHELLS = new Set(["bash", "sh", "zsh", "dash", "ksh", "pwsh", "powershell"]);
+const SHELLS = new Set(["bash", "sh", "zsh", "dash", "ash", "ksh", "fish", "pwsh", "powershell"]);
+const PS_SHELLS = new Set(["pwsh", "powershell"]);
 const CD_NAMES = new Set(["cd", "chdir", "pushd", "set-location", "sl"]);
 const EVAL_NAMES = new Set(["eval", "iex", "invoke-expression"]);
 const ENV_ASSIGN = /^[A-Za-z_][A-Za-z0-9_]*=/;
@@ -137,11 +140,79 @@ function parseGit(cwd, rest) {
   return { dir, sub: rest[k], args: rest.slice(k + 1) };
 }
 
+// 셸이 받은 "명령 문자열" 인자를 꺼낸다. 못 꺼내면 null.
+//   bash -c / -lc / -ec "…"   cmd /c "…" (/d /s /k 도)   powershell -Command "…" / -c / -EncodedCommand <base64>
+function shellPayload(name, args) {
+  if (name === "cmd") {
+    const at = args.findIndex((a) => /^\/[ck]$/i.test(a));
+    return at >= 0 && args[at + 1] !== undefined ? args.slice(at + 1).join(" ") : null;
+  }
+  if (PS_SHELLS.has(name)) {
+    const at = args.findIndex((a) => /^-(c|com|comm|comma|comman|command)$/i.test(a));
+    if (at >= 0 && args[at + 1] !== undefined) return args.slice(at + 1).join(" ");
+    const enc = args.findIndex((a) => /^-(e|ec|en|enc|enco|encod|encode|encoded|encodedc|encodedco|encodedcom|encodedcomm|encodedcomma|encodedcomman|encodedcommand)$/i.test(a));
+    if (enc >= 0 && args[enc + 1] !== undefined) return Buffer.from(args[enc + 1], "base64").toString("utf16le");
+    return null;
+  }
+  const at = args.findIndex((a) => /^-[A-Za-z]*c[A-Za-z]*$/.test(a)); // -c, -lc, -ec …
+  return at >= 0 && args[at + 1] !== undefined ? args.slice(at + 1).join(" ") : null;
+}
+
+// git switch / git checkout 한 번이 가리키는 브랜치 변화. 못 알아내면 { kind: "unknown" }.
+//   { kind: "branch", name }  이름이 정해진 브랜치(새로 만들거나 switch 로 가는 곳)
+//   { kind: "detached" }      --detach
+//   { kind: "maybe", name }   `git checkout x`: x 가 브랜치인지 경로인지는 실행 직전에 git 에게 물어 정한다
+//   null                      브랜치가 바뀌지 않음(`git checkout -- file`, `git checkout HEAD`)
+function switchChange(sub, args) {
+  const takesValue = sub === "switch" ? ["-c", "-C", "--create", "--force-create", "--orphan"] : ["-b", "-B", "--orphan"];
+  let created, detach = false, dashdash = false, firstPositional, track = false;
+  for (let k = 0; k < args.length; k++) {
+    const a = args[k];
+    if (dashdash) continue;
+    if (a === "--") { dashdash = true; continue; }
+    if (takesValue.includes(a)) { created = args[k + 1]; k++; continue; }
+    const attached = /^(-[cCbB])(.+)$/.exec(a); // -cname, -bname
+    if (attached && takesValue.includes(attached[1])) { created = attached[2]; continue; }
+    const eq = /^(--[a-z-]+)=(.*)$/.exec(a);
+    if (eq && takesValue.includes(eq[1])) { created = eq[2]; continue; }
+    if (a === "-d" || a === "--detach") { detach = true; continue; }
+    if (a === "-t" || a === "--track" || a.startsWith("--track=")) { track = true; continue; }
+    if (a === "-") { firstPositional ??= a; continue; }
+    if (a.startsWith("-")) continue;
+    firstPositional ??= a;
+  }
+  if (created !== undefined && created !== "") return { kind: "branch", name: created, created: true };
+  if (created === "") return { kind: "unknown" };
+  if (detach) return { kind: "detached" };
+  if (dashdash || firstPositional === undefined) return null;
+  const x = firstPositional;
+  if (x === "-" || x.startsWith("@") || track || /[~^:{$`*?]/.test(x)) return { kind: "unknown" }; // 이전 브랜치, @{-1}, HEAD~1, 변수($)가 든 이름, 원격 추적 …
+  if (x === "HEAD") return null;
+  return sub === "switch" ? { kind: "branch", name: x } : { kind: "maybe", name: x };
+}
+
+// gh pr create 의 --draft / -d (합친 짧은 옵션 `-dt 제목`, `-fd` 포함) 를 찾는다.
+// 값을 받는 짧은 옵션(a B b H l m p r T t)이 나오면 그 묶음의 나머지는 그 옵션의 값이다. (`-tdraft` 의 d 는 값의 글자)
+const GH_VALUE_SHORT = new Set("aBbHlmprTt");
+function ghDraft(args) {
+  for (let k = 0; k < args.length; k++) {
+    const a = args[k];
+    if (a === "--draft" || /^--draft=(true|1|t|TRUE|True)$/.test(a)) return true;
+    if (a.startsWith("--") || !a.startsWith("-") || a === "-") continue;
+    for (let c = 1; c < a.length; c++) {
+      const ch = a[c];
+      if (ch === "d") { if (a[c + 1] === "=") { if (/^(true|1|t)$/i.test(a.slice(c + 2))) return true; } else return true; break; }
+      if (GH_VALUE_SHORT.has(ch)) break;
+    }
+  }
+  return false;
+}
+
 // 명령 문자열 → 검사할 일의 목록: { type: "commit" | "push" | "draft-pr" | "pr-undo-ready", cwd, ... }
-function scan(src, startCwd, depth = 0, events = []) {
+function scan(src, startCwd, depth = 0, events = [], moves = new Map()) {
   if (depth > 4 || typeof src !== "string") return events;
   const { commands, nested } = tokenize(src);
-  for (const inner of nested) scan(inner, startCwd, depth + 1, events);
+  for (const inner of nested) scan(inner, startCwd, depth + 1, events, moves);
   let cwd = startCwd;
   for (const original of commands) {
     const w = original.slice();
@@ -157,14 +228,19 @@ function scan(src, startCwd, depth = 0, events = []) {
     const name = baseName(w[0]);
     const args = w.slice(1);
     if (CD_NAMES.has(name)) cwd = nextCwd(cwd, w);
-    else if (SHELLS.has(name)) {
-      const at = args.findIndex((a) => /^-(c|command)$/i.test(a));
-      if (at >= 0 && args[at + 1] !== undefined) scan(args.slice(at + 1).join(" "), cwd, depth + 1, events);
-    } else if (EVAL_NAMES.has(name)) scan(args.join(" "), cwd, depth + 1, events);
+    else if (SHELLS.has(name) || name === "cmd") {
+      const payload = shellPayload(name, args);
+      if (payload !== null) scan(payload, cwd, depth + 1, events, moves);
+    } else if (EVAL_NAMES.has(name)) scan(args.join(" "), cwd, depth + 1, events, moves);
     else if (name === "git") {
       const g = parseGit(cwd, args);
       const harmless = g.args.some((a) => ["--help", "-h", "--dry-run"].includes(a));
-      if (g.sub === "commit" && !harmless) events.push({ type: "commit", cwd: g.dir });
+      const moved = () => (moves.get(g.dir) ?? []).slice(); // 이 명령 줄 안에서 이미 일어난 브랜치 변화
+      if ((g.sub === "switch" || g.sub === "checkout") && !g.args.some((a) => ["--help", "-h"].includes(a))) {
+        const change = switchChange(g.sub, g.args);
+        if (change) moves.set(g.dir, [...moved(), change]);
+      }
+      if (g.sub === "commit" && !harmless) events.push({ type: "commit", cwd: g.dir, moves: moved() });
       if (g.sub === "push" && !g.args.some((a) => ["--help", "-h", "--dry-run", "-n"].includes(a))) {
         const positional = [];
         for (let k = 0; k < g.args.length; k++) {
@@ -173,13 +249,17 @@ function scan(src, startCwd, depth = 0, events = []) {
           else if (!a.startsWith("-")) positional.push(a);
         }
         events.push({
-          type: "push", cwd: g.dir, specs: positional.slice(1),
+          type: "push", cwd: g.dir, moves: moved(), specs: positional.slice(1),
           all: g.args.some((a) => a === "--all" || a === "--mirror"), tags: g.args.includes("--tags"),
         });
       }
-    } else if (name === "gh" && args[0] === "pr") {
-      if (args[1] === "create" && args.slice(2).some((a) => a === "--draft" || a === "-d" || /^--draft=(true|1)$/i.test(a))) events.push({ type: "draft-pr" });
-      if (args[1] === "ready" && args.includes("--undo")) events.push({ type: "pr-undo-ready" });
+    } else if (name === "gh") {
+      const rest = args.slice();
+      while (rest.length && /^(-R|--repo)$/.test(rest[0])) rest.splice(0, 2); // gh -R 소유자/저장소 pr create
+      if (rest[0] === "pr") {
+        if ((rest[1] === "create" || rest[1] === "new") && ghDraft(rest.slice(2))) events.push({ type: "draft-pr" });
+        if (rest[1] === "ready" && rest.includes("--undo")) events.push({ type: "pr-undo-ready" });
+      }
     }
   }
   return events;
@@ -240,6 +320,22 @@ export const BranchGuard = async ({ directory }) => {
       const isProtected = (name) => protectedBranches.includes(name);
       const cache = new Map();
       const branchOf = (cwd) => { if (!cache.has(cwd)) cache.set(cwd, currentBranch(cwd)); return cache.get(cwd); };
+      let noted = false;
+      // 이 명령 줄 안의 git switch/checkout 을 순서대로 반영한 "이 이벤트가 실행될 때의 브랜치".
+      // 목적지를 알 수 없는 전환은 무시하고(= 명령 시작 때의 브랜치로 판단) 로그에 NOTE 를 한 번 남긴다.
+      const branchFor = async (ev) => {
+        let state = null, unknown = false;
+        for (const m of ev.moves ?? []) {
+          if (m.kind === "branch") state = { branch: m.name, switched: true };
+          else if (m.kind === "detached") state = { skip: "detached-by-switch" };
+          else if (m.kind === "maybe") {
+            const isBranch = isProtected(m.name) || (existsSync(ev.cwd) && (await runGit(process.env.BRANCH_GUARD_GIT || "git", ev.cwd, ["show-ref", "--verify", "--quiet", `refs/heads/${m.name}`])).code === 0);
+            if (isBranch) state = { branch: m.name, switched: true }; else unknown = true;
+          } else unknown = true;
+        }
+        if (unknown && !noted) { noted = true; log(`NOTE switch-destination-unknown (judged by the branch before this command) :: ${short}`); }
+        return state ?? branchOf(ev.cwd);
+      };
       const short = String(command).replace(/\s+/g, " ").slice(0, 160);
       const deny = (id, message) => {
         log(`BLOCKED rule=${id} :: ${short}`);
@@ -255,10 +351,10 @@ export const BranchGuard = async ({ directory }) => {
           deny("draft-pr", "PR 을 초안으로 되돌리는 `gh pr ready --undo` 는 쓰지 않는 규칙입니다. 수정이 더 필요하면 같은 브랜치에 커밋을 추가하세요.");
         }
         if (ev.type === "commit") {
-          const b = await branchOf(ev.cwd);
+          const b = await branchFor(ev);
           if (b.skip) { skipped(b.skip); continue; }
           if (isProtected(b.branch)) {
-            deny("protected-branch", `현재 브랜치가 '${b.branch}' 입니다. ${protectedBranches.join("/")} 에는 직접 커밋하지 않습니다. 먼저 새 브랜치를 만드세요: git switch -c <type>/<name> (예: git switch -c feat/login-form). 변경한 파일은 그대로 따라옵니다. 그다음 같은 커밋 명령을 다시 실행하세요.`);
+            deny("protected-branch", `${b.switched ? `이 명령은 먼저 '${b.branch}' 로 전환한 뒤 커밋합니다.` : `현재 브랜치가 '${b.branch}' 입니다.`} ${protectedBranches.join("/")} 에는 직접 커밋하지 않습니다. 먼저 새 브랜치를 만드세요: git switch -c <type>/<name> (예: git switch -c feat/login-form). 변경한 파일은 그대로 따라옵니다. 그다음 같은 커밋 명령을 다시 실행하세요.`);
           }
         }
         if (ev.type === "push") {
@@ -268,17 +364,17 @@ export const BranchGuard = async ({ directory }) => {
           let needBranch = ev.specs.length === 0;
           for (const spec of ev.specs) {
             const dst = (spec.replace(/^\+/, "").split(":").pop() || "").replace(/^refs\/heads\//, "");
-            if (dst === "HEAD") needBranch = true; else targets.push(dst);
+            if (dst === "HEAD" || dst === "@") needBranch = true; else targets.push(dst);
           }
           let current;
           if (needBranch) {
-            const b = await branchOf(ev.cwd);
+            const b = await branchFor(ev);
             if (b.skip) skipped(b.skip); else { current = b.branch; targets.push(b.branch); }
           }
           const hit = targets.find(isProtected);
           if (hit) {
             deny("push-to-protected", hit === current
-              ? `현재 브랜치가 '${hit}' 입니다. ${protectedBranches.join("/")} 로는 직접 푸시하지 않습니다. 작업 브랜치를 만들어(git switch -c <type>/<name>) 커밋한 뒤 그 브랜치를 푸시하고(git push -u origin <브랜치>), PR 로 합치세요.`
+              ? `${ev.moves?.length ? `이 명령은 먼저 '${hit}' 로 전환한 뒤 푸시합니다.` : `현재 브랜치가 '${hit}' 입니다.`} ${protectedBranches.join("/")} 로는 직접 푸시하지 않습니다. 작업 브랜치를 만들어(git switch -c <type>/<name>) 커밋한 뒤 그 브랜치를 푸시하고(git push -u origin <브랜치>), PR 로 합치세요.`
               : `'${hit}' 로 직접 푸시하는 명령입니다. 작업 브랜치를 푸시하고(git push -u origin <브랜치>) PR 로 합치세요.`);
           }
         }

@@ -43,6 +43,19 @@ def registry_reachable(timeout=3.0):
         return False, url
 
 
+NET_ERROR_WORDS = ("enotfound", "econnrefused", "etimedout", "eai_again", "econnreset", "fetch failed", "network", "request to http")
+
+
+def network_failure(text):
+    """npm 의 오류 문구가 네트워크 문제로 보이는가 (레지스트리 확인을 통과한 뒤에도 중간에 끊길 수 있다). 원인은 앞쪽 줄에 쓰이므로 전체를 본다."""
+    low = (text or "").lower()
+    return any(w in low for w in NET_ERROR_WORDS)
+
+
+class NetSkip(Exception):
+    """레지스트리 확인은 통과했지만 이어진 단계에서 네트워크가 끊겼다 — 남은 npx 검사를 WARN 으로 건너뛴다."""
+
+
 def scripted_call(sb, cwd, tool, args):
     """가짜 모델이 `tool`을 `args`로 부르게 한다. 반환: (opencode 출력, 모델에게 제공된 도구 이름들, 모델에게 돌아간 도구 결과들)."""
     with FakeLLM(script=[("tool", tool, args), "DONE"]) as llm:
@@ -97,8 +110,12 @@ class StdioClient:
         return self.proc.returncode, err
 
 
+LAST_ERR = ""  # first_response_seconds 가 마지막으로 본 stderr
+
+
 def first_response_seconds(cmd, cwd, env=None):
     """서버를 띄워 initialize 응답이 올 때까지의 시간(초). 못 받으면 None."""
+    global LAST_ERR
     started = time.time()
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=str(cwd), env=env)
     try:
@@ -115,6 +132,7 @@ def first_response_seconds(cmd, cwd, env=None):
             proc.wait(timeout=20)
         except subprocess.TimeoutExpired:
             proc.kill()
+        LAST_ERR = proc.stderr.read().decode("utf-8", "replace")
         proc.stderr.close()
         proc.stdout.close()
 
@@ -149,6 +167,10 @@ if not (HERE / "node_modules" / "@modelcontextprotocol" / "sdk").is_dir():
         finish()
     started = time.time()
     proc = subprocess.run([NPM, "install", "--no-audit", "--no-fund"], cwd=str(HERE), capture_output=True, text=True, timeout=300)
+    if proc.returncode != 0 and network_failure(proc.stdout + proc.stderr):
+        check("WARN: 레지스트리 확인은 통과했지만 npm install 도중 네트워크가 끊겨 SDK 서버 검사를 건너뜁니다 (패키지 미러가 필요합니다)",
+              False, proc.stderr[-300:], soft=True)
+        finish()
     check(f"npm install 성공 ({time.time() - started:.1f}초)", proc.returncode == 0, proc.stdout[-300:] + proc.stderr[-300:])
     if proc.returncode != 0:
         finish()
@@ -219,6 +241,8 @@ with Sandbox("m10") as sb:
                       members == ["package/glossary.json", "package/package.json", "package/src/server.mjs"], str(members))
                 npx_cmd = [shutil.which("npx") or "npx", "-y", "./team-glossary-mcp-1.0.0.tgz"]
                 t1 = first_response_seconds(npx_cmd, project, env)
+                if t1 is None and network_failure(LAST_ERR):
+                    raise NetSkip(LAST_ERR)
                 t2 = first_response_seconds(npx_cmd, project, env)
                 print(f"[info] npx -y ./...tgz 시작 시간: 첫 실행(빈 캐시, 의존성 설치) {t1 and round(t1, 2)}초, 두 번째 {t2 and round(t2, 2)}초, node 직접 {t_node and round(t_node, 2)}초")
                 check("npx -y ./team-glossary-mcp-1.0.0.tgz: 첫 실행에도 서버가 응답한다 (의존성 자동 설치)", t1 is not None)
@@ -236,6 +260,9 @@ with Sandbox("m10") as sb:
                     sb.opencode(["run", "-m", "fake/echo", "--auto", "go"], project, timeout=120, extra_env=env2)
                     got = [llm.message_text(m) for rq in llm.main_requests() for m in rq["messages"] if m.get("role") == "tool"]
                 check("(가짜 모델) npx로 띄운 서버에서도 용어집 답이 돌아온다", any("내부 목표 수치" in x for x in got), str(got))
+        except NetSkip as exc:
+            check("WARN: 레지스트리 확인은 통과했지만 npx 가 의존성을 받는 도중 네트워크가 끊겨 npx 배포 형태 검사를 건너뜁니다 (패키지 미러가 필요합니다)",
+                  False, str(exc).strip()[-300:], soft=True)
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
 

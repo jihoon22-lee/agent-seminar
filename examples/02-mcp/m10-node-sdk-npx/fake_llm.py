@@ -125,6 +125,7 @@ if __name__ == "__main__":
         print(f"fake LLM: http://127.0.0.1:{llm.port}/v1  (Ctrl+C 로 종료)")
         print(json.dumps(llm.provider_config(), indent=2))
         try:
-            threading.Event().wait()
+            while not threading.Event().wait(0.5):   # 짧게 끊어 기다려야 Windows에서도 Ctrl+C가 먹는다
+                pass
         except KeyboardInterrupt:
             pass

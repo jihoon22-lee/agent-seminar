@@ -87,6 +87,49 @@ def find_opencode() -> str:
     return found
 
 
+def npm_registry_url() -> str:
+    """The npm registry opencode will use for its plugin dependency install (env, then ~/.npmrc, then the default)."""
+    for key in ("npm_config_registry", "NPM_CONFIG_REGISTRY"):
+        if os.environ.get(key):
+            return os.environ[key]
+    try:
+        for line in (Path.home() / ".npmrc").read_text(encoding="utf-8", errors="replace").splitlines():
+            name, _, value = line.partition("=")
+            if name.strip() == "registry" and value.strip():
+                return value.strip()
+    except OSError:
+        pass
+    return "https://registry.npmjs.org/"
+
+
+def registry_reachable() -> bool:
+    """True when the npm registry answers within 3 seconds. Probed once per run and shared through the environment.
+
+    When it does not answer, opencode still works but every start in a folder with plugins stalls
+    (about 70 s when the connection is refused, much longer when packets are dropped), so the
+    sandbox stretches its timeouts instead of failing with a timeout traceback.
+    """
+    cached = os.environ.get("AGENT_SEMINAR_REGISTRY")
+    if cached in ("ok", "down"):
+        return cached == "ok"
+    import urllib.error
+    import urllib.request
+    url = npm_registry_url()
+    try:
+        urllib.request.urlopen(url, timeout=3).close()
+        ok = True
+    except urllib.error.HTTPError:
+        ok = True  # any HTTP answer means the registry is there
+    except Exception:  # noqa: BLE001 - refused, timed out, DNS failure, bad URL
+        ok = False
+    os.environ["AGENT_SEMINAR_REGISTRY"] = "ok" if ok else "down"
+    if not ok:
+        print(f"[WARN] npm 레지스트리({url})가 3초 안에 응답하지 않습니다. 플러그인이 있는 예제는 opencode를 시작할 때마다 "
+              "70초 이상 멈추므로 검사가 오래 걸립니다(제한 시간을 늘려 계속합니다). "
+              "패키지 미러를 지정하세요: npm config set registry <미러 주소>", flush=True)
+    return ok
+
+
 class Sandbox:
     """Isolated opencode environment. Use as a context manager."""
 
@@ -146,6 +189,8 @@ class Sandbox:
         # `opencode run` takes its project directory from $PWD, not from the process cwd.
         env["PWD"] = str(Path(cwd).resolve())
         env.update(extra_env or {})
+        if not registry_reachable():
+            timeout = timeout * 4 + 300  # each start may stall on the dependency install
         # Large outputs (e.g. `debug skill`) get truncated when read through a pipe,
         # so stdout/stderr go to files and are read back afterwards.
         self._calls += 1

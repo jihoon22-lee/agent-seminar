@@ -185,6 +185,58 @@ with tempfile.TemporaryDirectory(prefix="m13-link-") as tmp:
     else:
         check("심볼릭 링크 시험은 권한이 없어 건너뜀", False, soft=True)
 
+# --- 저장소 설정에 적힌 외부 프로그램이 실행되지 않는다 -----------------------------------------------------
+# 저장소의 .git/config 와 .gitattributes 는 저장소를 받은 사람이 고를 수 없는 입력이다. textconv, 외부 diff, fsmonitor 에
+# 프로그램을 적어 두면 읽기 전용 명령처럼 보이는 git blame 도 그 프로그램을 실행한다. 표식 파일을 남기는 프로그램으로 확인한다.
+with tempfile.TemporaryDirectory(prefix="m13-hooks-") as tmp:
+    tmp = pathlib.Path(tmp)
+    repo = tmp / "repo"
+    repo.mkdir()
+    marks = tmp / "marks"
+    marks.mkdir()
+    probe = tmp / "probe.py"
+    probe.write_text("import sys, pathlib\npathlib.Path(sys.argv[1]).write_text('ran', encoding='utf-8')\n"
+                     "if len(sys.argv) > 2 and pathlib.Path(sys.argv[2]).is_file():\n"
+                     "    sys.stdout.write(pathlib.Path(sys.argv[2]).read_text(encoding='utf-8'))\n", encoding="utf-8")
+
+    def program(name):
+        """git 설정에 적을 명령: 파이썬으로 probe.py 를 실행해 marks/<name> 을 만든다 (git 이 sh 로 실행하므로 슬래시 표기)."""
+        return f'"{pathlib.Path(sys.executable).as_posix()}" "{probe.as_posix()}" "{(marks / name).as_posix()}"'
+
+    ident = {"GIT_AUTHOR_NAME": "demo", "GIT_AUTHOR_EMAIL": "", "GIT_COMMITTER_NAME": "demo", "GIT_COMMITTER_EMAIL": ""}
+    gitenv = {**clean_env(), **ident}
+
+    def hgit(*args):
+        return subprocess.run(["git", *args], cwd=str(repo), capture_output=True, encoding="utf-8", env=gitenv)
+
+    hgit("init", "-q")
+    (repo / ".gitattributes").write_text("*.txt diff=x\n", encoding="utf-8")
+    (repo / "f.txt").write_text("a\nb\n", encoding="utf-8")
+    hgit("add", ".")
+    hgit("commit", "-qm", "one")
+    (repo / "f.txt").write_text("a\nb\nc\n", encoding="utf-8")
+    hgit("commit", "-qam", "two")
+    hgit("config", "diff.x.textconv", program("textconv"))
+    hgit("config", "diff.external", program("extdiff"))
+    hgit("config", "core.fsmonitor", program("fsmonitor"))
+
+    # 대조: 막지 않은 git 은 저장소 설정의 프로그램을 실제로 실행한다 (이게 안 되면 아래 검사가 아무것도 증명하지 못한다)
+    hgit("blame", "-L", "1,2", "--", "f.txt")
+    hgit("diff", "HEAD~1", "HEAD", "--")
+    ran = {m.name for m in marks.iterdir()}
+    check("(대조) 막지 않은 git blame 은 textconv 와 fsmonitor 를, git diff 는 외부 diff 를 실행한다", {"textconv", "fsmonitor", "extdiff"} <= ran, str(sorted(ran)), soft=True)
+    for m in marks.iterdir():
+        m.unlink()
+
+    c4 = StdioClient(repo)
+    err_blame, text_blame = c4.call("git_blame", file="f.txt")
+    err_log, _ = c4.call("git_log")
+    err_diff, _ = c4.call("git_diff_stat", **{"from": "HEAD~1", "to": "HEAD"})
+    check("저장소에 textconv·외부 diff·fsmonitor 가 설정되어 있어도 세 도구가 정상 동작한다", not (err_blame or err_log or err_diff) and "demo" in text_blame, text_blame)
+    check("git_blame/git_log/git_diff_stat 어느 것도 저장소 설정의 외부 프로그램(textconv, 외부 diff, fsmonitor)을 실행하지 않는다 (--no-textconv, --no-ext-diff, core.fsmonitor=false)",
+          not any(marks.iterdir()), str(sorted(m.name for m in marks.iterdir())))
+    c4.close()
+
 # --- 시간 제한: git 대신 5초 자는 프로그램을 끼워서 1초 제한으로 시험 ----------------------------------------
 spec = importlib.util.spec_from_file_location("m13_server", SERVER)
 mod = importlib.util.module_from_spec(spec)

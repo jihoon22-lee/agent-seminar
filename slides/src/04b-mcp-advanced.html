@@ -60,7 +60,7 @@
       <ul class="small">
         <li><code>"enabled": false</code>: 서버 자체를 띄우지 않는다. <code>mcp list</code>에 <code>○ disabled</code></li>
         <li><code>permission</code>에서 <code>deny</code>한 도구는 <strong>모델에게 아예 전달되지 않는다</strong>. <code>ask</code>는 목록에는 남는다</li>
-        <li><code>agent.&lt;이름&gt;.tools</code>로 에이전트마다 다르게 줄 수 있다. <code>--agent reviewer</code>는 운영 도구와 파일 수정 없이 동작한다</li>
+        <li><code>agent.&lt;이름&gt;.tools</code>로 에이전트마다 다르게 줄 수 있다. <code>--agent reviewer</code>는 운영 도구와 <code>edit</code>, <code>write</code> 없이 동작한다. <code>bash</code>와 <code>task</code>는 남아 있어 읽기 전용은 아니다 (C8 참고)</li>
         <li>나중에 쓴 규칙이 이긴다. 예전 형식 <code>"tools": {"x_*": false}</code>도 같은 deny 규칙으로 바뀐다</li>
       </ul>
       <div class="callout small"><p><strong>측정해 보니</strong>: 도구 12개짜리 서버 하나를 켜면 매 요청마다 약 <strong>1,600 토큰</strong>이 늘었습니다. 안 쓰는 서버는 끄고, 안 쓰는 도구는 deny로 숨기세요.</p></div>
@@ -100,7 +100,7 @@
         <tr><td>배포물</td><td><code>server.py</code> + 데이터 파일</td><td>파일 하나, 355 KiB</td></tr>
         <tr><td>시작 시간 <span class="tiny muted">(15회 중앙값)</span></td><td>27.9ms</td><td><strong>1.3ms</strong></td></tr>
         <tr><td>만드는 쪽에 필요한 것</td><td>없음</td><td>Rust 도구, OS마다 빌드</td></tr>
-        <tr><td>코드</td><td>124줄</td><td>176줄 (<code>serde_json</code>만 사용)</td></tr>
+        <tr><td>코드 <span class="tiny muted">(주석 포함)</span></td><td>212줄</td><td>176줄 (<code>serde_json</code>만 사용)</td></tr>
       </table>
       <script type="text/x-code" data-lang="json" class="sm" data-title="opencode.json (Linux와 Windows 공용)">
       {"mcp": {"glossary": {
@@ -134,7 +134,7 @@
     <tr><td><code>outputSchema</code></td><td>모델에게 가지 않는다 (이름, 설명, 입력 스키마만 간다)</td><td>출력 모양은 설명에 글로 쓴다</td></tr>
     <tr><td>도구 목록 변경 알림<br><code>tools/list_changed</code></td><td>목록을 다시 요청하고, <strong>바로 다음 모델 요청부터</strong> 새 도구가 보인다</td><td>동적으로 도구를 늘려도 된다</td></tr>
     <tr><td>서버가 클라이언트에 묻기<br><span class="tiny">sampling, elicitation</span></td><td>즉시 <code>-32601</code>로 거절한다. 선언한 기능은 <code>roots</code>뿐</td><td>물어야 하면 도구 결과로 질문을 돌려준다</td></tr>
-    <tr><td>서버의 stderr 로그</td><td>어디에도 나오지 않는다</td><td>진단은 파일에 남긴다</td></tr>
+    <tr><td>서버의 stderr 로그</td><td>화면에도 <code>--print-logs DEBUG</code>에도 나오지 않는다</td><td>진단은 파일에 남긴다</td></tr>
   </table>
   <p class="small" style="margin-top:18px">이 표의 행마다 <code>check.py</code>에 검사가 있습니다. opencode 버전이 올라가 동작이 바뀌면 그 검사가 실패해서 알려 줍니다.</p>
   <div class="ref">examples/02-mcp/m15-client-features</div>

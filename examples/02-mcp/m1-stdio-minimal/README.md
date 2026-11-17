@@ -155,7 +155,7 @@ opencode가 시작되면 `opencode.json`의 `mcp.glossary`를 읽고 아래 순�
 4. **`tools/list`** — 서버가 가진 도구의 `name`, `description`, `inputSchema`를 받는다. opencode는 이것을 모델에게 보이는 도구 목록에 `서버이름_도구이름`(`glossary_lookup_term`) 형태로 넣는다. **모델은 설명과 스키마만 보고 도구를 고른다** — `description`을 대충 쓰면 모델이 도구를 못 쓴다.
 5. **`tools/call`** — 모델이 도구를 고르면 `{"name": "lookup_term", "arguments": {"term": "ADR"}}`가 전달된다. opencode는 `params._meta.progressToken`도 함께 붙인다.
 6. **결과 반환** — `result.content`는 블록 배열이고 대부분 `{"type": "text", "text": ...}`다. 이 텍스트가 그대로 모델의 다음 입력이 된다.
-7. **종료** — 호출이 끝나면 opencode가 `notifications/cancelled`(reason: AbortError)를 보내기도 한다. 모르는 알림은 조용히 무시해야 서버가 안전하다. opencode가 끝나면 stdin이 닫히고, `for line in sys.stdin` 반복이 끝나 프로세스가 종료된다.
+7. **종료** — 호출이 끝날 때마다 opencode가 `notifications/cancelled`(reason: AbortError)를 보낸다([M15](../m15-client-features/README.md)에서 `tools/call` 8번에 8번 온 것을 측정했다). 호출이 정상으로 끝났어도 온다. 모르는 알림은 조용히 무시해야 서버가 안전하다. opencode가 끝나면 stdin이 닫히고, `for line in sys.stdin` 반복이 끝나 프로세스가 종료된다.
 
 ### 오류는 두 종류다
 

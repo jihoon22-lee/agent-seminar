@@ -36,7 +36,7 @@
   },
   "agent": {
     "reviewer": {
-      "description": "읽기 전용 검토 에이전트: 파일 수정과 운영 도구를 쓰지 못한다",
+      "description": "검토 에이전트: edit·write 와 ops_* 도구를 쓰지 못한다 (bash, task 는 열려 있다)",
       "mode": "primary",
       "tools": {
         "ops_*": false,

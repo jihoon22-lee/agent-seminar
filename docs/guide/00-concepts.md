@@ -108,7 +108,7 @@ USB-C처럼 단자 규격이 같기 때문에, 한 번 만든 서버를 여러 �
 | `tool` | 새 도구 추가 |
 | `tool.definition` | 모델이 받는 도구 설명 수정 |
 | `experimental.chat.system.transform` | 모델 요청의 시스템 프롬프트에 글 추가 (실험 단계) |
-| `chat.message`, `chat.params`, `chat.headers`, `command.execute.before` 등 | 메시지, 요청 매개변수, 헤더, 커스텀 명령 실행 때 호출됨 (호출만 확인) |
+| `chat.message`, `chat.params`, `chat.headers`, `command.execute.before` 등 | 메시지, 요청 매개변수, 헤더, 커스텀 명령 실행 때 호출됨 (사전 조사에서 호출만 확인, 예제 없음) |
 
 핵심은 **모델이 고르지 않는다**는 점입니다. 조건이 맞으면 항상 실행됩니다.
 그래서 "반드시 지켜야 하는 규칙"과 "항상 일어나야 하는 자동화"에 씁니다.

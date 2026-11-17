@@ -28,6 +28,7 @@ c6-custom-commands/
   .opencode/command/finish.md       /finish: 인자 없는 지시문 (frontmatter description + 본문)
   .opencode/command/review.md       /review: $ARGUMENTS 를 쓰는 지시문
   .opencode/skills/finish-plan/     비교용. /finish 와 본문이 글자 하나 다르지 않은 스킬
+  src/app.py                        /review 연습용 작은 파일 (함수 두 개)
   lab.py  fake_llm.py               가짜 모델로 모델이 받은 요청을 읽는 도우미
   demo.py                           명령과 스킬이 모델에게 무엇을 보내는지 비교해서 출력
   check.py                          자동 검증
@@ -79,17 +80,18 @@ c6-custom-commands/
    opencode run --command review "src/app.py"
    opencode run --command review "src/my app.py"
    ```
-   마지막 줄은 공백이 있는 인자입니다. PowerShell 과 bash 모두 따옴표로 묶어 하나의 인자로 넘깁니다.
+   마지막 줄은 공백이 있는 인자입니다. PowerShell 과 bash 모두 따옴표로 묶어 하나의 인자로 넘깁니다. (`src/my app.py` 라는 파일은 예제에 없습니다. 인자가 따옴표를 달고 하나로 들어가는 모양만 보는 줄이라, 실제 모델로 실행하면 모델이 파일이 없다고 답할 수 있습니다. `src/app.py` 는 있습니다.)
 
 4. TUI 에서는 입력창에 `/finish` 처럼 슬래시와 이름을 입력하는 것이 opencode 의 방식입니다. **TUI 는 이 예제에서 직접 확인하지 못했습니다(미검증).** 아래 표의 동작은 모두 `opencode run --command` 로 확인한 것입니다.
 
 ## 기대 결과
 
-`python demo.py` 의 실제 출력입니다. (opencode 1.19.5, Linux, 가짜 모델. 시스템 프롬프트 전체 길이와 `<location>` 경로는 설치 위치·환경에 따라 달라서 생략했습니다.)
+`python demo.py` 의 실제 출력 전체입니다. (opencode 1.19.5, Linux, 가짜 모델. 시스템 프롬프트 전체 길이(9938자)는 설치된 opencode 와 환경에 따라 달라질 수 있습니다.)
 
 ```
 [1] 아무것도 부르지 않았을 때 모델이 받은 요청
-    스킬 finish-plan 항목: 이름+설명 103자 (...)
+    시스템 프롬프트 전체: 9938자
+    스킬 finish-plan 항목: 이름+설명 103자 (파일 경로 <location> 까지 포함하면 308자, 경로는 설치 위치마다 다름)
       <- 이 항목은 어떤 요청에든 들어 있다
     스킬 본문 길이: 280자  요청에 본문이 있는가: False
     명령 /finish 본문 길이: 280자  요청에 본문이 있는가: False
@@ -97,9 +99,15 @@ c6-custom-commands/
 
 [2] opencode run --command finish 로 불렀을 때 모델이 받은 사용자 메시지
     사용자 메시지 1개, 길이 280자, 명령 본문과 같은가: True
-    (본문 4개 규칙이 그대로 사용자 메시지로 들어감)
+    --- 받은 내용 ---
+    계획대로 끝까지 진행해 줘. 중간에 멈추고 묻지 말고, 아래 규칙을 지켜 줘.
+    
+    1. 작업은 PR 단위로 나눠서 진행한다. PR 하나는 한 가지 목적만 담는다.
+    2. PR마다 검사(테스트, 린트)를 돌리고, 모두 통과한 뒤에만 병합한다. 실패하면 원인을 고치고 다시 돌린다. 검사를 건너뛰거나 끄지 않는다.
+    3. 문서는 코드 PR에 섞지 말고 후속 커밋으로 올린다.
+    4. 끝나면 실행한 명령과 결과를 표로 보고한다. 열은 `단계 | 명령 | 결과` 로 한다. 실행하지 않은 것은 "미실행"으로 적는다.
 
-[3] 스킬은 모델이 skill 도구로 불러야 본문이 들어온다
+[3] 스킬은 모델이 skill 도구로 불러야 본문이 들어온다 (가짜 모델이 부른 것으로 흉내)
     두 번째 요청의 도구 결과에 본문이 있는가: True
 ```
 
@@ -172,3 +180,4 @@ c6-custom-commands/
 - 명령 이름을 틀리면 이유 없이 `UnknownError` 가 나옵니다(위). `debug config` 로 이름을 확인하세요.
 - Linux 에서 `python` 명령이 없으면 `python3` 로 바꾸세요. (`check.py` 는 어느 쪽이든 동작합니다.)
 - 이 예제의 `.opencode/` 가 있는 폴더에서 opencode 를 시작하면 `@opencode-ai/plugin` 을 npm 에서 설치하려고 시도하고 `.opencode/` 안에 `package.json`, `node_modules/` 가 생길 수 있습니다(모두 git 에서 제외). 플러그인 파일이 없는 이 예제에서는 레지스트리에 닿지 않아도 눈에 띄는 멈춤은 없었습니다. 자세한 내용은 [S1a README](../../01-skills/s1a-commit-message/README.md#주의할-점--문제-해결) 를 보세요.
+- **Windows**: Windows(PowerShell 5.1, opencode 1.19.5)에서 이 예제의 `check.py` 를 실행해 통과했습니다(실패 0). `opencode run --command` 를 손으로 따라 하는 과정과 실제 모델은 Windows 에서 확인하지 않았습니다.

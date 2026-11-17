@@ -4,7 +4,7 @@
 
 ## 무엇을 보여 주나
 
-M1~M9는 서버를 직접 만들었다. 실무에서는 **이미 있는 서버를 가져다 쓰는 일이 더 많다.** 이 예제는 `opencode.json`에 두 줄을 적어 공개 서버 두 개를 붙인다.
+M1~M10은 서버를 직접 만들었다. 실무에서는 **이미 있는 서버를 가져다 쓰는 일이 더 많다.** 이 예제는 `opencode.json`에 두 줄을 적어 공개 서버 두 개를 붙인다.
 
 - `files` — 공식 파일 서버 `@modelcontextprotocol/server-filesystem@2.3.0` (Node, `npx`로 실행)
 - `clock` — 시간 서버 `mcp-server-time==2026.11.11` (Python, `uvx`로 실행)
@@ -196,7 +196,7 @@ opencode의 서버 시작 제한은 30초다(M9). 이 PC는 레지스트리가 �
 ImportError: cannot import name 'McpError' from 'mcp.shared.exceptions' (...). Did you mean: 'MCPError'?
 ```
 
-그래서 이 예제는 의존성이 호환되는 최신 `2026.11.11`을 쓴다. 최상위 패키지만 고정해도 **그 아래 의존성은 흘러갈 수 있다**는 뜻이다. 엄격하게 하려면 `uvx --exclude-newer <날짜>`나 잠금 파일(M10/M12의 `package-lock.json`, `uv.lock`)을 쓴다 (이 예제에서는 시험하지 않았다).
+그래서 이 예제는 의존성이 호환되는 최신 `2026.11.11`을 쓴다. 최상위 패키지만 고정해도 **그 아래 의존성은 흘러갈 수 있다**는 뜻이다. 엄격하게 하려면 `uvx --exclude-newer <날짜>`를 쓴다 (이 예제에서는 시험하지 않았다). 잠금 파일은 `npx`·`uvx`로 남의 패키지를 실행하는 경로에는 적용되지 않는다. M10의 `package-lock.json`도 레포를 받아 `npm ci`로 설치할 때만 쓰인다(M10 참고).
 
 ### 3. "허용 폴더(allowed directories)"가 뜻하는 것
 
@@ -265,7 +265,8 @@ Access denied - path outside allowed directories: .../prepare.py not in .../sand
 
 ## 주의할 점 / 문제 해결
 
-- **막은 것은 MCP 도구뿐이다.** `files_write_file`을 deny해도 opencode 내장 `write`, `edit`, `bash`는 그대로 있어서 모델이 프로젝트 파일을 고칠 수 있다. 쓰기를 정말 막으려면 내장 도구도 같은 방식으로 deny한다(M8의 reviewer 에이전트 참고).
+- **막은 것은 MCP 도구뿐이다.** `files_write_file`을 deny해도 opencode 내장 `write`, `edit`, `bash`는 그대로 있어서 모델이 프로젝트 파일을 고칠 수 있다. 쓰기를 정말 막으려면 내장 도구도 같은 방식으로 deny한다. `edit`, `bash`, `task`를 모두 deny하는 [C8의 reviewer 에이전트](../../00-config/c8-agents/README.md)가 그 예다. (M8의 reviewer는 `edit`·`write`·`ops_*`만 막고 `bash`, `task`는 남아 있어 읽기 전용이 아니다.)
+- **레지스트리에 닿지 않을 때**: `show_tools.py`와 `check.py`는 먼저 npm 레지스트리(`npm config get registry`)와 uv가 쓰는 인덱스(uv에게 `hatchling` 버전 목록을 받아 보게 해서 판정, 8초 제한)에 닿는지 본다. 닿지 않으면 그 서버는 "건너뜀"으로 표시하고 끝낸다(`check.py`는 경고, 종료 코드 0). 받아 둔 캐시로 시도하려면 `python show_tools.py --no-probe`. uv는 `PIP_INDEX_URL`이나 `pip.conf`를 읽지 않으므로 이 판정에도 쓰지 않는다. 막힌 환경에서 닿지 않는 주소(`UV_DEFAULT_INDEX=http://127.0.0.1:9/simple`, `npm_config_registry=http://127.0.0.1:9/`)로 시험했을 때 `show_tools.py`는 5초 안에, `check.py`는 1초 안에 끝났다. 확인을 통과한 뒤 받는 도중에 끊기는 경우도 경고로 건너뛴다(이 경우에는 npm이 재시도하느라 수 분 걸릴 수 있다).
 - **`failed`가 나오면**: ① 미러 설정 ② `npx`/`uvx`가 PATH에 있는지 ③ 처음 받는 시간이 제한(`timeout`)을 넘었는지 순서로 본다. 서버 명령을 터미널에서 직접 실행해 보는 것이 가장 빠르다.
 - **파일 서버가 `sandbox`를 못 찾는다** — `python prepare.py`를 먼저 실행했는지, opencode를 예제 폴더에서 실행했는지 확인한다 (이 경우의 실제 오류 메시지는 확인하지 않았다).
 - **버전을 올릴 때**는 `show_tools.py`를 다시 돌려 도구 목록이 바뀌지 않았는지 본다. 도구가 늘면 `permission`의 deny 목록도 손봐야 한다.

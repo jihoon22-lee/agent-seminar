@@ -9,7 +9,7 @@
 - **가이드**: [docs/guide](docs/guide/)
 - **예제 목록**: [examples/README.md](examples/README.md)
 
-모든 내용은 **opencode 1.19.5**에서 직접 실행해 확인했습니다. Windows(PowerShell)와 Linux 양쪽에서 검증했습니다.
+모든 내용은 **opencode 1.19.5**에서 직접 실행해 확인했습니다. 모든 예제의 `check.py`를 Windows(PowerShell 5.1)와 Linux 양쪽에서 실행해 통과시켰습니다. 도구가 없어 건너뛴 부분과 확인하지 못한 부분은 각 README에 "미검증"으로 적었습니다.
 
 ## 한 줄 요약
 

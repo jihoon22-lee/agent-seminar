@@ -147,8 +147,12 @@ def main() -> None:
     args = ap.parse_args()
     with ModelServer(args.port, args.api_key, args.strict, Path(args.log)) as srv:
         print(f"모의 서버: {srv.base_url}  (Ctrl+C 로 종료)  기록: {args.log}", flush=True)
+        # Event().wait() 처럼 시간 제한 없는 대기는 Windows(Python 3.12)에서 Ctrl+C 로 깨어나지 않았다.
+        # 0.5초마다 깨어나서 신호를 받을 틈을 준다. 끝나면 with 블록이 소켓을 닫는다.
+        stop = threading.Event()
         try:
-            threading.Event().wait()
+            while not stop.wait(0.5):
+                pass
         except KeyboardInterrupt:
             pass
 

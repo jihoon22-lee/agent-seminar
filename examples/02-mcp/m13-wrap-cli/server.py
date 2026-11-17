@@ -59,10 +59,11 @@ def run_git(args, cwd=None, timeout=None, git_cmd=None):
         i18n.logOutputEncoding=utf-8 로그 출력을 UTF-8로
         color.ui=never               색 코드 없음 (--no-color도 명령별로 따로 준다)
         core.pager=cat               페이저가 뜨지 않는다
+        core.fsmonitor=false         저장소 설정에 적힌 fsmonitor 훅(외부 프로그램)이 실행되지 않는다
     - LC_ALL=C 로 git 안내 문구를 영어로 고정한다. 모델이 읽을 오류 문장이 환경마다 달라지지 않는다.
     """
     cmd = [*(git_cmd or GIT_CMD), "-c", "core.quotepath=false", "-c", "i18n.logOutputEncoding=utf-8",
-           "-c", "color.ui=never", "-c", "core.pager=cat", *args]
+           "-c", "color.ui=never", "-c", "core.pager=cat", "-c", "core.fsmonitor=false", *args]
     env = dict(os.environ)
     env.update({"LC_ALL": "C", "GIT_TERMINAL_PROMPT": "0", "GIT_OPTIONAL_LOCKS": "0", "GIT_PAGER": "cat"})
     try:
@@ -145,7 +146,8 @@ def git_blame(args):
     end = check_int("end_line", args.get("end_line"), 1, 10**7, start + MAX_LINES - 1)
     if end < start:
         raise ToolError("end_line은 start_line 이상이어야 합니다.")
-    out = run_git(["blame", "--date=short", "-L", f"{start},{end}", "--", rel], cwd=root)
+    # --no-textconv: 저장소 설정(diff.<이름>.textconv + .gitattributes)에 적힌 외부 프로그램이 blame 중에 실행되지 않게 한다.
+    out = run_git(["blame", "--no-textconv", "--date=short", "-L", f"{start},{end}", "--", rel], cwd=root)
     return clip(out)
 
 

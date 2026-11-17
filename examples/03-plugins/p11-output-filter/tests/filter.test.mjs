@@ -46,6 +46,23 @@ const masked = [
   [`run --api-key ${S1}`, "run --api-key ***"],
   [`A=1\nGITHUB_TOKEN=${S1}\nB=2`, "A=1\nGITHUB_TOKEN=***\nB=2"],
   [`TOKEN=${S1}; SECRET=${S1}`, "TOKEN=***; SECRET=***"],
+  // 따옴표로 감싼 값은 닫는 따옴표까지 전부 (공백 포함)
+  [`DB_PASSWORD="correct horse battery"`, `DB_PASSWORD="***"`],
+  [`DB_PASSWORD='pw with spaces 123'`, `DB_PASSWORD='***'`],
+  [`DB_PASSWORD = "correct horse battery" # 주석`, `DB_PASSWORD = "***" # 주석`],
+  [`export API_KEY="two words"; echo done`, `export API_KEY="***"; echo done`],
+  [`PASSWORD="esc \\"quoted\\" part"`, `PASSWORD="***"`],
+  [`password: "two words here" and more`, `password: "***" and more`],
+  [`{"password": "a b c d e", "x": 1}`, `{"password": "***", "x": 1}`],
+  [`run --password "pw with spaces" now`, `run --password "***" now`],
+  [`run --token='pw with spaces 1' now`, `run --token='***' now`],
+  // 닫는 따옴표가 없으면 그 줄 끝까지, 다음 줄은 그대로
+  [`A=1\nDB_PASSWORD="correct horse\nB=2`, `A=1\nDB_PASSWORD="***\nB=2`],
+  // 따옴표 없는 값: 쉼표는 바로 뒤에 공백·따옴표·; 가 없으면 값의 일부
+  [`API_KEY=abc,defghijkl`, `API_KEY=***`],
+  [`TOKEN=${S1},next=1`, `TOKEN=***`],
+  [`TOKEN=${S1}, next=1`, `TOKEN=***, next=1`],
+  [`PASSWORD=abcd;efgh`, `PASSWORD=***;efgh`],
 ];
 for (const [input, want] of masked) {
   const r = await run(input);
@@ -67,6 +84,14 @@ const untouched = [
   "Bearer of bad news",           // 8자 미만 단어들
   "The secret of the garden",     // 구분자(=, :) 없음
   "git commit -m 'fix token refresh'",
+  `password: "<your-password>"`,   // 따옴표 안의 자리표시
+  `password: "$PASSWORD"`,
+  `PASSWORD="ab"`,                  // 값이 4글자 미만
+  `PASSWORD="ab" and more text here`, // 짧은 따옴표 값 뒤의 글자를 값으로 오해하지 않음
+  `PASSWORD=""`,
+  `API_KEY="***"`,
+  `API_KEY='***'`,
+  "def f(password: str, x):",       // 쉼표 뒤에 공백이 오면 거기서 끝 (코드의 인자 목록)
 ];
 for (const input of untouched) {
   const r = await run(input);
@@ -79,6 +104,20 @@ for (const input of untouched) {
   // 알려진 한계(오탐): 소스 코드의 `password: str):` 처럼 값 뒤에 닫는 괄호가 붙은 4자 이상 토큰
   const c = await run("def login(password: str):");
   ok(c.output === "def login(password: ***", "알려진 한계: 타입 표기 뒤 `str):` 도 가려진다", c.output);
+}
+
+// ---- 알려진 한계: 따옴표 없는 값은 공백에서 끝난다 / 짧은 조각은 안 가린다 (README "미탐")
+{
+  const a = await run("password: correct horse battery");
+  ok(a.output === "password: *** horse battery", "한계: 따옴표 없는 값은 첫 단어만 가린다", a.output);
+  const b = await run("PASSWORD=ab;cdefgh");
+  ok(b.output === "PASSWORD=ab;cdefgh", "한계: ; 앞 조각이 4글자 미만이면 아무것도 안 가린다", b.output);
+  const c = await run("curl -d 'password=abc def'");
+  ok(c.output === "curl -d 'password=abc def'", "한계: 3글자 값은 안 가린다", c.output);
+  for (const text of [`DB_PASSWORD="correct horse battery"`, `API_KEY=abc,defghijkl`, `DB_PASSWORD='pw with spaces 123'`]) {
+    const r1 = await run(text); const r2 = await run(r1.output);
+    ok(r1.output !== text && r2.output === r1.output, `따옴표/쉼표 값도 멱등: ${text}`, r1.output);
+  }
 }
 
 // ---- 여러 줄, 멱등성, 다른 키 보존
@@ -146,6 +185,32 @@ const lines = (n) => Array.from({ length: n }, (_, i) => `line ${i + 1}`).join("
   const long = { content: [{ type: "text", text: lines(300) }] };
   await after({ tool: "cfg_dump", sessionID: "s", callID: "c", args: {} }, long);
   ok(long.content[0].text.includes("(220줄 생략)"), "MCP 도구의 긴 출력도 줄인다", long.content[0].text.slice(0, 80));
+}
+
+// ---- MCP: content 항목의 모든 종류와 structuredContent 를 재귀적으로 가린다
+{
+  const call = async (output) => { await after({ tool: "cfg_x", sessionID: "s", callID: "c", args: {} }, output); return output; };
+  const res = await call({ content: [{ type: "resource", resource: { uri: "file:///demo/app.env", mimeType: "text/plain", text: `DB_PASSWORD=${S1}` } }] });
+  ok(res.content[0].resource.text === "DB_PASSWORD=***" && res.content[0].resource.uri === "file:///demo/app.env" && res.content[0].resource.mimeType === "text/plain", "MCP resource.text 를 가리고 uri/mimeType 은 그대로", JSON.stringify(res));
+  const link = await call({ content: [{ type: "resource_link", uri: "file:///demo/x", name: "x", description: `API_KEY=${S1}` }] });
+  ok(link.content[0].description === "API_KEY=***" && link.content[0].name === "x", "MCP resource_link.description 도 가린다", JSON.stringify(link));
+  const sc = await call({ content: [{ type: "text", text: `DB_PASSWORD=${S1}` }], structuredContent: { DB_PASSWORD: S1, mode: "dev", count: 3, max_tokens: 1024, nested: { api_key: S1, list: [{ token: S1 }, `TOKEN=${S1}`, "plain"] } } });
+  const j = JSON.stringify(sc);
+  ok(!j.includes("demo-"), "structuredContent 안의 값이 남지 않음(키 이름 규칙 + 문장 규칙)", j);
+  ok(sc.structuredContent.DB_PASSWORD === "***" && sc.structuredContent.nested.api_key === "***" && sc.structuredContent.nested.list[0].token === "***" && sc.structuredContent.nested.list[1] === "TOKEN=***", "structuredContent 의 키 이름/문장 규칙 결과", j);
+  ok(sc.structuredContent.mode === "dev" && sc.structuredContent.count === 3 && sc.structuredContent.max_tokens === 1024 && sc.structuredContent.nested.list[2] === "plain", "비밀이 아닌 값과 숫자는 그대로", j);
+  const ph = await call({ content: [], structuredContent: { password: "<your-password>", secret: "ab", token: "$TOKEN", api_key: "***" } });
+  ok(JSON.stringify(ph.structuredContent) === JSON.stringify({ password: "<your-password>", secret: "ab", token: "$TOKEN", api_key: "***" }), "자리표시/짧은 값은 키 이름 규칙에서도 그대로", JSON.stringify(ph));
+  const meta = await call({ content: [{ type: "text", text: "ok" }], _meta: { note: `PASSWORD="two words here"` } });
+  ok(meta._meta.note === `PASSWORD="***"`, "_meta 같은 다른 키도 가린다", JSON.stringify(meta));
+  const bin = await call({ content: [{ type: "image", data: "TOKEN=abcdefgh", mimeType: "image/png" }, { type: "resource", resource: { uri: "file:///b", blob: "SECRET=abcdefgh" } }] });
+  ok(bin.content[0].data === "TOKEN=abcdefgh" && bin.content[1].resource.blob === "SECRET=abcdefgh", "한계: 이미지 data 와 resource.blob(base64)은 들여다보지 않는다", JSON.stringify(bin));
+  const longRes = await call({ content: [{ type: "resource", resource: { uri: "file:///l", text: lines(300) } }] });
+  ok(longRes.content[0].resource.text.includes("(220줄 생략)"), "resource.text 의 긴 출력도 줄인다", longRes.content[0].resource.text.slice(0, 60));
+  const odd = await call({ content: [null, 5, "문자열 항목 API_KEY=" + S1, [`TOKEN=${S1}`], { type: "resource" }, { type: "resource", resource: null }] });
+  ok(odd.content[2] === "문자열 항목 API_KEY=***" && odd.content[3][0] === "TOKEN=***" && odd.content[0] === null && odd.content[1] === 5, "이상한 항목도 throw 없이 처리", JSON.stringify(odd));
+  const keep = await call({ content: [{ type: "text", text: "hi" }] });
+  ok(Object.keys(keep).join() === "content", "없던 키를 만들지 않는다(MCP)", Object.keys(keep).join());
 }
 
 // ---- metadata 사본 (bash: output, read: preview, edit: diff/filediff)

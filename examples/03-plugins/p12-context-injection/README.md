@@ -74,22 +74,24 @@ p12-context-injection/
    ```
    `context-injection: 28 checks, 0 failed` 가 나오면 정상입니다.
 
-2. **연습용 저장소를 따로 만듭니다.** 블록의 `git 브랜치` 항목은 이 폴더가 git 저장소일 때만 나옵니다. 복사본을 저장소로 만드세요.
+2. **연습용 저장소를 따로 만듭니다.** 블록의 `git 브랜치` 항목은 이 폴더가 git 저장소일 때만 나옵니다. 1번에서 들어간 이 예제 폴더에서 이어서, 복사본을 저장소로 만드세요. (복사본이 이미 있으면 먼저 지웁니다.)
 
    PowerShell:
    ```powershell
-   cd examples\03-plugins
-   Copy-Item -Recurse p12-context-injection $env:TEMP\ctx-demo
+   Remove-Item -Recurse -Force $env:TEMP\ctx-demo -ErrorAction SilentlyContinue
+   Copy-Item -Recurse . $env:TEMP\ctx-demo
    cd $env:TEMP\ctx-demo
-   git init -b feat/alpha; git config user.name demo; git config user.email demo@example.invalid
+   git init -b feat/alpha; git config user.name demo; git config user.email demo.invalid
    git add .; git commit -m init
    ```
    Linux bash:
    ```bash
-   cp -r examples/03-plugins/p12-context-injection /tmp/ctx-demo && cd /tmp/ctx-demo
-   git init -b feat/alpha && git config user.name demo && git config user.email demo@example.invalid
+   rm -rf /tmp/ctx-demo
+   cp -r . /tmp/ctx-demo && cd /tmp/ctx-demo
+   git init -b feat/alpha && git config user.name demo && git config user.email demo.invalid
    git add . && git commit -m init
    ```
+   (`demo.invalid` 는 이메일 형태가 아닌 자리 채움 값입니다. git 은 이 값으로도 커밋합니다.)
 
 3. opencode 를 실행합니다. 처음 실행하면 opencode 가 `.opencode/` 안에 `@opencode-ai/plugin` 을 npm 으로 설치하려고 합니다. 인터넷이 막혀 있고 패키지 미러도 없으면 첫 시작이 70초쯤 멈췄다가 계속 진행됩니다. 레지스트리에 닿지 않으면 첫 실행만이 아니라 **시작할 때마다** 이렇게 멈춥니다. 아주 처음, 새 환경에서의 첫 시작은 약 130초까지 걸렸습니다(패킷을 조용히 버리는 레지스트리면 200초를 넘을 수도 있습니다). 패키지 미러를 지정하는 방법은 [P6 README](../../03-plugins/p6-custom-tool/README.md#npm-자동-설치와-레지스트리패키지-미러)에 있습니다. (이 단계는 패키지 미러가 필요할 수 있습니다.)
 
@@ -104,7 +106,7 @@ p12-context-injection/
    PowerShell: `Get-Content -Encoding UTF8 logs\context-injection.log`
    Linux bash: `cat logs/context-injection.log`
 
-6. 자동 검증: `python check.py` / `python check.py --model` (Linux에서 `python` 명령이 없으면 `python3`로 바꾸세요).
+6. 자동 검증: 3~5번은 연습용 저장소(`ctx-demo`)에서 했으므로, 1번과 같은 예제 폴더로 돌아가서 실행합니다. `python check.py` / `python check.py --model` (Linux에서 `python` 명령이 없으면 `python3`로 바꾸세요).
 
 ## 기대 결과
 

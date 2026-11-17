@@ -30,6 +30,11 @@ def main() -> int:
     checks = sorted((ROOT / "examples").glob("*/*/check.py"))
     if filters:
         checks = [c for c in checks if any(f in c.as_posix() for f in filters)]
+    # Probe the npm registry once and tell every check.py the result (they would each probe otherwise).
+    sys.path.insert(0, str(ROOT / "tools"))
+    import octest
+    octest.registry_reachable()
+    env["AGENT_SEMINAR_REGISTRY"] = os.environ.get("AGENT_SEMINAR_REGISTRY", "ok")
     rows = []
     for path in checks:
         rel = path.parent.relative_to(ROOT).as_posix()

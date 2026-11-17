@@ -76,9 +76,9 @@
       </script>
     </div>
   </div>
-  <div class="ref">examples/02-mcp/m1-stdio-minimal/server.py (211줄, 주석 포함)</div>
+  <div class="ref">examples/02-mcp/m1-stdio-minimal/server.py (212줄, 주석 포함)</div>
   <aside class="notes">
-    <p>전체 파일은 주석이 많아 211줄이지만 실제 로직은 위가 전부입니다. SDK가 해 주는 일이 무엇인지 알고 쓰면 문제가 생겼을 때 훨씬 빨리 찾습니다.</p>
+    <p>전체 파일은 주석이 많아 212줄이지만 실제 로직은 위가 전부입니다. SDK가 해 주는 일이 무엇인지 알고 쓰면 문제가 생겼을 때 훨씬 빨리 찾습니다.</p>
   </aside>
 </section>
 
@@ -146,8 +146,8 @@
   <table class="compact">
     <tr><th class="mcp">방법</th><th class="mcp">opencode.json</th><th class="mcp">미리 필요한 것</th><th class="mcp">시작 시간 <span class="tiny">(Linux 실측)</span></th><th class="mcp">예제</th></tr>
     <tr><td><strong>직접 실행</strong></td><td><code>["python", "server.py"]</code><br><code>["node", "src/server.mjs"]</code></td><td>소스 폴더와 런타임</td><td>0.03초 / 0.3초</td><td>M1, M10</td></tr>
-    <tr><td><strong>npx</strong></td><td><code>["npx", "-y", "패키지@버전"]</code></td><td>Node, 레지스트리(미러)</td><td>첫 실행 3~5초, 이후 1~2초</td><td>M10, M11</td></tr>
-    <tr><td><strong>uvx</strong></td><td><code>["uvx", "패키지==버전"]</code></td><td>uv, 패키지 인덱스(미러)</td><td>첫 실행 1~3초, 이후 1초 이내</td><td>M11, M12</td></tr>
+    <tr><td><strong>npx</strong></td><td><code>["npx", "-y", "패키지@버전"]</code></td><td>Node, 레지스트리(미러)</td><td>첫 실행 2.8~4.7초, 이후 1.1~1.8초</td><td>M10, M11</td></tr>
+    <tr><td><strong>uvx</strong></td><td><code>["uvx", "패키지==버전"]</code></td><td>uv, 패키지 인덱스(미러)</td><td>첫 실행 0.6~2.5초, 이후 0.06~0.8초</td><td>M11, M12</td></tr>
     <tr><td><strong>실행 파일</strong></td><td><code>["./bin/glossary-mcp"]</code></td><td>빌드된 파일 하나</td><td>0.001초</td><td>M14</td></tr>
     <tr><td><strong>원격</strong></td><td><code>"type": "remote", "url": "…"</code></td><td>이미 떠 있는 서버</td><td>연결만 한다</td><td>M4, M5</td></tr>
   </table>
@@ -233,7 +233,7 @@
         <li><code>bin</code>이 있어야 <code>npx -y team-glossary-mcp@1.0.0</code>으로 실행된다</li>
         <li>SDK는 모르는 도구나 빠진 인자도 <code>isError</code> 결과로 돌려준다. M1의 <code>-32602</code>와 다르다</li>
         <li><code>npx -y .</code>는 의존성을 설치하지 않는다. <code>npm install</code>이 먼저다</li>
-        <li>하위 의존성까지 고정하려고 <code>package-lock.json</code>을 함께 올렸다</li>
+        <li><code>package-lock.json</code>은 레포를 받아 설치할 때만 하위 의존성을 고정한다. <code>npm pack</code>에는 들어가지 않아서 npx 배포에는 따라가지 않는다</li>
       </ul>
     </div>
   </div>

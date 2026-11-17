@@ -121,8 +121,8 @@ tool.execute.after     결과 기록, 후처리
 | `tool.definition` | 모델이 받는 도구 설명(`output.description`) 수정 | P12 |
 | `experimental.chat.system.transform` | `output.system.push("...")`로 시스템 프롬프트 끝에 글 추가 (실험) | P12 |
 | `experimental.session.compacting` | 압축 요약 프롬프트에 사실 덧붙이기 (실험) | P7 |
-| `command.execute.before` | 커스텀 명령을 실행할 때 호출 (`input.command`, `input.arguments`, `output.parts`) | 호출만 확인 |
-| `chat.message`, `chat.params`, `chat.headers`, `experimental.chat.messages.transform` | 호출되는 것만 확인 | 예제 없음 |
+| `command.execute.before` | 커스텀 명령을 실행할 때 호출 (`input.command`, `input.arguments`, `output.parts`) | 예제 없음 |
+| `chat.message`, `chat.params`, `chat.headers`, `experimental.chat.messages.transform` | 예제를 만들기 전 사전 조사에서 호출되는 것만 확인했다. 이 저장소에는 이를 검사하는 예제가 없다 | 예제 없음 |
 
 `config` 훅(설정 변경)도 타입 정의에 있지만 이 저장소에서는 호출을 확인하지 않았습니다. `permission.ask` 훅은 타입 정의에 있지만, 1.19.5에서는 권한 요청이 발생해도 **한 번도 호출되지 않았습니다.** 권한 요청은 `event` 훅의 `permission.asked`로 받으세요.
 
@@ -299,11 +299,13 @@ export const TeamTools = async ({ directory }) => {
 - **판단을 못 하면 허용하고 이유를 기록**합니다(git 저장소가 아님, detached HEAD, git 실패나 없음). 전부 막으면 에이전트가 멈추기 때문입니다.
 - 차단 메시지가 **대신 무엇을 하라**고 알려 줍니다(`git switch -c <type>/<name>`). 모델은 막힌 채 멈추지 않고 안내대로 새 브랜치를 만든 뒤 다시 커밋하면 통과했습니다(가짜 모델).
 - AGENTS.md의 "main에 직접 커밋하지 않는다"는 모델이 읽는 **부탁**이고 정적이라 "main일 때만 안 된다"는 조건을 표현할 수 없습니다. 둘은 함께 쓰는 것이 좋습니다. AGENTS.md로 평소 행동을 이끌고 가드는 마지막 안전장치로 둡니다. 실제 모델이 얼마나 자주 규칙을 어기는지는 측정하지 않았습니다.
-- 비용: 브랜치를 묻는 git 한 번이 작은 저장소에서 중앙값 2.3ms(최대 7.4ms)였습니다. 단위 테스트는 134건입니다.
+- 비용: 브랜치를 묻는 git 한 번이 작은 저장소에서 중앙값 2.3ms(최대 7.4ms)였습니다. 단위 테스트는 250건입니다.
 
 **이 가드는 실수 방지이지 보안 경계가 아닙니다.** 알려진 한계입니다.
 
 - `git merge`, `cherry-pick`, `revert`, `am`, `rebase`도 현재 브랜치에 커밋을 만들 수 있지만 막지 않습니다. 스크립트 안의 git 호출(`make release` 등)과 git 별칭도 못 잡습니다.
+- 같은 줄 안에서 `git switch`/`git checkout`으로 브랜치가 바뀌면 `cd`처럼 따라가서 판단합니다(`git switch main && git commit`은 막고, `git switch -c feat/x && git commit`은 허용). 목적지를 알 수 없으면(`git switch -`, 변수) 시작 브랜치로 판단하고 로그에 남깁니다.
+- `bash -lc "…"`, `cmd /c "…"`, `powershell -Command "…"`처럼 문자열로 넘긴 명령은 풀어서 봅니다. 스크립트 파일(`bash x.sh`, `powershell -File`), `ssh`, `docker exec` 안쪽은 못 봅니다.
 - 셸 문법은 일부만 압니다. `cd "$DIR"`처럼 변수가 든 경로는 풀지 못해 허용하고, `xargs`나 `find -exec`로 실행되는 git은 분석하지 않습니다.
 - push의 목적지는 명령에 적힌 것만 봅니다. 인자 없는 `git push`가 설정에 따라 `main`으로 가도 현재 브랜치가 `main`이 아니면 허용합니다. 원격 쪽 branch protection은 그대로 필요합니다.
 - 새 저장소(`git init` 직후)의 첫 커밋도 `main`이면 막힙니다. 먼저 `git switch -c`로 브랜치를 만드세요.
@@ -321,7 +323,7 @@ export const TeamTools = async ({ directory }) => {
 | `read` | `{title, output, metadata{preview, ...}, attachments}` | 바뀜 | 파일 내용은 화면에 안 나옴 | `metadata.preview`에 원본 |
 | `grep` | `{title, output, metadata{matches, truncated}, attachments}` | 바뀜 | 개수만 | 개수라 비밀 없음 |
 | `edit` | `{title, output, metadata{diff, filediff, ...}, attachments}` | `output`은 `Edit applied successfully.`뿐 | **화면의 diff는 `metadata`에서 그려서 파일 내용이 나옴** | `metadata.diff`에 원본 |
-| **MCP 도구** | **`{content: [{type: "text", text}]}` 뿐.** `output`, `title`, `metadata`가 없음 | `output.content[].text`를 바꿔야 모델이 바뀐 글자를 받음 | `⚙ 도구이름`만 | 없음 |
+| **MCP 도구** | **`{content: [...]}`와, 서버가 보냈다면 `structuredContent`.** `output`, `title`, `metadata`가 없음. `content` 항목은 `text` 말고 `resource` 같은 형태도 온다 | `content`와 `structuredContent` 안의 **모든 문자열**을 바꿔야 한다. `text` 항목만 바꾸면 `resource` 항목의 글자는 모델에게 그대로 간다 | `⚙ 도구이름`만 | 없음 |
 
 그래서 `output.output`만 바꾸는 플러그인은 MCP 결과를 **전혀 가리지 못합니다.** `glob`, `webfetch`, `task`, 이미지 결과(`attachments`)는 확인하지 못했습니다(미검증).
 

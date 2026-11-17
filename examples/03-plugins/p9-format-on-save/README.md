@@ -24,7 +24,7 @@
 | 모델이 아는가 | 모릅니다. 도구 결과에 아무 표시가 없고, 파일 내용만 모델이 쓴 것과 달라집니다 | 압니다. 도구 결과 끝에 `[린트 결과]` 가 붙습니다 |
 | 사람이 고쳐야 하는 문제 (쓰지 않는 import, 문법 오류) | 못 다룸 | 다룸 |
 | 작성 | JSON 몇 줄 | JS 플러그인 + 테스트 |
-| 실패했을 때 | 조용히 건너뜀 (깨진 JSON 은 파일을 그대로 두고 종료 코드 1) | 이 예제는 로그만 남기고 편집은 유지 |
+| 실패했을 때 | **조용히** 건너뜀 (깨진 JSON 은 파일을 그대로 두고 종료 코드 1, 명령을 못 찾으면 로그에만 남음) | 이 예제는 로그만 남기고 편집은 유지 |
 | 충분한 경우 | 들여쓰기·정렬·공백처럼 **기계적으로 고칠 수 있는** 규칙 | 린트·타입·보안 검사처럼 **모델이 읽고 판단해야** 하는 결과 |
 
 둘은 함께 쓰는 것이 보통입니다(이 예제도 그렇습니다). formatter 가 먼저 파일을 정리하고, 플러그인은 정리된 파일을 검사합니다. 1.19.5 에서 이 순서를 확인했습니다: after 훅이 불리는 시점에 파일은 이미 formatter 가 끝낸 상태입니다.
@@ -74,7 +74,15 @@ p9-format-on-save/
    opencode
    ```
 
-3. **Part A**: 키 순서가 엉망인 JSON 을 쓰게 합니다.
+3. **먼저, Linux 라면 `python` 명령이 있는지 확인하세요.** `opencode.json` 의 formatter 는 `["python", "scripts/fmt_json.py", "$FILE"]` 로 `python` 을 부릅니다. 그런데 Linux 는 `python3` 만 있고 `python` 은 없는 경우가 많습니다. 이때 Part A 는 **아무 표시 없이 아무 일도 하지 않습니다.** 파일은 모델이 쓴 그대로(정렬 안 됨)이고, 모델이 받는 도구 결과에도 화면에도 오류가 나오지 않습니다(`python` 을 못 찾았다는 사실은 `opencode run --print-logs` 로만 `failed to format file ... spawn failed` 로 보입니다). 이 예제의 `check.py` 가 이 동작을 직접 확인해 둡니다.
+
+   Linux bash:
+   ```bash
+   command -v python || echo "python 없음: opencode.json 의 formatter 에서 \"python\" 을 \"python3\" 로 바꾸세요"
+   ```
+   없다면 `opencode.json` 의 `"command": ["python", ...]` 의 첫 단어를 `python3` 로 바꾸고 3번(Part A)을 하세요. (Windows 는 보통 `python` 이 있어 바꿀 필요가 없습니다. 이 레포의 설정 파일은 모두 `python` 으로 적으니, 바꾼 파일은 되돌리세요.) Part B 의 플러그인은 `python`, `python3` 순서로 직접 찾으므로 이것과 상관없이 돕니다. `check.py` 는 시작할 때 이 컴퓨터에 `python` 이 없으면 `[WARN]` 한 줄로 알려 줍니다.
+
+   그다음 **Part A**: 키 순서가 엉망인 JSON 을 쓰게 합니다.
 
    `demo.json 파일을 만들어 줘. 내용은 정확히 {"version": 2, "name": "demo", "deps": {"zeta": 1, "alpha": 2}} 한 줄이야.`
 
@@ -133,18 +141,30 @@ Wrote file successfully.
 
 [린트 결과] broken.json: 문제 발견. 다음 단계에서 고쳐 주세요.
 1행: JSON 문법 오류: Illegal trailing comma before end of object
+
+← Write only_write.json
+Wrote file successfully.
+
+[린트 결과] only_write.json: 문제 없음
 ```
+
+(경로와 diff 머리말은 줄여 썼습니다. 전체는 `CHECK_VERBOSE=1 python3 check.py` 의 `--- scripted run ---` 아래에 있습니다.)
 
 - `edit` 는 화면에 **diff**(metadata)를 보여 주고 `[린트 결과]` 는 보여 주지 않습니다. 하지만 모델이 받는 도구 결과에는 `Edit applied successfully.\n\n[린트 결과] lint.py: 문제 없음` 처럼 붙어 있습니다(가짜 모델 서버가 받은 요청 본문으로 확인). 화면에 안 보여도 모델은 받습니다.
 - `a.json` 의 diff 는 formatter 가 정렬한 결과입니다: 모델이 `"a"` 를 `"zz"` 로 바꿨지만 파일에서는 `"b"` 뒤로 이동했습니다.
 - 깨진 JSON 은 formatter 가 파일을 건드리지 않고(종료 코드 1) 넘어가고, 도구 결과에는 formatter 쪽 표시가 없었습니다. 알려 준 것은 플러그인뿐입니다.
 
-`logs/format-check.log`:
+`logs/format-check.log` (`CHECK_VERBOSE=1 python3 check.py` 의 `--- format-check.log ---` 아래에 그대로 나옵니다. `format-check loaded` 가 두 번인 것은 설정 확인용 실행 한 번과 가짜 모델 실행 한 번이 같은 폴더를 쓰기 때문입니다. 시각은 실행마다 다릅니다):
 
 ```
-2026-11-17T07:50:47.064Z format-check loaded
-2026-11-17T07:50:48.743Z FOUND lint.py: 1건
-2026-11-17T07:50:48.842Z FOUND b.json: 1건
+2026-11-17T09:58:39.850Z format-check loaded
+2026-11-17T09:58:40.709Z format-check loaded
+2026-11-17T09:58:41.921Z OK a.json
+2026-11-17T09:58:42.027Z OK a.json
+2026-11-17T09:58:42.658Z FOUND lint.py: 1건
+2026-11-17T09:58:42.915Z OK lint.py
+2026-11-17T09:58:42.995Z FOUND broken.json: 1건
+2026-11-17T09:58:43.086Z OK only_write.json
 ```
 
 단위 테스트와 `check.py`:
@@ -153,8 +173,10 @@ Wrote file successfully.
 $ node tests/after.test.mjs
 format-check: 24 checks, 0 failed
 $ python3 check.py
-== 19 checks, 0 failed, 0 warnings
+== 23 checks, 0 failed, 1 warnings
 ```
+
+(`1 warnings` 는 위 `python` 명령 경고입니다. 이 컴퓨터에는 `python3` 만 있어서 나왔고, `python` 이 있는 컴퓨터에서는 `0 warnings` 입니다.)
 
 ## 동작 원리
 
@@ -200,7 +222,8 @@ ruff 는 문제가 있으면 종료 코드 1 로 끝나므로 위의 약속과 �
 - **formatter 는 모델이 쓴 내용과 디스크 내용을 달라지게 합니다.** 모델에게는 알려지지 않으므로, 모델이 방금 쓴 문장을 기억해 다음 `edit` 의 `oldString` 으로 쓰면 맞지 않을 수 있습니다. `edit` 는 매번 파일을 다시 읽으니 대부분은 문제 없지만, 포맷 규칙이 크게 바꾸는 파일 형식에서는 알아 두세요.
 - **화면과 모델이 보는 것이 다릅니다.** `write` 는 화면에도 `[린트 결과]` 가 나오지만 `edit` 는 diff 만 나옵니다. 모델이 무엇을 받았는지는 화면이 아니라 가짜 모델 서버가 받은 요청(`check.py` 의 `scripted_run`)으로 확인하세요.
 - 이 플러그인은 `write`/`edit` 만 봅니다. 다른 도구(예: `apply_patch`)나 `bash` 로 고친 파일은 검사하지 않습니다. 가짜 모델이 받은 1.19.5 의 도구 목록에는 `apply_patch` 가 없었고, 다른 모델에서의 목록은 확인하지 못했습니다.
+- **`python` 명령이 없는 Linux 에서 Part A 는 조용히 실패합니다.** 위 "따라 하기" 3번 참고. 내장 formatter 는 `opencode.json` 에 적힌 이름 그대로 실행하므로(`python3` 로 알아서 바꿔 주지 않음) 명령을 못 찾으면 파일은 그대로이고 모델에게도 화면에도 표시가 없습니다. 처음에 쓴 대로 정렬된 파일이 나오지 않을 때 가장 먼저 의심할 것입니다. 이 레포의 설정은 모두 `python` 이라고 적는 것이 규칙이어서 설정은 그대로 두었고, 안내와 `check.py` 의 `[WARN]`·`[python 없음]` 검사로 알립니다. 두 OS 에서 한 파일로 되는 실행 방법(PATH 에 의존하지 않는 실행기)은 찾지 못했습니다. `sh -c "python3 … || python …"` 은 Windows 에 `sh` 가 없고, 셔뱅(`#!`) 스크립트는 Windows 가 해석하지 않는다고 알고 있으나 두 방법 모두 이번에 실행해 확인하지는 않았습니다(**미검증**).
 - 검사기가 `python`/`python3` 를 찾지 못하면 `FAIL ... ENOENT` 로 기록되고 아무것도 붙지 않습니다. 플러그인이 쓰는 파이썬은 `P9_PYTHON` 으로 지정할 수 있습니다. 시간 제한은 `P9_TIMEOUT_MS` (기본 10000).
 - **export 는 플러그인 함수만 하세요.** 숫자·문자열·객체 같은 함수가 아닌 값(`export const X = 1`)을 export 하면 opencode 가 **파일 전체를 건너뜁니다.** 평소 실행에는 아무 출력도 없고 `opencode --print-logs` 에만 `Plugin export is not a function` 오류가 보입니다. 그래서 `MAX_APPENDED` 같은 상수와 `run()` 은 export 하지 않고, 테스트는 플러그인을 불러와 훅을 호출합니다. `.opencode/plugins/` 안의 모든 `.js` 가 플러그인으로 로드되므로 테스트와 스크립트는 그 폴더 밖에 둡니다.
 - `node` 가 없으면 `check.py` 가 경고(WARN)를 내고 단위 테스트를 건너뜁니다. opencode 실행에는 Node 가 필요 없습니다.
-- **Windows 에서의 확인**: 네이티브 Windows(Windows Python 3.12, Windows 용 opencode 1.19.5, bash 도구는 PowerShell 5.1)에서 `check.py` 19건과 단위 테스트(24건)가 통과했습니다. 실제 모델과 PowerShell 7 은 **미검증**입니다.
+- **Windows 에서의 확인**: 네이티브 Windows(Windows Python 3.12, Windows 용 opencode 1.19.5, bash 도구는 PowerShell 5.1)에서 `check.py` 20건(`python` 없는 PATH 검사 3건은 건너뜀)과 단위 테스트(24건)가 통과했습니다. 실제 모델과 PowerShell 7 은 **미검증**입니다.

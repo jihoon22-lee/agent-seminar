@@ -13,7 +13,8 @@
     python show_tools.py --no-limit      # permission(막기) 규칙을 뺀 설정으로 비교
     python show_tools.py --raw           # 1단계만 (opencode 없이)
 
-서버를 처음 받을 때는 인터넷(npm/PyPI 미러)이 필요하다. 못 받는 서버는 표에서 "시작 실패"로 표시하고 계속한다.
+서버를 처음 받을 때는 인터넷(npm/PyPI 미러)이 필요하다. 레지스트리에 3초 안에 닿지 않으면 그 서버는 "건너뜀"으로
+표시하고 계속한다 (받아 둔 캐시로 시도해 보려면 --no-probe).
 """
 import argparse
 import fnmatch
@@ -22,8 +23,11 @@ import pathlib
 import subprocess
 import sys
 import tempfile
+import os
 import shutil
 import threading
+import urllib.error
+import urllib.request
 
 sys.stdout.reconfigure(encoding="utf-8")
 
@@ -33,6 +37,62 @@ sys.path.insert(0, str(HERE.parents[2] / "tools"))
 
 BUILTIN = {"bash", "edit", "glob", "grep", "read", "skill", "task", "todowrite", "webfetch", "write", "websearch", "list",
            "apply_patch", "question", "invalid", "list_mcp_resources", "read_mcp_resource", "list_mcp_resource_templates"}
+
+
+def http_ok(url, timeout=3.0):
+    """URL 에 HTTP 응답이 오는가 (401/404 같은 오류 응답도 '서버는 살아 있음'으로 본다)."""
+    try:
+        urllib.request.urlopen(urllib.request.Request(url), timeout=timeout).close()
+        return True
+    except urllib.error.HTTPError:
+        return True
+    except Exception:  # noqa: BLE001 - 연결 거부, DNS 실패, 시간 초과 모두 '닿지 않음'
+        return False
+
+
+def npm_registry_reachable():
+    """npm 이 쓰는 레지스트리(npm config get registry)에 3초 안에 닿는가. 반환: (가능 여부, 주소 또는 사유)."""
+    npm = shutil.which("npm")
+    if not npm or not shutil.which("npx"):
+        return False, "(npm/npx 없음)"
+    try:
+        url = subprocess.run([npm, "config", "get", "registry"], capture_output=True, text=True, timeout=10).stdout.strip()
+    except (OSError, subprocess.TimeoutExpired):
+        return False, "(npm config 실패)"
+    return url.startswith("http") and http_ok(url), url
+
+
+def uv_index_reachable():
+    """uv 가 실제로 쓰는 패키지 인덱스에 닿는가. uv 에게 hatchling 의 버전 목록을 받아 보게 해서 판정한다.
+
+    UV_DEFAULT_INDEX / UV_INDEX_URL / uv.toml 의 index 설정은 uv 가 알아서 적용한다.
+    pip 설정(PIP_INDEX_URL, pip.conf)은 uv 가 읽지 않으므로 보지 않는다. 8초 안에 끝나지 않으면 닿지 않는 것으로 본다.
+    """
+    uv = shutil.which("uv")
+    if not uv or not shutil.which("uvx"):
+        return False, "(uv/uvx 없음)"
+    label = os.environ.get("UV_DEFAULT_INDEX") or os.environ.get("UV_INDEX_URL") or "uv 기본값(uv.toml 이 없으면 https://pypi.org/simple)"
+    env = dict(os.environ, UV_HTTP_RETRIES="0", UV_HTTP_TIMEOUT="3")
+    try:
+        proc = subprocess.run([uv, "pip", "compile", "--no-cache", "-q", "-"], input=b"hatchling\n", capture_output=True, timeout=8, env=env, cwd=str(HERE))
+    except (OSError, subprocess.TimeoutExpired):
+        return False, label
+    return proc.returncode == 0, label
+
+
+NET_ERROR_WORDS = ("error sending request", "dns error", "failed to lookup", "tcp connect", "connection refused", "timed out", "client error (connect)",
+                   "failed to fetch", "enotfound", "econnrefused", "etimedout", "eai_again", "econnreset", "fetch failed", "네트워크 오류")
+
+
+def network_failure(text):
+    """서버가 시작하지 못한 이유가 네트워크 문제로 보이는가 (레지스트리 확인을 통과한 뒤에도 중간에 끊길 수 있다)."""
+    low = (text or "").lower()
+    return any(w in low for w in NET_ERROR_WORDS)
+
+
+def registry_for(command):
+    """서버 명령이 어느 레지스트리를 쓰는지: npx -> npm, uvx -> uv 인덱스, 그 밖(로컬 실행)은 None."""
+    return {"npx": npm_registry_reachable, "uvx": uv_index_reachable}.get(pathlib.Path(command[0]).stem)
 
 
 def size(obj):
@@ -57,7 +117,7 @@ def list_server_tools(command, cwd=HERE, timeout=90):
             while True:
                 line = proc.stdout.readline().decode("utf-8", "replace")
                 if not line:
-                    raise RuntimeError(proc.stderr.read().decode("utf-8", "replace")[-300:] or "서버가 응답 없이 끝났다")
+                    raise RuntimeError(proc.stderr.read().decode("utf-8", "replace") or "서버가 응답 없이 끝났다")
                 msg = json.loads(line)
                 if msg.get("id") == msg_id:
                     return msg
@@ -67,7 +127,12 @@ def list_server_tools(command, cwd=HERE, timeout=90):
         proc.stdin.flush()
         return rpc(2, "tools/list")["result"]["tools"], None
     except Exception as exc:  # noqa: BLE001 - 안내 메시지로 바꿔 보여 준다
-        return [], str(exc).strip().splitlines()[-1][:200] if str(exc).strip() else "알 수 없는 오류"
+        text = str(exc).strip()
+        if not text:
+            return [], "알 수 없는 오류"
+        last = text.splitlines()[-1][:200]
+        # npm 은 원인(ECONNREFUSED 등)을 앞쪽 줄에 쓰고 마지막 줄에는 로그 위치만 적는다: 전체에서 판정해 표시를 붙인다
+        return [], ("(네트워크 오류) " + last) if network_failure(text) and not network_failure(last) else last
     finally:
         timer.cancel()
         proc.kill()
@@ -99,6 +164,7 @@ def model_tools(project):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--no-limit", action="store_true", help="permission 규칙을 뺀 설정으로 본다")
+    ap.add_argument("--no-probe", action="store_true", help="레지스트리 확인(3초)을 건너뛰고 바로 서버를 띄운다 (받아 둔 캐시로 시도할 때)")
     ap.add_argument("--raw", action="store_true", help="서버가 내놓는 도구만 보고 끝낸다 (opencode 를 실행하지 않음)")
     args = ap.parse_args()
 
@@ -108,8 +174,17 @@ def main():
 
     print("== 1. 서버가 내놓는 도구 (tools/list)")
     offered = {}
+    skipped = []
     for name, server in servers.items():
         print(f"\n[{name}] {' '.join(server['command'])}")
+        probe = None if args.no_probe else registry_for(server["command"])
+        if probe:
+            reachable, where = probe()
+            if not reachable:
+                print(f"  건너뜀: 패키지 레지스트리({where})에 3초 안에 닿지 않는다. 미러를 지정하거나 (npm: npm config set registry <주소>, "
+                      "uv: UV_DEFAULT_INDEX=<주소>) 받아 둔 캐시로 시도하려면 --no-probe")
+                skipped.append(name)
+                continue
         tools, err = list_server_tools(server["command"])
         if err:
             print(f"  시작 실패: {err}")
@@ -134,9 +209,13 @@ def main():
     print("\n== 2. 모델이 실제로 받는 도구 (가짜 LLM 이 받은 요청)" + ("  [--no-limit: permission 규칙 제외]" if args.no_limit else ""))
     project = HERE
     tmp = None
-    if args.no_limit:
-        tmp = pathlib.Path(tempfile.mkdtemp(prefix="m11-nolimit-"))
-        config.pop("permission", None)
+    if args.no_limit or skipped:
+        tmp = pathlib.Path(tempfile.mkdtemp(prefix="m11-tools-"))
+        if args.no_limit:
+            config.pop("permission", None)
+        for name in skipped:  # 닿지 않는 레지스트리의 서버는 opencode 시작 때 멈춰 있지 않도록 끈다
+            config["mcp"][name]["enabled"] = False
+        servers = {n: sv for n, sv in servers.items() if n not in skipped}
         (tmp / "opencode.json").write_text(json.dumps(config, ensure_ascii=False), encoding="utf-8")
         if (HERE / "sandbox").is_dir():
             shutil.copytree(HERE / "sandbox", tmp / "sandbox")

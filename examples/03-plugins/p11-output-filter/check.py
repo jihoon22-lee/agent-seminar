@@ -98,6 +98,9 @@ SCRIPT = [
     bash(LONG_CMD),                                                                         # 4 긴 출력 (500줄)
     bash(HUGE_CMD),                                                                         # 5 아주 긴 출력 (3000줄)
     ("tool", "edit", {"filePath": "sample/app.env", "oldString": "API_KEY=***", "newString": "API_KEY=changed"}),  # 6 가려진 글자로 편집 시도
+    ("tool", "cfg_show_resource", {}),                                                      # 7 MCP: content 가 resource 항목
+    ("tool", "cfg_show_structured", {}),                                                    # 8 MCP: text 와 structuredContent 가 함께
+    ("tool", "cfg_show_structured_only", {}),                                               # 9 MCP: structuredContent 만 (opencode 가 JSON 문자열로 바꿈)
     "끝",
 ]
 
@@ -116,11 +119,14 @@ def main() -> None:
         out, results = scripted_run(sb, work, SCRIPT)
         show("A: 화면", out)
         show("A: 모델이 받은 도구 결과", "\n---\n".join(r if len(r) < 700 else r[:350] + f"\n[... 이 사이 {len(r) - 700}자 ...]\n" + r[-350:] for r in results))
-        check("모델이 7개 도구 결과를 모두 받음", len(results) == 7, str(len(results)))
-        if len(results) == 7:
+        check("모델이 10개 도구 결과를 모두 받음", len(results) == 10, str(len(results)))
+        if len(results) == 10:
             check("bash: 모델이 받은 결과에서 값이 가려짐", "DB_PASSWORD=***" in results[0] and "API_KEY=***" in results[0] and SECRET not in results[0] and "APP_NAME=demo-app" in results[0], results[0])
             check("read: 모델이 받은 파일 내용에서 값이 가려짐 (줄 번호/나머지는 그대로)", "2: DB_PASSWORD=***" in results[1] and "4: other=1" in results[1] and SECRET not in results[1], results[1])
             check("MCP 도구: output.content[].text 를 가리면 모델이 가려진 결과를 받음", results[2] == "DB_PASSWORD=***\nmode=dev", results[2])
+            check("MCP resource 항목: content[].resource.text 도 가려져 모델이 받음", results[7] == "DB_PASSWORD=***", results[7])
+            check("MCP text + structuredContent: 모델은 text 만 받고(가려짐) 비밀이 없음", results[8] == "DB_PASSWORD=***\nmode=dev", results[8])
+            check("MCP structuredContent 만 있으면 opencode 가 JSON 문자열로 바꿔 모델에게 줌: 그 문자열도 가려짐", json.loads(results[9]) == {"DB_PASSWORD": "***", "mode": "dev"}, results[9])
             check("edit: 모델이 받는 결과에는 원래 비밀이 없음 (diff 는 metadata 에만)", results[3] == "Edit applied successfully.", results[3])
             r4, r5 = results[4], results[5]
             lines4 = r4.splitlines()
@@ -136,6 +142,7 @@ def main() -> None:
               len(spill) == 1 and SECRET in spill[0].read_text(encoding="utf-8"), str(spill))
         check("파일 자체는 그대로 (디스크의 원본은 가려지지 않음)", f"DB_PASSWORD={SECRET}" in read(work / "sample" / "app.env") and "other=2" in read(work / "sample" / "app.env"))
         log = read(work / "logs" / "output-filter.log")
+        show("A: output-filter.log", log)
         check("기록: 도구별 가린 개수/줄인 크기만 남고 값은 없음", re.search(r"tool=bash masked=\d+\n", log) is not None and len(re.findall(r"shortened=\d+줄 -> 81줄", log)) == 2 and SECRET not in log, log)
         states = {}
         for p in tool_parts(sb):
@@ -148,6 +155,33 @@ def main() -> None:
         leaks = event_leaks(sb)
         check("그런데 이벤트 로그(event 테이블)에는 훅이 닿기 전에 기록된 running 상태의 metadata 에 원본이 남음 (bash 출력 스트림, edit diff)",
               leaks == {("bash", "running"), ("edit", "running")}, str(leaks))
+
+    # --- D: MCP 결과의 모양을 눈으로 확인: 탐침 플러그인이 필터 훅을 부른 직후의 훅 output 전체(structuredContent 포함)를 파일에 적는다
+    with Sandbox("p11d") as sb:
+        work = make_work(sb, "work-d")
+        # 플러그인 불리는 순서는 OS 마다 다를 수 있어서(Windows 에서는 탐침이 필터보다 먼저 불렸다) 순서에 기대지 않는다:
+        # 필터 파일을 plugins/ 밖으로 옮기고, plugins/ 의 탐침이 필터 훅을 직접 부른 뒤 그 결과(output)를 기록한다.
+        (work / ".opencode" / "impl").mkdir()
+        shutil.move(str(work / ".opencode" / "plugins" / "output-filter.js"), str(work / ".opencode" / "impl" / "output-filter.mjs"))
+        (work / ".opencode" / "plugins" / "probe.js").write_text(
+            'import { appendFileSync } from "node:fs";\n'
+            'import { OutputFilter } from "../impl/output-filter.mjs";\n'
+            'export const Probe = async (ctx) => {\n'
+            '  const filter = await OutputFilter(ctx);\n'
+            '  return { "tool.execute.after": async (input, output) => {\n'
+            '    await filter["tool.execute.after"](input, output);\n'
+            '    appendFileSync(ctx.directory + "/probe.jsonl", JSON.stringify({ tool: input.tool, output }) + "\\n");\n'
+            '  } };\n};\n', encoding="utf-8")
+        out, results = scripted_run(sb, work, SCRIPT[7:10] + ["끝"])
+        seen = [json.loads(l) for l in read(work / "probe.jsonl").splitlines() if l.strip()]
+        show("D: 탐침이 본 훅 output (필터 다음)", "\n".join(json.dumps(x, ensure_ascii=False) for x in seen))
+        check("[MCP 모양] 탐침이 세 MCP 도구의 훅 output 을 모두 봄", [x["tool"] for x in seen] == ["cfg_show_resource", "cfg_show_structured", "cfg_show_structured_only"], str([x["tool"] for x in seen]))
+        check("[MCP 모양] structuredContent 는 객체로 같이 오고, 필터를 거친 뒤 훅 output 전체(content, structuredContent)에 원본 값이 없음",
+              len(seen) == 3 and all("structuredContent" in x["output"] for x in seen[1:]) and all(SECRET not in json.dumps(x) for x in seen) and seen[1]["output"]["structuredContent"]["DB_PASSWORD"] == "***",
+              json.dumps(seen, ensure_ascii=False)[:600])
+        check("[MCP 모양] resource 항목은 {type:'resource', resource:{uri, text}} 모양이고 text 만 바뀜",
+              len(seen) >= 1 and seen[0]["output"]["content"][0]["resource"]["text"] == "DB_PASSWORD=***" and seen[0]["output"]["content"][0]["resource"]["uri"] == "file:///demo/app.env", json.dumps(seen[:1], ensure_ascii=False))
+        check("[MCP 모양] 이 세 도구에서도 저장소(세션 DB)에 원본 값이 남지 않음", SECRET.encode() not in store_bytes(sb))
 
     # --- B: 플러그인 켬, metadata 는 건드리지 않음 -> 모델에게는 가려지지만 저장소와 edit 화면에는 원본이 남는다
     with Sandbox("p11b") as sb:

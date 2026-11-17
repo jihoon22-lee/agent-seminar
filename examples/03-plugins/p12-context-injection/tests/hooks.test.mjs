@@ -15,7 +15,7 @@ const load = async (file) => {
 const ctx = await load("context-injection.js");
 const rem = await load("bash-reminder.js");
 
-const identity = { GIT_AUTHOR_NAME: "t", GIT_AUTHOR_EMAIL: "t@example.invalid", GIT_COMMITTER_NAME: "t", GIT_COMMITTER_EMAIL: "t@example.invalid" };
+const identity = { GIT_AUTHOR_NAME: "t", GIT_AUTHOR_EMAIL: "demo.invalid", GIT_COMMITTER_NAME: "t", GIT_COMMITTER_EMAIL: "demo.invalid" };
 const git = (cwd, ...args) => execFileSync("git", args, { cwd, env: { ...process.env, ...identity }, stdio: "pipe" }).toString().trim();
 function repo(name, branch = "main") {
   const dir = join(tmp, name);

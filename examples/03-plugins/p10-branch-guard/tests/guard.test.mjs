@@ -12,7 +12,7 @@ const tmp = mkdtempSync(join(tmpdir(), "branch-guard-test-"));
 copyFileSync(join(here, "..", ".opencode", "plugins", "branch-guard.js"), join(tmp, "plugin.mjs"));
 const mod = await import(pathToFileURL(join(tmp, "plugin.mjs")).href);
 
-const identity = { GIT_AUTHOR_NAME: "t", GIT_AUTHOR_EMAIL: "t@example.invalid", GIT_COMMITTER_NAME: "t", GIT_COMMITTER_EMAIL: "t@example.invalid" };
+const identity = { GIT_AUTHOR_NAME: "t", GIT_AUTHOR_EMAIL: "demo.invalid", GIT_COMMITTER_NAME: "t", GIT_COMMITTER_EMAIL: "demo.invalid" };
 const git = (cwd, ...args) => execFileSync("git", args, { cwd, env: { ...process.env, ...identity }, stdio: "pipe" }).toString().trim();
 
 // ws/ (git 저장소 아님) 안에: main(main 브랜치) feat(feat/x 브랜치) det(detached) rel(release/1.0) 네 저장소
@@ -31,6 +31,7 @@ const detRepo = repo("det", "main"); git(detRepo, "checkout", "-q", "--detach");
 const relRepo = repo("rel", "release/1.0");
 const unborn = repo("unborn", "master", false); // 커밋이 아직 없는 저장소의 첫 커밋
 const plain = join(ws, "plain"); mkdirSync(plain);
+const multi = repo("multi", "main"); git(multi, "branch", "feat/x"); git(multi, "branch", "dev"); // main 에 있고 feat/x, dev 브랜치가 이미 있는 저장소
 
 let failed = 0, total = 0;
 
@@ -133,6 +134,124 @@ await expect("true && git push origin HEAD", mainRepo, "push-to-protected");
 await expect("git commit -m \"$(cat <<'EOF'\nfix: 메시지\n\nEOF\n)\"", mainRepo, BLOCK, "heredoc 메시지로 커밋하는 흔한 형태");
 await expect("git commit -m \"$(cat <<'EOF'\nfix: 메시지\nEOF\n)\"", featRepo, null);
 
+// ---- 같은 명령 줄 안에서 브랜치가 바뀌는 경우 (git switch / git checkout 을 cd 처럼 따라간다)
+await expect("git switch main && git commit -m x", featRepo, BLOCK, "feat/x 에서 시작해 main 으로 전환한 뒤 커밋");
+await expect("git switch main; git commit -m x", featRepo, BLOCK);
+await expect("git checkout main && git commit -m x", featRepo, BLOCK);
+await expect("git switch master && git commit -m x", featRepo, BLOCK, "master 도 보호 대상");
+await expect("git switch main && git push", featRepo, "push-to-protected", "전환 뒤 push");
+await expect("git switch main && git push origin HEAD", featRepo, "push-to-protected");
+await expect("git switch -c feat/y && git commit -m x", mainRepo, null, "차단 메시지가 권하는 절차를 한 줄로 쓴 형태");
+await expect("git switch -c feat/y; git commit -m x", mainRepo, null);
+await expect("git switch -C feat/y && git commit -m x", mainRepo, null);
+await expect("git switch --create feat/y && git commit -m x", mainRepo, null);
+await expect("git switch -cfeat/y && git commit -m x", mainRepo, null, "값을 붙여 쓴 -c");
+await expect("git switch --orphan feat/y && git commit -m x", mainRepo, null);
+await expect("git checkout -b feat/y && git commit -m x", mainRepo, null);
+await expect("git checkout -B feat/y && git commit -m x", mainRepo, null);
+await expect("git checkout --orphan feat/y && git commit -m x", mainRepo, null);
+await expect("git switch -c feat/y main && git commit -m x", mainRepo, null, "시작점(main)은 새 브랜치 이름이 아님");
+await expect("git switch -c feat/y && git commit -m x && git push", mainRepo, null);
+await expect("git switch -c feat/y && git commit -m x && git push -u origin HEAD", mainRepo, null);
+await expect("git switch -c feat/y && git push origin main", mainRepo, "push-to-protected", "새 브랜치에 있어도 main 으로 가는 push 는 막음");
+await expect("git switch feat/x && git commit -m x", multi, null, "main 에서 시작해 기존 feature 브랜치로 전환");
+await expect("git checkout feat/x && git commit -m x", multi, null, "checkout 의 목적지가 실제 브랜치면 그 브랜치로 판단");
+await expect("git checkout dev && git commit -m x", multi, null);
+await expect("git switch main && git switch -c feat/z && git commit -m x", featRepo, null, "순서대로: main 으로 갔다가 새 브랜치");
+await expect("git switch -c feat/z && git switch main && git commit -m x", featRepo, BLOCK);
+await expect("git switch --detach && git commit -m x", mainRepo, null, "detached 로 전환하면 허용(원래 규칙과 같음)");
+await expect("git checkout --detach && git commit -m x", mainRepo, null);
+await expect("git switch main && git status && git commit -m x", featRepo, BLOCK, "사이에 다른 명령이 끼어도");
+await expect("git add . && git switch main && git commit -m x", featRepo, BLOCK);
+await expect("git -C feat switch main && git -C feat commit -m x", ws, BLOCK, "-C 로 지정한 저장소의 전환");
+await expect("git -C main switch -c feat/y && git -C main commit -m x", ws, null);
+await expect("git -C feat switch main && git commit -m x", ws, null, "다른 폴더의 전환은 영향 없음(ws 는 저장소가 아님)");
+await expect("cd feat && git switch main && git commit -m x", ws, BLOCK);
+await expect("cd main && git switch -c feat/y && git commit -m x", ws, null);
+await expect("git switch -c feat/y && cd ../feat && git commit -m x", mainRepo, null, "전환은 그 폴더에서만 유효, 다른 폴더는 실제 브랜치(feat/x)");
+await expect("git switch -c feat/y && cd ../main && git commit -m x", featRepo, BLOCK, "feat 에서 만든 브랜치는 main 폴더에 영향 없음");
+await expect('bash -c "git switch -c feat/y && git commit -m x"', mainRepo, null, "bash -c 안의 전환");
+await expect('bash -c "git switch main && git commit -m x"', featRepo, BLOCK);
+await expect("git switch main", featRepo, null, "전환만 하는 명령은 허용");
+await expect("git checkout main", featRepo, null);
+await expect("git checkout -- f.txt && git commit -m x", mainRepo, BLOCK, "파일을 되돌리는 checkout 은 브랜치를 바꾸지 않음");
+await expect("git checkout HEAD -- f.txt && git commit -m x", mainRepo, BLOCK);
+await expect("git checkout HEAD && git commit -m x", mainRepo, BLOCK);
+await expect("git switch --help && git commit -m x", mainRepo, BLOCK);
+
+// 목적지를 알 수 없는 전환: 명령 시작 때의 브랜치로 판단하고 로그에 NOTE 를 남긴다 (README "한계")
+await expect("git switch - && git commit -m x", mainRepo, BLOCK, "한계: 이전 브랜치(-)");
+await expect("git switch - && git commit -m x", featRepo, null, "한계: 이전 브랜치(-)");
+await expect("git checkout @{-1} && git commit -m x", featRepo, null, "한계: @{-1}");
+await expect("git checkout HEAD~1 && git commit -m x", mainRepo, BLOCK, "한계: 커밋으로 가는 checkout 은 detached 인지 모름");
+await expect("git checkout README.md && git commit -m x", mainRepo, BLOCK, "한계: 경로인지 브랜치인지 git 이 모르는 이름은 브랜치 변화로 보지 않음");
+await expect("git branch feat/q && git checkout feat/q && git commit -m x", mainRepo, BLOCK, "한계: 같은 줄에서 방금 만든 브랜치로 checkout (git switch 면 알 수 있음)");
+await expect("git branch feat/q && git switch feat/q && git commit -m x", mainRepo, null);
+await expect('git switch "$TARGET" && git commit -m x', mainRepo, BLOCK, "한계: 변수가 든 목적지는 알 수 없으니 시작 때의 브랜치(main)로 판단");
+await expect('git switch "$TARGET" && git commit -m x', featRepo, null, "한계: 위와 같음, 시작이 feat/x 면 허용");
+
+// ---- 셸 껍데기: bash -lc, cmd /c, powershell -Command, -EncodedCommand
+await expect('bash -lc "git commit -m x"', mainRepo, BLOCK, "bash -l -c 를 합친 -lc");
+await expect("bash -lc 'git commit -m x'", mainRepo, BLOCK);
+await expect('bash -ec "git commit -m x"', mainRepo, BLOCK);
+await expect('sh -c "git commit -m x"', mainRepo, BLOCK);
+await expect('zsh -c "git commit -m x"', mainRepo, BLOCK);
+await expect('fish -c "git commit -m x"', mainRepo, BLOCK);
+await expect('bash -l -c "git commit -m x"', mainRepo, BLOCK, "-l 과 -c 가 따로");
+await expect('bash -lc "git commit -m x"', featRepo, null);
+await expect('bash -lc "cd feat && git commit -m x"', ws, null);
+await expect('bash -lc "cd main && git commit -m x"', ws, BLOCK);
+await expect('env FOO=1 bash -lc "git commit -m x"', mainRepo, BLOCK);
+await expect('sudo bash -c "git commit -m x"', mainRepo, BLOCK);
+await expect('bash -lc "bash -lc \\"git commit -m x\\""', mainRepo, BLOCK, "중첩");
+await expect('cmd /c "git commit -m x"', mainRepo, BLOCK, "PowerShell 5.1 에서 && 대신 쓰는 형태");
+await expect('cmd /c "git add . && git commit -m x"', mainRepo, BLOCK);
+await expect("cmd /c git commit -m x", mainRepo, BLOCK, "따옴표 없이");
+await expect('cmd.exe /d /s /c "git commit -m x"', mainRepo, BLOCK);
+await expect('CMD /C "git commit -m x"', mainRepo, BLOCK);
+await expect('cmd /k "git commit -m x"', mainRepo, BLOCK);
+await expect('cmd /c "git commit -m x"', featRepo, null);
+await expect('cmd /c "git switch -c feat/y && git commit -m x"', mainRepo, null);
+await expect('cmd /c "cd ..\\feat && git commit -m x"', mainRepo, null);
+await expect('cmd /c "echo git commit"', mainRepo, null, "cmd 가 echo 하는 글자는 명령이 아님");
+await expect('powershell -NoProfile -Command "git commit -m x"', mainRepo, BLOCK);
+await expect('powershell -Command git commit -m x', mainRepo, BLOCK, "-Command 뒤 나머지 전부");
+await expect('powershell.exe -c "git commit -m x"', mainRepo, BLOCK);
+await expect('pwsh -NoLogo -Command "git commit -m x"', mainRepo, BLOCK);
+await expect('powershell -Comm "git commit -m x"', mainRepo, BLOCK, "-Command 의 줄임말");
+await expect('powershell -EncodedCommand ' + Buffer.from("git commit -m x", "utf16le").toString("base64"), mainRepo, BLOCK, "-EncodedCommand (base64 UTF-16LE)");
+await expect('pwsh -enc ' + Buffer.from("git commit -m x", "utf16le").toString("base64"), featRepo, null);
+await expect('powershell -Command "git commit -m x"', featRepo, null);
+
+// ---- push 의 @ (HEAD 의 줄임)
+await expect("git push origin @", mainRepo, "push-to-protected", "@ 는 HEAD");
+await expect("git push -u origin @", mainRepo, "push-to-protected");
+await expect("git push origin @", featRepo, null);
+await expect("git push origin @:main", featRepo, "push-to-protected");
+await expect("git push origin @:feat/x", mainRepo, null, "@ 에서 feat/x 로");
+await expect("git push origin @:refs/heads/feat/x", mainRepo, null);
+
+// ---- gh pr new (create 의 별칭), 합친 짧은 옵션
+await expect("gh pr new --draft", mainRepo, "draft-pr");
+await expect("gh pr new --draft --title x", featRepo, "draft-pr");
+await expect("gh pr new -d", featRepo, "draft-pr");
+await expect("gh pr new --title x --body y", featRepo, null);
+await expect("gh pr create -dt x", mainRepo, "draft-pr", "-d 와 -t 를 합친 형태");
+await expect("gh pr create -dt x -b y", mainRepo, "draft-pr");
+await expect("gh pr create -fd", featRepo, "draft-pr");
+await expect("gh pr create -t x -d", featRepo, "draft-pr");
+await expect("gh pr create -d=true", featRepo, "draft-pr");
+await expect("gh pr create -d=false", featRepo, null);
+await expect("gh pr create -t draft", featRepo, null, "값이 draft 인 -t");
+await expect("gh pr create -tdraft", featRepo, null, "붙여 쓴 값 속의 d 는 옵션이 아님");
+await expect("gh pr create -bdraft -t x", featRepo, null);
+await expect("gh pr create --title draft --body 'a -d b'", featRepo, null, "값 속의 -d 글자");
+await expect("gh pr create -t x -B develop", featRepo, null);
+await expect("gh pr create -ft x", featRepo, null);
+await expect("gh -R owner/repo pr create --draft", featRepo, "draft-pr", "-R 이 앞에 오는 형태");
+await expect("gh -R owner/repo pr new -d", featRepo, "draft-pr");
+await expect("gh pr new --draft=false", featRepo, null);
+
 // ---- PowerShell / Windows 형태
 await expect("git.exe commit -m x", mainRepo, BLOCK);
 await expect('& git commit -m "x"', mainRepo, BLOCK);
@@ -182,6 +301,12 @@ await expect('cd "$DIR" && git commit -m x', ws, null, "한계: 변수가 든 �
 await expect("(cd ../feat); git commit -m x", mainRepo, null, "한계: 서브셸의 cd 가 바깥으로 샌다");
 await expect('git commit -m "--dry-run"', mainRepo, null, "한계: 옵션 이름과 같은 메시지 값");
 await expect("git push", relRepo, null, "한계: release/1.0 는 기본 보호 목록에 없다");
+await expect("bash release.sh", mainRepo, null, "한계: 스크립트 파일 안의 git");
+await expect("powershell -File release.ps1", mainRepo, null, "한계: -File");
+await expect("cmd /c release.bat", mainRepo, null, "한계: 배치 파일");
+await expect('wsl git commit -m x', mainRepo, null, "한계: wsl 은 껍데기로 풀지 않음");
+await expect('ssh host "git commit -m x"', mainRepo, null, "한계: 원격 셸");
+await expect("git --git-dir=main/.git --work-tree=main commit -m x", featRepo, null, "한계: --git-dir 는 폴더로 환산하지 않고 현재 폴더(feat/x) 기준");
 
 // ---- 환경: 판단할 수 없는 상황은 모두 허용하고 기록 (로그는 플러그인의 directory 아래 logs/ 에 쌓인다)
 {
@@ -218,6 +343,20 @@ total++;
   total++;
   const blockedLog = readFileSync(join(mainRepo, "logs", "branch-guard.log"), "utf8");
   if (!/BLOCKED rule=protected-branch :: git commit -m x/.test(blockedLog) || !/BLOCKED rule=draft-pr/.test(blockedLog)) { failed++; console.log("FAIL: BLOCKED 기록 없음:", blockedLog); }
+}
+
+// ---- 전환을 따라간 차단 메시지와 NOTE 기록
+{
+  rmSync(join(featRepo, "logs"), { recursive: true, force: true });
+  const hooks = await mod.BranchGuard({ directory: featRepo });
+  let msg = "";
+  try { await hooks["tool.execute.before"]({ tool: "bash" }, { args: { command: "git switch main && git commit -m x" } }); } catch (e) { msg = e.message; }
+  total++;
+  if (!msg.includes("[branch-guard:protected-branch]") || !msg.includes("먼저 'main' 로 전환한 뒤 커밋") || !msg.includes("git switch -c <type>/<name>")) { failed++; console.log("FAIL: 전환 뒤 차단 메시지:", msg); }
+  await hooks["tool.execute.before"]({ tool: "bash" }, { args: { command: "git switch - && git commit -m x" } });
+  total++;
+  const l = readFileSync(join(featRepo, "logs", "branch-guard.log"), "utf8");
+  if (!/BLOCKED rule=protected-branch :: git switch main && git commit/.test(l) || !/NOTE switch-destination-unknown .* :: git switch - && git commit -m x/.test(l)) { failed++; console.log("FAIL: BLOCKED/NOTE 기록:", l); }
 }
 
 // ---- 설정/입력
