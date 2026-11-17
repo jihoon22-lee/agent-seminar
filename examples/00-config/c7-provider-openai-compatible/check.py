@@ -3,10 +3,12 @@
 진짜 모델 대신 model_server.py(모의 서버)를 빈 포트에 띄워 쓴다. 인터넷도 레지스트리도 필요 없다.
 (opencode 1.19.5 는 @ai-sdk/openai-compatible 을 내장하고 있어 첫 실행에도 내려받지 않는다. 아래 검사가 이를 확인한다.)
 """
+import atexit
 import json
 import os
 import pathlib
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -49,7 +51,9 @@ def post(url: str, key: str | None, body: dict | None = None):
 
 
 # 2. model_server.py 자체
-log = pathlib.Path(tempfile.mkdtemp(prefix="c7-log-")) / "sub" / "m.log"
+_log_dir = pathlib.Path(tempfile.mkdtemp(prefix="c7-log-"))
+atexit.register(shutil.rmtree, _log_dir, ignore_errors=True)   # 검사가 끝나면 임시 로그 폴더를 지운다
+log = _log_dir / "sub" / "m.log"
 with ModelServer(0, KEY, strict=False, log_path=log, quiet=True) as srv:
     status, data = post(srv.base_url + "/chat/completions", KEY, {"model": "demo-chat"})
     check("모의 서버: 고정 답변을 돌려줌", status == 200 and data["choices"][0]["message"]["content"] == REPLY, str(data))
